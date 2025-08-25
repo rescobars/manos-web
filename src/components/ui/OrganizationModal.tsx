@@ -31,7 +31,7 @@ export function OrganizationModal({
     contact_email: '',
     contact_phone: '',
     address: '',
-    plan_type: 'BASIC'
+    plan_type: 'FREE' // Cambiado a FREE como valor por defecto más seguro
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,7 +50,7 @@ export function OrganizationModal({
           contact_email: organization.contact_email || '',
           contact_phone: organization.contact_phone || '',
           address: organization.address || '',
-          plan_type: organization.plan_type as any || 'BASIC'
+          plan_type: organization.plan_type as any || 'FREE'
         });
       } else {
         setFormData({
@@ -63,7 +63,7 @@ export function OrganizationModal({
           contact_email: '',
           contact_phone: '',
           address: '',
-          plan_type: 'BASIC'
+          plan_type: 'FREE'
         });
       }
       setErrors({});
@@ -73,6 +73,7 @@ export function OrganizationModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    // Campos obligatorios según las instrucciones
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre es requerido';
     }
@@ -83,12 +84,19 @@ export function OrganizationModal({
       newErrors.slug = 'El slug solo puede contener letras minúsculas, números y guiones';
     }
 
+    // Validaciones opcionales
     if (formData.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
       newErrors.contact_email = 'Email inválido';
     }
 
     if (formData.website_url && !/^https?:\/\/.+/.test(formData.website_url)) {
       newErrors.website_url = 'URL inválida (debe comenzar con http:// o https://)';
+    }
+
+    // Validar plan_type
+    const validPlanTypes = ['FREE', 'BASIC', 'PRO', 'ENTERPRISE'];
+    if (formData.plan_type && !validPlanTypes.includes(formData.plan_type)) {
+      newErrors.plan_type = 'Tipo de plan inválido';
     }
 
     setErrors(newErrors);
@@ -102,8 +110,26 @@ export function OrganizationModal({
       return;
     }
 
+    // Limpiar campos vacíos antes de enviar
+    const cleanData = Object.fromEntries(
+      Object.entries(formData).map(([key, value]) => [
+        key, 
+        typeof value === 'string' ? value.trim() : value
+      ]).filter(([key, value]) => {
+        // Mantener campos obligatorios siempre
+        if (key === 'name' || key === 'slug' || key === 'plan_type') {
+          return true;
+        }
+        // Filtrar campos opcionales vacíos
+        return value !== '' && value !== null && value !== undefined;
+      })
+    );
+
+    // Log de los datos que se van a enviar
+    console.log('Datos del formulario a enviar:', cleanData);
+
     try {
-      await onSubmit(formData);
+      await onSubmit(cleanData);
       onClose();
     } catch (error) {
       console.error('Error submitting form:', error);

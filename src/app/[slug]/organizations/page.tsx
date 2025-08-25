@@ -96,12 +96,19 @@ export default function OrganizationsPage() {
   const handleCreateOrganization = async (data: any) => {
     setActionLoading(true);
     try {
+      // Verificar autenticación
+      const accessToken = localStorage.getItem('accessToken');
+      console.log('Token de acceso:', accessToken ? 'Presente' : 'Ausente');
+      
+      console.log('Enviando datos al servidor:', data);
       const response = await createOrganization(data);
+      console.log('Respuesta del servidor:', response);
+      
       if (response.success) {
         await loadOrganizations();
         setShowCreateModal(false);
       } else {
-        throw new Error(response.error || 'Error al crear organización');
+        throw new Error(response.error || response.message || 'Error al crear organización');
       }
     } catch (error) {
       console.error('Error creating organization:', error);

@@ -86,22 +86,13 @@ export function OrganizationDetail({
               <p className="text-sm text-gray-600">ID: {organization.uuid}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit(organization)}
-            >
-              Editar
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </CardHeader>
 
         <CardContent className="space-y-6">
