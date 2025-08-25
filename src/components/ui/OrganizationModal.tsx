@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Organization, CreateOrganizationFormData, UpdateOrganizationFormData } from '@/types';
 import { Button } from './Button';
 import { Input } from './Input';
+import { TextArea } from './TextArea';
+import { Select } from './Select';
 import { X, Building2, Save, Loader2 } from 'lucide-react';
 
 interface OrganizationModalProps {
@@ -245,212 +247,151 @@ export function OrganizationModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Información básica */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre *
-              </label>
-              <Input
-                value={formData.name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="Nombre de la organización"
-                error={errors.name}
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Slug *
-              </label>
-              <Input
-                value={formData.slug}
-                onChange={(e) => handleInputChange('slug', e.target.value)}
-                placeholder="mi-empresa"
-                error={errors.slug}
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descripción *
-              </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Descripción de la organización"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.description ? 'border-red-300' : 'border-gray-300'
-              }`}
-              rows={3}
+            <Input
+              label="Nombre"
+              value={formData.name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder="Nombre de la organización"
+              error={errors.name}
+              required={true}
               disabled={loading}
             />
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-            )}
+
+            <Input
+              label="Slug"
+              value={formData.slug}
+              onChange={(e) => handleInputChange('slug', e.target.value)}
+              placeholder="mi-empresa"
+              error={errors.slug}
+              required={true}
+              disabled={loading}
+            />
           </div>
+
+                    <TextArea
+            label="Descripción"
+            value={formData.description}
+            onChange={(e) => handleInputChange('description', e.target.value)}
+            placeholder="Descripción de la organización"
+            error={errors.description}
+            required={true}
+            rows={3}
+            disabled={loading}
+          />
 
           {/* Información de contacto */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email de contacto *
-              </label>
-              <Input
-                type="email"
-                value={formData.contact_email}
-                onChange={(e) => handleInputChange('contact_email', e.target.value)}
-                placeholder="contacto@empresa.com"
-                error={errors.contact_email}
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label="Email de contacto"
+              type="email"
+              value={formData.contact_email}
+              onChange={(e) => handleInputChange('contact_email', e.target.value)}
+              placeholder="contacto@empresa.com"
+              error={errors.contact_email}
+              required={true}
+              disabled={loading}
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Teléfono de contacto *
-              </label>
-              <Input
-                value={formData.contact_phone}
-                onChange={(e) => handleInputChange('contact_phone', e.target.value)}
-                placeholder="+502 5000-0000"
-                error={errors.contact_phone}
-                disabled={loading}
-              />
-            </div>
+            <Input
+              label="Teléfono de contacto"
+              value={formData.contact_phone}
+              onChange={(e) => handleInputChange('contact_phone', e.target.value)}
+              placeholder="+502 5000-0000"
+              error={errors.contact_phone}
+              required={true}
+              disabled={loading}
+            />
           </div>
 
           {/* Información web */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Dominio
-            </label>
             <Input
+              label="Dominio"
               value={formData.domain}
               onChange={(e) => handleInputChange('domain', e.target.value)}
               placeholder="empresa.com"
               error={errors.domain}
+              required={false}
               disabled={loading}
             />
-          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sitio web
-              </label>
-              <Input
-                value={formData.website_url}
-                onChange={(e) => handleInputChange('website_url', e.target.value)}
-                placeholder="https://empresa.com"
-                error={errors.website_url}
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL del logo *
-              </label>
             <Input
-              value={formData.logo_url}
-              onChange={(e) => handleInputChange('logo_url', e.target.value)}
-              placeholder="https://example.com/logo.png"
-              error={errors.logo_url}
+              label="Sitio web"
+              value={formData.website_url}
+              onChange={(e) => handleInputChange('website_url', e.target.value)}
+              placeholder="https://empresa.com"
+              error={errors.website_url}
+              required={false}
               disabled={loading}
             />
           </div>
 
-          <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                Dirección *
-              </label>
-            <textarea
-              value={formData.address}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              placeholder="Dirección completa de la organización"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.address ? 'border-red-300' : 'border-gray-300'
-              }`}
-              rows={2}
-              disabled={loading}
-            />
-            {errors.address && (
-              <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-            )}
-          </div>
+                    <Input
+            label="URL del logo"
+            value={formData.logo_url}
+            onChange={(e) => handleInputChange('logo_url', e.target.value)}
+            placeholder="https://example.com/logo.png"
+            error={errors.logo_url}
+            required={true}
+            disabled={loading}
+          />
+
+                    <TextArea
+            label="Dirección"
+            value={formData.address}
+            onChange={(e) => handleInputChange('address', e.target.value)}
+            placeholder="Dirección completa de la organización"
+            error={errors.address}
+            required={true}
+            rows={2}
+            disabled={loading}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estado *
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.status ? 'border-red-300' : 'border-gray-300'
-                }`}
-                disabled={loading}
-              >
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-                <option value="SUSPENDED">SUSPENDED</option>
-              </select>
-              {errors.status && (
-                <p className="mt-1 text-sm text-red-600">{errors.status}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tipo de plan *
-              </label>
-              <select
-                value={formData.plan_type}
-                onChange={(e) => handleInputChange('plan_type', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.plan_type ? 'border-red-300' : 'border-gray-300'
-                }`}
-                disabled={loading}
-              >
-                <option value="FREE">FREE</option>
-                <option value="BASIC">BASIC</option>
-                <option value="PRO">PRO</option>
-                <option value="ENTERPRISE">ENTERPRISE</option>
-              </select>
-              {errors.plan_type && (
-                <p className="mt-1 text-sm text-red-600">{errors.plan_type}</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha de expiración de suscripción *
-              </label>
-            <input
-              type="datetime-local"
-              value={formData.subscription_expires_at ? formData.subscription_expires_at.slice(0, 16) : ''}
-              onChange={(e) => {
-                const date = e.target.value;
-                const isoDate = date ? new Date(date).toISOString() : '';
-                handleInputChange('subscription_expires_at', isoDate);
-              }}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.subscription_expires_at ? 'border-red-300' : 'border-gray-300'
-              }`}
+            <Select
+              label="Estado"
+              value={formData.status}
+              onChange={(value) => handleInputChange('status', value)}
+              options={[
+                { value: 'ACTIVE', label: 'ACTIVE' },
+                { value: 'INACTIVE', label: 'INACTIVE' },
+                { value: 'SUSPENDED', label: 'SUSPENDED' }
+              ]}
+              error={errors.status}
+              required={true}
               disabled={loading}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Deja vacío para usar la fecha por defecto
-            </p>
-            {errors.subscription_expires_at && (
-              <p className="mt-1 text-sm text-red-600">{errors.subscription_expires_at}</p>
-            )}
+
+            <Select
+              label="Tipo de plan"
+              value={formData.plan_type}
+              onChange={(value) => handleInputChange('plan_type', value)}
+              options={[
+                { value: 'FREE', label: 'FREE' },
+                { value: 'BASIC', label: 'BASIC' },
+                { value: 'PRO', label: 'PRO' },
+                { value: 'ENTERPRISE', label: 'ENTERPRISE' }
+              ]}
+              error={errors.plan_type}
+              required={true}
+              disabled={loading}
+            />
           </div>
+
+          <Input
+            label="Fecha de expiración de suscripción"
+            type="datetime-local"
+            value={formData.subscription_expires_at ? formData.subscription_expires_at.slice(0, 16) : ''}
+            onChange={(e) => {
+              const date = e.target.value;
+              const isoDate = date ? new Date(date).toISOString() : '';
+              handleInputChange('subscription_expires_at', isoDate);
+            }}
+            error={errors.subscription_expires_at}
+            required={true}
+            disabled={loading}
+            helperText="Deja vacío para usar la fecha por defecto"
+          />
 
           {/* Botones */}
           <div className="flex justify-end space-x-3 pt-4">

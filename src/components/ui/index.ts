@@ -1,6 +1,8 @@
 // Componentes base
 export { Button } from './Button';
 export { Input } from './Input';
+export { TextArea } from './TextArea';
+export { Select } from './Select';
 export { Card, CardHeader, CardTitle, CardContent } from './Card';
 
 // Componentes de organizaciones
