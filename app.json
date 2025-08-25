@@ -13,6 +13,10 @@
     "NODE_ENV": {
       "description": "Environment for the application",
       "value": "production"
+    },
+    "NEXT_PUBLIC_API_URL": {
+      "description": "API URL for the application",
+      "value": "https://movigo-api-prod-8f5d7dc176d2.herokuapp.com"
     }
   },
   "formation": {
