@@ -31,7 +31,8 @@ export function OrganizationModal({
     contact_email: '',
     contact_phone: '',
     address: '',
-    plan_type: 'FREE' // Cambiado a FREE como valor por defecto más seguro
+    plan_type: 'FREE', // Cambiado a FREE como valor por defecto más seguro
+    subscription_expires_at: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,7 +51,8 @@ export function OrganizationModal({
           contact_email: organization.contact_email || '',
           contact_phone: organization.contact_phone || '',
           address: organization.address || '',
-          plan_type: organization.plan_type as any || 'FREE'
+          plan_type: organization.plan_type as any || 'FREE',
+          subscription_expires_at: organization.subscription_expires_at || ''
         });
       } else {
         setFormData({
@@ -63,7 +65,8 @@ export function OrganizationModal({
           contact_email: '',
           contact_phone: '',
           address: '',
-          plan_type: 'FREE'
+          plan_type: 'FREE',
+          subscription_expires_at: ''
         });
       }
       setErrors({});
@@ -76,27 +79,85 @@ export function OrganizationModal({
     // Campos obligatorios según las instrucciones
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre es requerido';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+    } else if (formData.name.trim().length > 100) {
+      newErrors.name = 'El nombre no puede exceder 100 caracteres';
     }
 
     if (!formData.slug.trim()) {
       newErrors.slug = 'El slug es requerido';
     } else if (!/^[a-z0-9-]+$/.test(formData.slug)) {
       newErrors.slug = 'El slug solo puede contener letras minúsculas, números y guiones';
+    } else if (formData.slug.length < 3) {
+      newErrors.slug = 'El slug debe tener al menos 3 caracteres';
+    } else if (formData.slug.length > 50) {
+      newErrors.slug = 'El slug no puede exceder 50 caracteres';
     }
 
-    // Validaciones opcionales
-    if (formData.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
-      newErrors.contact_email = 'Email inválido';
+    // Validar descripción
+    if (formData.description && formData.description.length > 500) {
+      newErrors.description = 'La descripción no puede exceder 500 caracteres';
     }
 
-    if (formData.website_url && !/^https?:\/\/.+/.test(formData.website_url)) {
-      newErrors.website_url = 'URL inválida (debe comenzar con http:// o https://)';
+    // Validar dominio
+    if (formData.domain) {
+      if (!/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(formData.domain)) {
+        newErrors.domain = 'Formato de dominio inválido (ejemplo: empresa.com)';
+      }
+    }
+
+    // Validar email de contacto
+    if (formData.contact_email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
+        newErrors.contact_email = 'Email inválido';
+      } else if (formData.contact_email.length > 100) {
+        newErrors.contact_email = 'El email no puede exceder 100 caracteres';
+      }
+    }
+
+    // Validar teléfono
+    if (formData.contact_phone) {
+      if (!/^[\+]?[0-9\s\-\(\)]{7,20}$/.test(formData.contact_phone)) {
+        newErrors.contact_phone = 'Formato de teléfono inválido';
+      }
+    }
+
+    // Validar sitio web
+    if (formData.website_url) {
+      if (!/^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/.test(formData.website_url)) {
+        newErrors.website_url = 'URL inválida (debe comenzar con http:// o https://)';
+      }
+    }
+
+    // Validar URL del logo
+    if (formData.logo_url) {
+      if (!/^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/.test(formData.logo_url)) {
+        newErrors.logo_url = 'URL del logo inválida';
+      }
+    }
+
+    // Validar dirección
+    if (formData.address && formData.address.length > 200) {
+      newErrors.address = 'La dirección no puede exceder 200 caracteres';
     }
 
     // Validar plan_type
     const validPlanTypes = ['FREE', 'BASIC', 'PRO', 'ENTERPRISE'];
-    if (formData.plan_type && !validPlanTypes.includes(formData.plan_type)) {
+    if (!formData.plan_type || !validPlanTypes.includes(formData.plan_type)) {
       newErrors.plan_type = 'Tipo de plan inválido';
+    }
+
+    // Validar fecha de expiración
+    if (formData.subscription_expires_at) {
+      const expirationDate = new Date(formData.subscription_expires_at);
+      const now = new Date();
+      
+      if (isNaN(expirationDate.getTime())) {
+        newErrors.subscription_expires_at = 'Fecha de expiración inválida';
+      } else if (expirationDate <= now) {
+        newErrors.subscription_expires_at = 'La fecha de expiración debe ser futura';
+      }
     }
 
     setErrors(newErrors);
@@ -125,14 +186,12 @@ export function OrganizationModal({
       })
     );
 
-    // Log de los datos que se van a enviar
-    console.log('Datos del formulario a enviar:', cleanData);
-
     try {
       await onSubmit(cleanData);
       onClose();
     } catch (error) {
       console.error('Error submitting form:', error);
+      // No cerrar el modal ni limpiar el formulario en caso de error
     }
   };
 
@@ -165,7 +224,6 @@ export function OrganizationModal({
     }
   };
 
-  console.log('OrganizationModal render:', { isOpen, organization: organization?.name });
   if (!isOpen) return null;
 
   return (
@@ -226,10 +284,15 @@ export function OrganizationModal({
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="Descripción de la organización"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.description ? 'border-red-300' : 'border-gray-300'
+              }`}
               rows={3}
               disabled={loading}
             />
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+            )}
           </div>
 
           {/* Información de contacto */}
@@ -263,17 +326,18 @@ export function OrganizationModal({
 
           {/* Información web */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Dominio
-              </label>
-              <Input
-                value={formData.domain}
-                onChange={(e) => handleInputChange('domain', e.target.value)}
-                placeholder="empresa.com"
-                disabled={loading}
-              />
-            </div>
+                      <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Dominio
+            </label>
+            <Input
+              value={formData.domain}
+              onChange={(e) => handleInputChange('domain', e.target.value)}
+              placeholder="empresa.com"
+              error={errors.domain}
+              disabled={loading}
+            />
+          </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -297,6 +361,7 @@ export function OrganizationModal({
               value={formData.logo_url}
               onChange={(e) => handleInputChange('logo_url', e.target.value)}
               placeholder="https://example.com/logo.png"
+              error={errors.logo_url}
               disabled={loading}
             />
           </div>
@@ -309,10 +374,15 @@ export function OrganizationModal({
               value={formData.address}
               onChange={(e) => handleInputChange('address', e.target.value)}
               placeholder="Dirección completa de la organización"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.address ? 'border-red-300' : 'border-gray-300'
+              }`}
               rows={2}
               disabled={loading}
             />
+            {errors.address && (
+              <p className="mt-1 text-sm text-red-600">{errors.address}</p>
+            )}
           </div>
 
           <div>
@@ -322,7 +392,9 @@ export function OrganizationModal({
             <select
               value={formData.plan_type}
               onChange={(e) => handleInputChange('plan_type', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.plan_type ? 'border-red-300' : 'border-gray-300'
+              }`}
               disabled={loading}
             >
               <option value="FREE">FREE</option>
@@ -330,6 +402,34 @@ export function OrganizationModal({
               <option value="PRO">PRO</option>
               <option value="ENTERPRISE">ENTERPRISE</option>
             </select>
+            {errors.plan_type && (
+              <p className="mt-1 text-sm text-red-600">{errors.plan_type}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha de expiración de suscripción
+            </label>
+            <input
+              type="datetime-local"
+              value={formData.subscription_expires_at ? formData.subscription_expires_at.slice(0, 16) : ''}
+              onChange={(e) => {
+                const date = e.target.value;
+                const isoDate = date ? new Date(date).toISOString() : '';
+                handleInputChange('subscription_expires_at', isoDate);
+              }}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.subscription_expires_at ? 'border-red-300' : 'border-gray-300'
+              }`}
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Deja vacío para usar la fecha por defecto
+            </p>
+            {errors.subscription_expires_at && (
+              <p className="mt-1 text-sm text-red-600">{errors.subscription_expires_at}</p>
+            )}
           </div>
 
           {/* Botones */}

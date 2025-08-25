@@ -148,6 +148,7 @@ export interface CreateOrganizationFormData {
   contact_phone?: string;
   address?: string;
   plan_type?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+  subscription_expires_at?: string;
 }
 
 export interface UpdateOrganizationFormData {
@@ -161,6 +162,7 @@ export interface UpdateOrganizationFormData {
   contact_phone?: string;
   address?: string;
   plan_type?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+  subscription_expires_at?: string;
 }
 
 export interface OrganizationFilters {

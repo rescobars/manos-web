@@ -92,6 +92,8 @@ class ApiService {
       ...options,
     };
 
+
+
     try {
       const response = await fetch(url, config);
       const data = await response.json();
@@ -125,7 +127,15 @@ class ApiService {
           }
         }
         
-        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+        // Mostrar error más detallado del backend
+        const errorMessage = data.error || data.message || data.detail || `HTTP ${response.status}: ${response.statusText}`;
+        console.error('Backend Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: data,
+          url: url
+        });
+        throw new Error(errorMessage);
       }
       
       return data;
@@ -216,6 +226,7 @@ class ApiService {
     contact_phone?: string;
     address?: string;
     plan_type?: string;
+    subscription_expires_at?: string;
   }): Promise<ApiResponse> {
     return this.request('/organizations', {
       method: 'POST',
@@ -234,6 +245,7 @@ class ApiService {
     contact_phone: string;
     address: string;
     plan_type: string;
+    subscription_expires_at: string;
   }>): Promise<ApiResponse> {
     return this.request(`/organizations/${uuid}`, {
       method: 'PUT',

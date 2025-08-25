@@ -63,14 +63,7 @@ export default function OrganizationsPage() {
   const canChangeStatus = hasPermission('organizations', 'suspend') || hasPermission('organizations', 'activate');
   const canViewOrganizations = hasPermission('organizations', 'read');
 
-  // Debug: Log permisos para verificar
-  console.log('Permisos de organizaciones:', {
-    canCreate: canCreateOrganizations,
-    canEdit: canEditOrganizations,
-    canDelete: canDeleteOrganizations,
-    canChangeStatus,
-    canView: canViewOrganizations
-  });
+
 
   // Cargar organizaciones al montar el componente
   useEffect(() => {
@@ -96,13 +89,7 @@ export default function OrganizationsPage() {
   const handleCreateOrganization = async (data: any) => {
     setActionLoading(true);
     try {
-      // Verificar autenticación
-      const accessToken = localStorage.getItem('accessToken');
-      console.log('Token de acceso:', accessToken ? 'Presente' : 'Ausente');
-      
-      console.log('Enviando datos al servidor:', data);
       const response = await createOrganization(data);
-      console.log('Respuesta del servidor:', response);
       
       if (response.success) {
         await loadOrganizations();
@@ -112,7 +99,9 @@ export default function OrganizationsPage() {
       }
     } catch (error) {
       console.error('Error creating organization:', error);
+      // Mostrar error pero no cerrar el modal
       alert('Error al crear la organización: ' + (error as Error).message);
+      // No cerrar el modal para que el usuario pueda corregir los datos
     } finally {
       setActionLoading(false);
     }
@@ -134,6 +123,7 @@ export default function OrganizationsPage() {
     } catch (error) {
       console.error('Error updating organization:', error);
       alert('Error al actualizar la organización: ' + (error as Error).message);
+      // No cerrar el modal para que el usuario pueda corregir los datos
     } finally {
       setActionLoading(false);
     }
