@@ -135,3 +135,39 @@ export interface ApiResponse<T = unknown> {
   message?: string;
   error?: string;
 }
+
+// Tipos para el management de organizaciones
+export interface CreateOrganizationFormData {
+  name: string;
+  slug: string;
+  description?: string;
+  domain?: string;
+  logo_url?: string;
+  website_url?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  address?: string;
+  plan_type?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+}
+
+export interface UpdateOrganizationFormData {
+  name?: string;
+  slug?: string;
+  description?: string;
+  domain?: string;
+  logo_url?: string;
+  website_url?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  address?: string;
+  plan_type?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+}
+
+export interface OrganizationFilters {
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  plan_type?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+}
+
+export interface OrganizationStatusUpdate {
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+}

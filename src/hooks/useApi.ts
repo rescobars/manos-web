@@ -1,6 +1,12 @@
 import { useState, useCallback } from 'react';
 import { apiService } from '@/lib/api';
-import { ApiResponse } from '@/types';
+import { 
+  CreateOrganizationFormData, 
+  UpdateOrganizationFormData, 
+  OrganizationFilters,
+  OrganizationStatusUpdate,
+  ApiResponse 
+} from '@/types';
 
 interface UseApiOptions {
   onSuccess?: (data: any) => void;
@@ -24,7 +30,7 @@ export function useApi<T = any>(options: UseApiOptions = {}) {
       const response = await apiService.authenticatedRequest<T>(endpoint, requestOptions);
       
       if (response.success) {
-        setData(response.data);
+        setData(response.data || null);
         options.onSuccess?.(response.data);
       } else {
         throw new Error(response.error || 'Request failed');
@@ -130,5 +136,122 @@ export function useDeleteApi<T = any>(options: UseApiOptions = {}) {
   return {
     ...api,
     delete: del,
+  };
+}
+
+export function useOrganizations() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getOrganizations = useCallback(async (filters?: OrganizationFilters) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.getOrganizations(filters);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getOrganization = useCallback(async (uuid: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.getOrganization(uuid);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const createOrganization = useCallback(async (data: CreateOrganizationFormData) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.createOrganization(data);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateOrganization = useCallback(async (uuid: string, data: UpdateOrganizationFormData) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.updateOrganization(uuid, data);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateOrganizationStatus = useCallback(async (uuid: string, status: OrganizationStatusUpdate['status']) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.updateOrganizationStatus(uuid, status);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deleteOrganization = useCallback(async (uuid: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.deleteOrganization(uuid);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  return {
+    loading,
+    error,
+    getOrganizations,
+    getOrganization,
+    createOrganization,
+    updateOrganization,
+    updateOrganizationStatus,
+    deleteOrganization,
+    clearError,
   };
 }

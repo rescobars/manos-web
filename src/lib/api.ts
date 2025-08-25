@@ -191,6 +191,69 @@ class ApiService {
     });
   }
 
+  // Organization endpoints
+  async getOrganizations(params?: { status?: string; plan_type?: string }): Promise<ApiResponse> {
+    const queryParams = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return this.request(`/organizations${queryParams}`, {
+      method: 'GET',
+    });
+  }
+
+  async getOrganization(uuid: string): Promise<ApiResponse> {
+    return this.request(`/organizations/${uuid}`, {
+      method: 'GET',
+    });
+  }
+
+  async createOrganization(data: {
+    name: string;
+    slug: string;
+    description?: string;
+    domain?: string;
+    logo_url?: string;
+    website_url?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    address?: string;
+    plan_type?: string;
+  }): Promise<ApiResponse> {
+    return this.request('/organizations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateOrganization(uuid: string, data: Partial<{
+    name: string;
+    slug: string;
+    description: string;
+    domain: string;
+    logo_url: string;
+    website_url: string;
+    contact_email: string;
+    contact_phone: string;
+    address: string;
+    plan_type: string;
+  }>): Promise<ApiResponse> {
+    return this.request(`/organizations/${uuid}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateOrganizationStatus(uuid: string, status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'): Promise<ApiResponse> {
+    return this.request(`/organizations/${uuid}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async deleteOrganization(uuid: string): Promise<ApiResponse> {
+    return this.request(`/organizations/${uuid}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Método genérico para requests autenticadas
   async authenticatedRequest<T>(
     endpoint: string,
