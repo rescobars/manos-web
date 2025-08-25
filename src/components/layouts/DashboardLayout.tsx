@@ -7,9 +7,10 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
   user: any;
   onLogout: () => void;
+  currentSlug?: string;
 }
 
-export function DashboardLayout({ children, user, onLogout }: DashboardLayoutProps) {
+export function DashboardLayout({ children, user, onLogout, currentSlug }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -20,6 +21,7 @@ export function DashboardLayout({ children, user, onLogout }: DashboardLayoutPro
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         user={user}
         onLogout={onLogout}
+        currentSlug={currentSlug}
       />
 
       {/* Main Content Area */}

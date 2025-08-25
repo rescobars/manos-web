@@ -1,5 +1,7 @@
 import React from 'react';
 import { clsx } from 'clsx';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   Building2, 
   Users, 
@@ -19,43 +21,45 @@ interface SidebarProps {
   onToggle: () => void;
   user: any;
   onLogout: () => void;
+  currentSlug?: string;
 }
 
-const menuItems = [
+const getMenuItems = (slug: string) => [
   {
     label: 'Dashboard',
     icon: BarChart3,
-    href: '/dashboard',
-    active: true
+    href: `/${slug}/dashboard`
   },
   {
     label: 'Organizaciones',
     icon: Building2,
-    href: '/organizations'
+    href: `/${slug}/organizations`
   },
   {
     label: 'Miembros',
     icon: Users,
-    href: '/members'
+    href: `/${slug}/members`
   },
   {
     label: 'Conductores',
     icon: Truck,
-    href: '/drivers'
+    href: `/${slug}/drivers`
   },
   {
     label: 'Pedidos',
     icon: Package,
-    href: '/orders'
+    href: `/${slug}/orders`
   },
   {
     label: 'Configuración',
     icon: Settings,
-    href: '/settings'
+    href: `/${slug}/settings`
   }
 ];
 
-export function Sidebar({ isOpen, onToggle, user, onLogout }: SidebarProps) {
+export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: SidebarProps) {
+  const pathname = usePathname();
+  const menuItems = getMenuItems(currentSlug || '');
   return (
     <>
       {/* Mobile overlay */}
@@ -109,20 +113,21 @@ export function Sidebar({ isOpen, onToggle, user, onLogout }: SidebarProps) {
         <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = pathname === item.href;
             return (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
                 className={clsx(
                   'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
-                  item.active
+                  isActive
                     ? 'bg-primary-100 text-primary-700'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 )}
               >
                 <Icon className="w-5 h-5 mr-3" />
                 {item.label}
-              </a>
+              </Link>
             );
           })}
         </nav>

@@ -70,7 +70,7 @@ export default function OrganizationLayout({
   }
 
   return (
-    <DashboardLayout user={user} onLogout={logout}>
+    <DashboardLayout user={user} onLogout={logout} currentSlug={slug}>
       {children}
     </DashboardLayout>
   );
