@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganizations } from '@/hooks/useApi';
+import { useToast } from '@/hooks/useToast';
 import { Organization, OrganizationFilters } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +12,7 @@ import { OrganizationDetail } from '@/components/ui/OrganizationDetail';
 import { OrganizationActions } from '@/components/ui/OrganizationActions';
 import { OrganizationFiltersComponent } from '@/components/ui/OrganizationFilters';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 import { 
   Building2, 
   Plus,
@@ -44,6 +46,8 @@ export default function OrganizationsPage() {
     deleteOrganization,
     clearError
   } = useOrganizations();
+
+  const { toasts, removeToast, success, error: showError, warning, info } = useToast();
 
   // Estados locales
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -83,6 +87,7 @@ export default function OrganizationsPage() {
       console.error('Error loading organizations:', error);
       // Fallback a las organizaciones del contexto
       setOrganizations(userOrganizations);
+      showError('Error al cargar organizaciones', 'No se pudieron cargar las organizaciones desde el servidor');
     }
   };
 
@@ -94,14 +99,13 @@ export default function OrganizationsPage() {
       if (response.success) {
         await loadOrganizations();
         setShowCreateModal(false);
+        success('Organización creada', 'La organización se ha creado exitosamente');
       } else {
         throw new Error(response.error || response.message || 'Error al crear organización');
       }
     } catch (error) {
       console.error('Error creating organization:', error);
-      // Mostrar error pero no cerrar el modal
-      alert('Error al crear la organización: ' + (error as Error).message);
-      // No cerrar el modal para que el usuario pueda corregir los datos
+      showError('Error al crear organización', (error as Error).message);
     } finally {
       setActionLoading(false);
     }
@@ -117,13 +121,13 @@ export default function OrganizationsPage() {
         await loadOrganizations();
         setShowEditModal(false);
         setSelectedOrganization(null);
+        success('Organización actualizada', 'La organización se ha actualizado exitosamente');
       } else {
         throw new Error(response.error || 'Error al actualizar organización');
       }
     } catch (error) {
       console.error('Error updating organization:', error);
-      alert('Error al actualizar la organización: ' + (error as Error).message);
-      // No cerrar el modal para que el usuario pueda corregir los datos
+      showError('Error al actualizar organización', (error as Error).message);
     } finally {
       setActionLoading(false);
     }
@@ -135,12 +139,13 @@ export default function OrganizationsPage() {
       const response = await updateOrganizationStatus(org.uuid, newStatus);
       if (response.success) {
         await loadOrganizations();
+        success('Estado actualizado', `El estado de "${org.name}" se ha cambiado a ${newStatus}`);
       } else {
         throw new Error(response.error || 'Error al cambiar estado');
       }
     } catch (error) {
       console.error('Error changing status:', error);
-      alert('Error al cambiar el estado: ' + (error as Error).message);
+      showError('Error al cambiar estado', (error as Error).message);
     } finally {
       setActionLoading(false);
     }
@@ -156,12 +161,13 @@ export default function OrganizationsPage() {
         await loadOrganizations();
         setShowDeleteDialog(false);
         setOrganizationToDelete(null);
+        success('Organización eliminada', `La organización "${organizationToDelete.name}" se ha eliminado exitosamente`);
       } else {
         throw new Error(response.error || 'Error al eliminar organización');
       }
     } catch (error) {
       console.error('Error deleting organization:', error);
-      alert('Error al eliminar la organización: ' + (error as Error).message);
+      showError('Error al eliminar organización', (error as Error).message);
     } finally {
       setActionLoading(false);
     }
@@ -497,6 +503,9 @@ export default function OrganizationsPage() {
         variant="danger"
         loading={actionLoading}
       />
+
+      {/* Sistema de toasts */}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
 }

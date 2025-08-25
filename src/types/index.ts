@@ -147,6 +147,7 @@ export interface CreateOrganizationFormData {
   contact_email?: string;
   contact_phone?: string;
   address?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   plan_type?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
   subscription_expires_at?: string;
 }
@@ -161,6 +162,7 @@ export interface UpdateOrganizationFormData {
   contact_email?: string;
   contact_phone?: string;
   address?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   plan_type?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
   subscription_expires_at?: string;
 }

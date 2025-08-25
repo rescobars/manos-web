@@ -225,6 +225,7 @@ class ApiService {
     contact_email?: string;
     contact_phone?: string;
     address?: string;
+    status?: string;
     plan_type?: string;
     subscription_expires_at?: string;
   }): Promise<ApiResponse> {
@@ -244,6 +245,7 @@ class ApiService {
     contact_email: string;
     contact_phone: string;
     address: string;
+    status: string;
     plan_type: string;
     subscription_expires_at: string;
   }>): Promise<ApiResponse> {

@@ -12,6 +12,11 @@ export { OrganizationFiltersComponent } from './OrganizationFilters';
 // Componentes de utilidad
 export { ConfirmDialog } from './ConfirmDialog';
 
+// Sistema de toasts
+export { Toast, ToastContainer } from './ToastContainer';
+export type { ToastItem, ToastType } from './ToastContainer';
+export { useToast } from '../../hooks/useToast';
+
 // Componentes existentes
 export { OrganizationInfo } from './OrganizationInfo';
 export { OrganizationSelector } from './OrganizationSelector';
