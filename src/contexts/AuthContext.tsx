@@ -94,12 +94,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           // Intentar obtener el perfil del usuario (ahora sin pasar token)
           const response = await apiService.getProfile();
+          
           if (response.success && response.data) {
             // Token válido, restaurar sesión
             const data = response.data as any;
-            const user = data.user as User;
-            const organizations = data.organizations as Organization[];
-            const defaultOrganization = data.default_organization as Organization;
+            
+            // Extraer datos según la estructura real del endpoint
+            const user = {
+              uuid: data.uuid,
+              email: data.email,
+              name: data.name,
+              status: data.status,
+              created_at: data.created_at,
+              updated_at: data.updated_at
+            } as User;
+            
+            const organizations = data.session_data?.organizations as Organization[] || [];
+            const defaultOrganization = organizations.find(org => org.uuid === data.session_data?.lastOrganizationUuid) || organizations[0];
             
             dispatch({
               type: 'UPDATE_SESSION',
@@ -139,14 +150,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiService.refreshToken(refreshToken);
       if (response.success && response.data) {
         localStorage.setItem('accessToken', response.data.access_token);
-        dispatch({
-          type: 'UPDATE_SESSION',
-          payload: {
-            accessToken: response.data.access_token,
-            isAuthenticated: true,
-            isLoading: false,
-          },
-        });
+        
+        // Después de renovar el token, obtener el perfil completo
+        const profileResponse = await apiService.getProfile();
+        if (profileResponse.success && profileResponse.data) {
+          const data = profileResponse.data as any;
+          
+          // Extraer datos según la estructura real del endpoint
+          const user = {
+            uuid: data.uuid,
+            email: data.email,
+            name: data.name,
+            status: data.status,
+            created_at: data.created_at,
+            updated_at: data.updated_at
+          } as User;
+          
+          const organizations = data.session_data?.organizations as Organization[] || [];
+          const defaultOrganization = organizations.find(org => org.uuid === data.session_data?.lastOrganizationUuid) || organizations[0];
+          
+          dispatch({
+            type: 'UPDATE_SESSION',
+            payload: {
+              user,
+              organizations,
+              defaultOrganization,
+              currentOrganization: defaultOrganization,
+              accessToken: response.data.access_token,
+              refreshToken,
+              isAuthenticated: true,
+              isLoading: false,
+            },
+          });
+        } else {
+          throw new Error('Failed to get profile after token refresh');
+        }
       } else {
         throw new Error('Failed to refresh token');
       }

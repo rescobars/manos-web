@@ -25,12 +25,19 @@ export default function OrganizationLayout({
   const slug = params.slug as string;
 
   useEffect(() => {
+    // Si no está autenticado, redirigir a login
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
       return;
     }
 
-    if (!isLoading && isAuthenticated && organizations.length > 0) {
+    // Si está autenticado pero no hay organizaciones, esperar
+    if (!isLoading && isAuthenticated && (!organizations || organizations.length === 0)) {
+      return;
+    }
+
+    // Si está autenticado y hay organizaciones
+    if (!isLoading && isAuthenticated && organizations && organizations.length > 0) {
       // Buscar la organización por slug
       const organization = getOrganizationBySlug(slug);
 
@@ -50,7 +57,7 @@ export default function OrganizationLayout({
   }, [slug, organizations, currentOrganization, isAuthenticated, isLoading, router, setCurrentOrganization, getOrganizationBySlug]);
 
   // Mostrar loading mientras se verifica la organización
-  if (isLoading || !currentOrganization || currentOrganization.slug !== slug) {
+  if (isLoading || !isAuthenticated || !organizations || organizations.length === 0 || !currentOrganization || currentOrganization.slug !== slug) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
