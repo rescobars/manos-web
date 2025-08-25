@@ -1,13 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { AuthState, LoginResponse, User } from '@/types';
+import { AuthState, LoginResponse, User, Organization } from '@/types';
 import { apiService } from '@/lib/api';
 
 // Estado inicial
 const initialState: AuthState = {
   user: null,
-  sessionData: null,
+  organizations: [],
+  defaultOrganization: null,
+  currentOrganization: null,
   accessToken: null,
   refreshToken: null,
   isAuthenticated: false,
@@ -19,7 +21,8 @@ type AuthAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'LOGIN_SUCCESS'; payload: LoginResponse }
   | { type: 'LOGOUT' }
-  | { type: 'UPDATE_SESSION'; payload: Partial<AuthState> };
+  | { type: 'UPDATE_SESSION'; payload: Partial<AuthState> }
+  | { type: 'SET_CURRENT_ORGANIZATION'; payload: Organization };
 
 // Reducer
 function authReducer(state: AuthState, action: AuthAction): AuthState {
@@ -31,7 +34,9 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
       return {
         ...state,
         user: action.payload.user,
-        sessionData: action.payload.session_data,
+        organizations: action.payload.organizations,
+        defaultOrganization: action.payload.default_organization,
+        currentOrganization: action.payload.default_organization,
         accessToken: action.payload.access_token,
         refreshToken: action.payload.refresh_token,
         isAuthenticated: true,
@@ -49,6 +54,12 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         ...state,
         ...action.payload,
       };
+
+    case 'SET_CURRENT_ORGANIZATION':
+      return {
+        ...state,
+        currentOrganization: action.payload,
+      };
     
     default:
       return state;
@@ -60,7 +71,11 @@ interface AuthContextType extends AuthState {
   login: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   verifyToken: (token: string) => Promise<void>;
-  verifyCode: (code: string) => Promise<void>;
+  verifyCode: (email: string, code: string) => Promise<void>;
+  setCurrentOrganization: (organization: Organization) => void;
+  getCurrentOrganization: () => Organization | null;
+  getOrganizationBySlug: (slug: string) => Organization | null;
+  hasPermission: (module: string, action: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,7 +84,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Verificar token al cargar
+  // Verificar sesión al cargar
   useEffect(() => {
     const checkAuth = async () => {
       const accessToken = localStorage.getItem('accessToken');
@@ -77,17 +92,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (accessToken && refreshToken) {
         try {
-          // Intentar obtener el perfil del usuario
-          const response = await apiService.getProfile(accessToken);
-          if (response.success) {
+          // Intentar obtener el perfil del usuario (ahora sin pasar token)
+          const response = await apiService.getProfile();
+          if (response.success && response.data) {
             // Token válido, restaurar sesión
-            const user = response.data as User;
-            const sessionData = (response.data as any).session_data;
+            const data = response.data as any;
+            const user = data.user as User;
+            const organizations = data.organizations as Organization[];
+            const defaultOrganization = data.default_organization as Organization;
+            
             dispatch({
               type: 'UPDATE_SESSION',
               payload: {
                 user,
-                sessionData,
+                organizations,
+                defaultOrganization,
+                currentOrganization: defaultOrganization,
                 accessToken,
                 refreshToken,
                 isAuthenticated: true,
@@ -100,6 +120,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (error) {
           console.error('Auth check failed:', error);
+          // Limpiar tokens inválidos
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
           dispatch({ type: 'LOGOUT' });
         }
       } else {
@@ -129,6 +152,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Token refresh failed:', error);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       dispatch({ type: 'LOGOUT' });
     }
   };
@@ -140,8 +165,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await apiService.requestPasswordlessLogin(email);
       if (response.success) {
-        // El login passwordless envía un email, no retorna tokens inmediatamente
-        // Los tokens se obtienen cuando el usuario verifica el token del email
         dispatch({ type: 'SET_LOADING', payload: false });
       } else {
         throw new Error(response.error || 'Login failed');
@@ -174,11 +197,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Función de verificación de código
-  const verifyCode = async (code: string) => {
+  const verifyCode = async (email: string, code: string) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      const response = await apiService.verifyPasswordlessCode(code);
+      const response = await apiService.verifyPasswordlessCode(email, code);
       if (response.success && response.data) {
         // Guardar tokens en localStorage
         localStorage.setItem('accessToken', response.data.access_token);
@@ -210,12 +233,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Función para cambiar la organización actual
+  const setCurrentOrganization = (organization: Organization) => {
+    dispatch({ type: 'SET_CURRENT_ORGANIZATION', payload: organization });
+  };
+
+  // Función para obtener la organización actual
+  const getCurrentOrganization = (): Organization | null => {
+    return state.currentOrganization;
+  };
+
+  // Función para obtener organización por slug
+  const getOrganizationBySlug = (slug: string): Organization | null => {
+    return state.organizations.find(org => org.slug === slug) || null;
+  };
+
+  // Función para verificar permisos
+  const hasPermission = (module: string, action: string): boolean => {
+    if (!state.currentOrganization) return false;
+    
+    const permissions = state.currentOrganization.permissions;
+    const modulePermissions = permissions[module as keyof typeof permissions];
+    
+    if (!modulePermissions || typeof modulePermissions !== 'object') {
+      return false;
+    }
+    
+    return (modulePermissions as any)[action] === true;
+  };
+
   const value: AuthContextType = {
     ...state,
     login,
     logout,
     verifyToken,
     verifyCode,
+    setCurrentOrganization,
+    getCurrentOrganization,
+    getOrganizationBySlug,
+    hasPermission,
   };
 
   return (

@@ -53,9 +53,10 @@ export default function LoginPage() {
     setError('');
 
     try {
-      await verifyCode(verificationCode.trim());
-      // Si la verificación es exitosa, redirigir al dashboard
-      router.push('/dashboard');
+      await verifyCode(email, verificationCode.trim());
+      // Si la verificación es exitosa, redirigir a la página raíz
+      // que manejará la redirección al dashboard correcto
+      router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Código inválido');
     } finally {

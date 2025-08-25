@@ -6,17 +6,22 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, defaultOrganization } = useAuth();
 
   useEffect(() => {
     if (!isLoading) {
-      if (isAuthenticated) {
-        router.push('/dashboard');
+      if (isAuthenticated && defaultOrganization) {
+        // Redirigir al dashboard de la organización por defecto
+        router.push(`/${defaultOrganization.slug}/dashboard`);
+      } else if (isAuthenticated) {
+        // Si está autenticado pero no hay organización por defecto, ir al login
+        router.push('/login');
       } else {
+        // Si no está autenticado, ir al login
         router.push('/login');
       }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, defaultOrganization, router]);
 
   // Mostrar loading mientras se verifica la autenticación
   return (

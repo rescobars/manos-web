@@ -1,0 +1,69 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+
+export default function OrganizationLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const params = useParams();
+  const router = useRouter();
+  const { 
+    user, 
+    organizations, 
+    currentOrganization, 
+    setCurrentOrganization, 
+    getOrganizationBySlug,
+    isAuthenticated,
+    isLoading
+  } = useAuth();
+
+  const slug = params.slug as string;
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (!isLoading && isAuthenticated && organizations.length > 0) {
+      // Buscar la organización por slug
+      const organization = getOrganizationBySlug(slug);
+
+      if (organization) {
+        // Si la organización actual es diferente, actualizarla
+        if (!currentOrganization || currentOrganization.uuid !== organization.uuid) {
+          setCurrentOrganization(organization);
+        }
+      } else {
+        // Si no se encuentra la organización, redirigir a la primera disponible
+        const firstOrg = organizations[0];
+        if (firstOrg && firstOrg.slug !== slug) {
+          router.push(`/${firstOrg.slug}/dashboard`);
+        }
+      }
+    }
+  }, [slug, organizations, currentOrganization, isAuthenticated, isLoading, router, setCurrentOrganization, getOrganizationBySlug]);
+
+  // Mostrar loading mientras se verifica la organización
+  if (isLoading || !currentOrganization || currentOrganization.slug !== slug) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando organización...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <DashboardLayout user={user} onLogout={() => {}}>
+      {children}
+    </DashboardLayout>
+  );
+}
