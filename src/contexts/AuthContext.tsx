@@ -268,6 +268,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       dispatch({ type: 'LOGOUT' });
+      
+      // Redirigir a login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
   };
 

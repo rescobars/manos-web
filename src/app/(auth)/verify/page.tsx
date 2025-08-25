@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 function VerifyPageContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState('');
+  const [hasAttempted, setHasAttempted] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { verifyToken } = useAuth();
@@ -23,22 +24,39 @@ function VerifyPageContent() {
       return;
     }
 
+    // Evitar múltiples intentos
+    if (hasAttempted) {
+      return;
+    }
+
     const verify = async () => {
+      setHasAttempted(true);
       try {
         await verifyToken(token);
         setStatus('success');
-        // Redirigir al dashboard después de 2 segundos
+        // Redirigir a la página raíz después de 2 segundos
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push('/');
         }, 2000);
       } catch (err) {
         setStatus('error');
-        setError(err instanceof Error ? err.message : 'Error al verificar el token');
+        const errorMessage = err instanceof Error ? err.message : 'Error al verificar el token';
+        
+        // Mensajes más amigables para errores específicos
+        if (errorMessage.includes('already been used')) {
+          setError('Este enlace ya ha sido utilizado. Por favor, solicita un nuevo código de acceso.');
+        } else if (errorMessage.includes('expired')) {
+          setError('Este enlace ha expirado. Por favor, solicita un nuevo código de acceso.');
+        } else if (errorMessage.includes('invalid')) {
+          setError('Enlace inválido. Por favor, verifica el enlace o solicita un nuevo código.');
+        } else {
+          setError(errorMessage);
+        }
       }
     };
 
     verify();
-  }, [searchParams, verifyToken, router]);
+  }, [searchParams, verifyToken, router, hasAttempted]);
 
   if (status === 'loading') {
     return (
@@ -105,10 +123,10 @@ function VerifyPageContent() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => window.location.reload()}
+              onClick={() => router.push('/login')}
               className="w-full"
             >
-              Intentar de nuevo
+              Solicitar nuevo código
             </Button>
           </div>
         </CardContent>

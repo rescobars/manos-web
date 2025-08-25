@@ -19,7 +19,8 @@ export default function OrganizationLayout({
     setCurrentOrganization, 
     getOrganizationBySlug,
     isAuthenticated,
-    isLoading
+    isLoading,
+    logout
   } = useAuth();
 
   const slug = params.slug as string;
@@ -69,7 +70,7 @@ export default function OrganizationLayout({
   }
 
   return (
-    <DashboardLayout user={user} onLogout={() => {}}>
+    <DashboardLayout user={user} onLogout={logout}>
       {children}
     </DashboardLayout>
   );

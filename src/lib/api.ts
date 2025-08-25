@@ -144,7 +144,7 @@ class ApiService {
   }
 
   async verifyPasswordlessToken(token: string): Promise<ApiResponse<LoginResponse>> {
-    return this.request(`/auth/passwordless/verify?token=${token}`, {
+    return this.request<LoginResponse>(`/auth/passwordless/verify?token=${token}`, {
       method: 'GET',
     });
   }
