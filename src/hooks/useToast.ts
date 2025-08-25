@@ -27,7 +27,6 @@ export function useToast() {
   }, []);
 
   const success = useCallback((title: string, message?: string, duration?: number) => {
-    console.log('Toast success:', { title, message, duration });
     addToast('success', title, message, duration);
   }, [addToast]);
 

@@ -12,7 +12,6 @@ interface ToastContainerProps {
 }
 
 export function ToastContainer({ toasts, onRemoveToast }: ToastContainerProps) {
-  console.log('ToastContainer render:', { toastsCount: toasts.length, toasts });
   return (
     <div className="fixed top-4 right-4 z-[9999] space-y-2">
       {toasts.map((toast, index) => (

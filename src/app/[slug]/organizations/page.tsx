@@ -390,46 +390,7 @@ export default function OrganizationsPage() {
                   )}
                 </div>
 
-                {/* Botones de acción */}
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleView(org)}
-                    className="flex-1"
-                  >
-                    Ver
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(org)}
-                    className="flex-1"
-                  >
-                    Editar
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleStatusChange(org, org.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')}
-                    className="flex-1"
-                  >
-                    {org.status === 'ACTIVE' ? 'Pausar' : 'Activar'}
-                  </Button>
-                  
-                  {currentOrganization?.uuid !== org.uuid && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSwitchOrganization(org)}
-                      className="w-full"
-                    >
-                      Cambiar a esta organización
-                    </Button>
-                  )}
-                </div>
+
               </div>
             </CardContent>
           </Card>
@@ -461,7 +422,6 @@ export default function OrganizationsPage() {
       <OrganizationModal
         isOpen={showCreateModal}
         onClose={() => {
-          console.log('Cerrando modal de crear');
           setShowCreateModal(false);
         }}
         onSubmit={handleCreateOrganization}
