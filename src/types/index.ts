@@ -140,16 +140,16 @@ export interface ApiResponse<T = unknown> {
 export interface CreateOrganizationFormData {
   name: string;
   slug: string;
-  description?: string;
+  description: string;
   domain?: string;
-  logo_url?: string;
+  logo_url: string;
   website_url?: string;
-  contact_email?: string;
-  contact_phone?: string;
-  address?: string;
-  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-  plan_type?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
-  subscription_expires_at?: string;
+  contact_email: string;
+  contact_phone: string;
+  address: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  plan_type: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+  subscription_expires_at: string;
 }
 
 export interface UpdateOrganizationFormData {

@@ -21,7 +21,7 @@ export function OrganizationModal({
   onSubmit,
   loading = false
 }: OrganizationModalProps) {
-  const [formData, setFormData] = useState<CreateOrganizationFormData>({
+    const [formData, setFormData] = useState<CreateOrganizationFormData>({
     name: '',
     slug: '',
     description: '',
@@ -31,9 +31,9 @@ export function OrganizationModal({
     contact_email: '',
     contact_phone: '',
     address: '',
-    status: 'ACTIVE', // Valor por defecto según endpoint
-              plan_type: 'FREE', // Valor por defecto según endpoint
-          subscription_expires_at: ''
+    status: 'ACTIVE',
+    plan_type: 'FREE',
+    subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 año por defecto
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -67,8 +67,9 @@ export function OrganizationModal({
           contact_email: '',
           contact_phone: '',
           address: '',
+          status: 'ACTIVE',
           plan_type: 'FREE',
-          subscription_expires_at: ''
+          subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 año por defecto
         });
       }
       setErrors({});
@@ -95,53 +96,59 @@ export function OrganizationModal({
       newErrors.slug = 'El slug no puede exceder 100 caracteres';
     }
 
-    // Validar descripción (opcional, sin límite específico en el endpoint)
-    // No se valida longitud ya que no está especificada en los requerimientos
+    // Validar descripción (requerido)
+    if (!formData.description.trim()) {
+      newErrors.description = 'La descripción es requerida';
+    }
 
     // Validar dominio (opcional, texto plano según endpoint)
     // No se valida formato ya que el endpoint especifica "texto plano"
 
-    // Validar email de contacto (opcional, email válido según endpoint)
-    if (formData.contact_email) {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
-        newErrors.contact_email = 'Email inválido';
-      }
+    // Validar email de contacto (requerido, email válido)
+    if (!formData.contact_email.trim()) {
+      newErrors.contact_email = 'El email de contacto es requerido';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
+      newErrors.contact_email = 'Email inválido';
     }
 
-    // Validar teléfono (opcional, texto plano según endpoint)
-    // No se valida formato ya que el endpoint especifica "texto plano"
+    // Validar teléfono (requerido, texto plano)
+    if (!formData.contact_phone.trim()) {
+      newErrors.contact_phone = 'El teléfono de contacto es requerido';
+    }
 
     // Validar sitio web (opcional, URL válida según endpoint)
-    if (formData.website_url) {
-      if (!/^https?:\/\/.+/.test(formData.website_url)) {
-        newErrors.website_url = 'URL inválida (debe comenzar con http:// o https://)';
-      }
+    if (formData.website_url && !/^https?:\/\/.+/.test(formData.website_url)) {
+      newErrors.website_url = 'URL inválida (debe comenzar con http:// o https://)';
     }
 
-    // Validar URL del logo (opcional, URL válida según endpoint)
-    if (formData.logo_url) {
-      if (!/^https?:\/\/.+/.test(formData.logo_url)) {
-        newErrors.logo_url = 'URL del logo inválida';
-      }
+    // Validar URL del logo (requerido, URL válida)
+    if (!formData.logo_url.trim()) {
+      newErrors.logo_url = 'La URL del logo es requerida';
+    } else if (!/^https?:\/\/.+/.test(formData.logo_url)) {
+      newErrors.logo_url = 'URL del logo inválida';
     }
 
-    // Validar dirección (opcional, texto plano según endpoint)
-    // No se valida longitud ya que no está especificada en los requerimientos
+    // Validar dirección (requerido, texto plano)
+    if (!formData.address.trim()) {
+      newErrors.address = 'La dirección es requerida';
+    }
 
-    // Validar status (opcional, valores específicos según endpoint)
+    // Validar status (requerido, valores específicos)
     const validStatuses = ['ACTIVE', 'INACTIVE', 'SUSPENDED'];
-    if (formData.status && !validStatuses.includes(formData.status)) {
+    if (!formData.status || !validStatuses.includes(formData.status)) {
       newErrors.status = 'Estado inválido';
     }
 
-    // Validar plan_type (opcional, valores específicos según endpoint)
+    // Validar plan_type (requerido, valores específicos)
     const validPlanTypes = ['FREE', 'BASIC', 'PRO', 'ENTERPRISE'];
-    if (formData.plan_type && !validPlanTypes.includes(formData.plan_type)) {
+    if (!formData.plan_type || !validPlanTypes.includes(formData.plan_type)) {
       newErrors.plan_type = 'Tipo de plan inválido';
     }
 
-    // Validar fecha de expiración (opcional, formato ISO 8601 según endpoint)
-    if (formData.subscription_expires_at) {
+    // Validar fecha de expiración (requerido, formato ISO 8601)
+    if (!formData.subscription_expires_at) {
+      newErrors.subscription_expires_at = 'La fecha de expiración es requerida';
+    } else {
       const expirationDate = new Date(formData.subscription_expires_at);
       
       if (isNaN(expirationDate.getTime())) {
@@ -266,9 +273,9 @@ export function OrganizationModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descripción
-            </label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                Descripción *
+              </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
@@ -288,7 +295,7 @@ export function OrganizationModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email de contacto
+                Email de contacto *
               </label>
               <Input
                 type="email"
@@ -302,12 +309,13 @@ export function OrganizationModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Teléfono de contacto
+                Teléfono de contacto *
               </label>
               <Input
                 value={formData.contact_phone}
                 onChange={(e) => handleInputChange('contact_phone', e.target.value)}
                 placeholder="+502 5000-0000"
+                error={errors.contact_phone}
                 disabled={loading}
               />
             </div>
@@ -343,9 +351,9 @@ export function OrganizationModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL del logo
-            </label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                URL del logo *
+              </label>
             <Input
               value={formData.logo_url}
               onChange={(e) => handleInputChange('logo_url', e.target.value)}
@@ -356,9 +364,9 @@ export function OrganizationModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Dirección
-            </label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                Dirección *
+              </label>
             <textarea
               value={formData.address}
               onChange={(e) => handleInputChange('address', e.target.value)}
@@ -377,7 +385,7 @@ export function OrganizationModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estado
+                Estado *
               </label>
               <select
                 value={formData.status}
@@ -398,7 +406,7 @@ export function OrganizationModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tipo de plan
+                Tipo de plan *
               </label>
               <select
                 value={formData.plan_type}
@@ -420,9 +428,9 @@ export function OrganizationModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha de expiración de suscripción
-            </label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fecha de expiración de suscripción *
+              </label>
             <input
               type="datetime-local"
               value={formData.subscription_expires_at ? formData.subscription_expires_at.slice(0, 16) : ''}
