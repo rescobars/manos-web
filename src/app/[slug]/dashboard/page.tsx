@@ -36,34 +36,35 @@ export default function DashboardPage() {
   const isAdmin = currentOrganization.is_admin;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
       {/* Header con información de la organización */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-4">
+      <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {currentOrganization.logo_url ? (
               <img 
                 src={currentOrganization.logo_url} 
                 alt={`${currentOrganization.name} logo`}
-                className="w-16 h-16 rounded-lg object-cover"
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover mx-auto sm:mx-0"
               />
             ) : (
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Building2 className="w-8 h-8 text-white" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto sm:mx-0">
+                <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
             )}
             
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+            <div className="text-center sm:text-left">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                 Dashboard - {currentOrganization.name}
               </h1>
-              <p className="text-gray-600">{currentOrganization.description}</p>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">{currentOrganization.description}</p>
               
-              <div className="flex items-center space-x-2 mt-2">
+              <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 mt-2">
                 {isPlatformAdmin && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                     <Shield className="w-3 h-3 mr-1" />
-                    Administrador de Plataforma
+                    <span className="hidden sm:inline">Administrador de Plataforma</span>
+                    <span className="sm:hidden">Admin</span>
                   </span>
                 )}
                 {isOwner && (
@@ -81,21 +82,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="text-right text-sm text-gray-500">
-            <div className="flex items-center">
+          <div className="text-center lg:text-right text-sm text-gray-500 space-y-1">
+            <div className="flex items-center justify-center lg:justify-end">
               <Globe className="w-4 h-4 mr-1" />
-              {currentOrganization.domain}
+              <span className="truncate">{currentOrganization.domain}</span>
             </div>
-            <div className="flex items-center mt-1">
+            <div className="flex items-center justify-center lg:justify-end">
               <Calendar className="w-4 h-4 mr-1" />
-              Expira {new Date(currentOrganization.subscription_expires_at).toLocaleDateString()}
+              <span className="truncate">Expira {new Date(currentOrganization.subscription_expires_at).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <StatCard
           icon={Building2}
           title="Organizaciones"
@@ -135,7 +136,7 @@ export default function DashboardPage() {
           <CardTitle>Permisos del Usuario</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {Object.entries(currentOrganization.permissions).map(([module, permissions]) => {
               if (!permissions || typeof permissions !== 'object') return null;
               
@@ -143,7 +144,7 @@ export default function DashboardPage() {
               const totalPermissions = Object.keys(permissions).length;
               
               return (
-                <div key={module} className="p-3 border rounded-lg">
+                <div key={module} className="p-3 border rounded-lg text-center sm:text-left">
                   <h4 className="font-medium text-sm capitalize mb-1">
                     {module.replace('_', ' ')}
                   </h4>
@@ -163,36 +164,36 @@ export default function DashboardPage() {
           <CardTitle>Acciones Rápidas</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {hasPermission('orders', 'create') && (
-              <button className="p-4 border rounded-lg hover:bg-gray-50 text-left">
-                <Package className="w-6 h-6 text-blue-600 mb-2" />
-                <h4 className="font-medium">Crear Pedido</h4>
-                <p className="text-sm text-gray-600">Nuevo pedido</p>
+              <button className="p-4 border rounded-lg hover:bg-gray-50 text-center sm:text-left transition-colors">
+                <Package className="w-6 h-6 text-blue-600 mb-2 mx-auto sm:mx-0" />
+                <h4 className="font-medium text-sm sm:text-base">Crear Pedido</h4>
+                <p className="text-xs sm:text-sm text-gray-600">Nuevo pedido</p>
               </button>
             )}
             
             {hasPermission('drivers', 'create') && (
-              <button className="p-4 border rounded-lg hover:bg-gray-50 text-left">
-                <Truck className="w-6 h-6 text-green-600 mb-2" />
-                <h4 className="font-medium">Agregar Conductor</h4>
-                <p className="text-sm text-gray-600">Nuevo conductor</p>
+              <button className="p-4 border rounded-lg hover:bg-gray-50 text-center sm:text-left transition-colors">
+                <Truck className="w-6 h-6 text-green-600 mb-2 mx-auto sm:mx-0" />
+                <h4 className="font-medium text-sm sm:text-base">Agregar Conductor</h4>
+                <p className="text-xs sm:text-sm text-gray-600">Nuevo conductor</p>
               </button>
             )}
             
             {hasPermission('customers', 'create') && (
-              <button className="p-4 border rounded-lg hover:bg-gray-50 text-left">
-                <Users className="w-6 h-6 text-purple-600 mb-2" />
-                <h4 className="font-medium">Agregar Cliente</h4>
-                <p className="text-sm text-gray-600">Nuevo cliente</p>
+              <button className="p-4 border rounded-lg hover:bg-gray-50 text-center sm:text-left transition-colors">
+                <Users className="w-6 h-6 text-purple-600 mb-2 mx-auto sm:mx-0" />
+                <h4 className="font-medium text-sm sm:text-base">Agregar Cliente</h4>
+                <p className="text-xs sm:text-sm text-gray-600">Nuevo cliente</p>
               </button>
             )}
             
             {hasPermission('reports', 'read') && (
-              <button className="p-4 border rounded-lg hover:bg-gray-50 text-left">
-                <Building2 className="w-6 h-6 text-orange-600 mb-2" />
-                <h4 className="font-medium">Ver Reportes</h4>
-                <p className="text-sm text-gray-600">Analíticas</p>
+              <button className="p-4 border rounded-lg hover:bg-gray-50 text-center sm:text-left transition-colors">
+                <Building2 className="w-6 h-6 text-orange-600 mb-2 mx-auto sm:mx-0" />
+                <h4 className="font-medium text-sm sm:text-base">Ver Reportes</h4>
+                <p className="text-xs sm:text-sm text-gray-600">Analíticas</p>
               </button>
             )}
           </div>

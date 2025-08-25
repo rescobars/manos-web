@@ -23,18 +23,18 @@ export function StatCard({
   trend 
 }: StatCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
       <div className="flex items-center">
-        <div className={clsx('p-2 rounded-lg', iconBgColor)}>
-          <Icon className={clsx('w-6 h-6', iconColor)} />
+        <div className={clsx('p-2 rounded-lg flex-shrink-0', iconBgColor)}>
+          <Icon className={clsx('w-5 h-5 sm:w-6 sm:h-6', iconColor)} />
         </div>
-        <div className="ml-4 flex-1">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
+        <div className="ml-3 sm:ml-4 flex-1 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{title}</p>
           <div className="flex items-center">
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">{value}</p>
             {trend && (
               <div className={clsx(
-                'ml-2 flex items-center text-sm',
+                'ml-2 flex items-center text-xs sm:text-sm',
                 trend.isPositive ? 'text-green-600' : 'text-red-600'
               )}>
                 <span className={clsx(
