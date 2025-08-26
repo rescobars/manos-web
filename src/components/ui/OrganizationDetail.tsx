@@ -4,6 +4,7 @@ import React from 'react';
 import { Organization } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { Button } from './Button';
+import { AuthenticationUrls } from './AuthenticationUrls';
 import { 
   Building2, 
   Globe, 
@@ -279,6 +280,17 @@ export function OrganizationDetail({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* URLs de Autenticación */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3">URLs de Autenticación</h3>
+            <AuthenticationUrls
+              orgUuid={organization.uuid}
+              role="DRIVER"
+              showLabels={false}
+              compact={false}
+            />
           </div>
         </CardContent>
       </Card>
