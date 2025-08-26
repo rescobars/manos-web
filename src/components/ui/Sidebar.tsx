@@ -3,18 +3,14 @@ import { clsx } from 'clsx';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Building2, 
-  Users, 
-  Truck, 
-  Package, 
-  BarChart3, 
-  Settings, 
   Menu, 
   X,
   LogOut,
   User
 } from 'lucide-react';
 import { Button } from './Button';
+import NavigationSelector, { NavigationItem } from '@/components/navigation/NavigationSelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -24,42 +20,13 @@ interface SidebarProps {
   currentSlug?: string;
 }
 
-const getMenuItems = (slug: string) => [
-  {
-    label: 'Dashboard',
-    icon: BarChart3,
-    href: `/${slug}/dashboard`
-  },
-  {
-    label: 'Organizaciones',
-    icon: Building2,
-    href: `/${slug}/organizations`
-  },
-  {
-    label: 'Miembros',
-    icon: Users,
-    href: `/${slug}/members`
-  },
-  {
-    label: 'Conductores',
-    icon: Truck,
-    href: `/${slug}/drivers`
-  },
-  {
-    label: 'Pedidos',
-    icon: Package,
-    href: `/${slug}/orders`
-  },
-  {
-    label: 'Configuración',
-    icon: Settings,
-    href: `/${slug}/settings`
-  }
-];
+
 
 export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: SidebarProps) {
   const pathname = usePathname();
-  const menuItems = getMenuItems(currentSlug || '');
+  const { currentOrganization } = useAuth();
+  const menuItems = NavigationSelector({ slug: currentSlug || '' });
+  
   return (
     <>
       {/* Mobile overlay */}
@@ -79,8 +46,22 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
         {/* Header */}
         <div className="flex items-center justify-between h-12 px-4 border-b border-gray-200">
           <div className="flex items-center">
-            <Building2 className="w-8 h-8 text-primary-600 mr-3" />
-            <h1 className="text-xl font-semibold text-gray-900">moviGo</h1>
+            {currentOrganization?.logo_url ? (
+              <img 
+                src={currentOrganization.logo_url} 
+                alt={`${currentOrganization.name} logo`}
+                className="w-8 h-8 rounded-lg object-cover mr-3"
+              />
+            ) : (
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-white font-bold text-lg">
+                  {currentOrganization?.name?.charAt(0) || 'O'}
+                </span>
+              </div>
+            )}
+            <h1 className="text-lg font-semibold text-gray-900 truncate">
+              {currentOrganization?.name || 'Organización'}
+            </h1>
           </div>
           <Button
             variant="ghost"
@@ -111,7 +92,7 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => {
+          {menuItems.map((item: NavigationItem) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
