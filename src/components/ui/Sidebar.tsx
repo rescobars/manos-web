@@ -72,8 +72,8 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
 
       {/* Sidebar */}
       <div className={clsx(
-        'w-64 bg-white border-r border-gray-200 flex flex-col',
-        'fixed lg:static inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out',
+        'w-64 bg-white border-r border-gray-200 flex flex-col h-screen',
+        'fixed lg:fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out',
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
         {/* Header */}

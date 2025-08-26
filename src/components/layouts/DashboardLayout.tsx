@@ -15,7 +15,7 @@ export function DashboardLayout({ children, user, onLogout, currentSlug }: Dashb
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
+      {/* Sidebar - Fixed on desktop */}
       <Sidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -25,9 +25,9 @@ export function DashboardLayout({ children, user, onLogout, currentSlug }: Dashb
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 h-12 flex items-center px-4 sm:px-6 lg:px-8">
+      <div className="flex-1 flex flex-col lg:ml-64">
+        {/* Top Header - Fixed */}
+        <header className="bg-white shadow-sm border-b border-gray-200 h-12 flex items-center px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
           <Button
             variant="ghost"
             size="sm"
@@ -41,8 +41,8 @@ export function DashboardLayout({ children, user, onLogout, currentSlug }: Dashb
           </h2>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        {/* Page Content - Scrollable */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto h-[calc(100vh-3rem)]">
           {children}
         </main>
       </div>
