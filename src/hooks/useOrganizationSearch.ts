@@ -28,11 +28,21 @@ export function useOrganizationSearch({
   // Efecto para cargar organizaciones cuando cambien los filtros
   useEffect(() => {
     const performSearch = async () => {
+      // Filtrar solo los filtros que tienen valores
+      const activeFilters = Object.fromEntries(
+        Object.entries(debouncedFilters).filter(([_, value]) => 
+          value !== undefined && value !== null && value !== ''
+        )
+      );
+
       setLoading(true);
       setError(null);
 
       try {
-        const response = await searchFunction(debouncedFilters);
+        // Si no hay filtros activos, hacer una llamada sin filtros para obtener todas las organizaciones
+        const filtersToSend = Object.keys(activeFilters).length === 0 ? {} : activeFilters;
+        const response = await searchFunction(filtersToSend);
+        
         if (response.success && response.data) {
           setOrganizations(response.data);
         } else {
@@ -85,11 +95,21 @@ export function useOrganizationSearch({
     hasActiveFilters,
     // Función para recargar organizaciones manualmente
     reload: async () => {
+      // Filtrar solo los filtros que tienen valores
+      const activeFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, value]) => 
+          value !== undefined && value !== null && value !== ''
+        )
+      );
+
       setLoading(true);
       setError(null);
 
       try {
-        const response = await searchFunction(filters);
+        // Si no hay filtros activos, hacer una llamada sin filtros para obtener todas las organizaciones
+        const filtersToSend = Object.keys(activeFilters).length === 0 ? {} : activeFilters;
+        const response = await searchFunction(filtersToSend);
+        
         if (response.success && response.data) {
           setOrganizations(response.data);
         } else {
