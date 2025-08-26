@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { useOrganizationInfo } from '@/hooks/useOrganizationInfo';
 
 export default function VerifyPage() {
   const [code, setCode] = useState('');

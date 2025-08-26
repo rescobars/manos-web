@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { useOrganizationInfo } from '@/hooks/useOrganizationInfo';
 
 export default function SigninPage() {
   const [email, setEmail] = useState('');
@@ -22,6 +23,7 @@ export default function SigninPage() {
   const { login, verifyCode } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { organization, loading: orgLoading, error: orgError } = useOrganizationInfo(orgUuid);
 
   useEffect(() => {
     // Obtener los query parameters
@@ -130,6 +132,10 @@ export default function SigninPage() {
                 loading={isVerifying}
                 disabled={!isCodeButtonEnabled}
                 className="w-full"
+                style={{
+                  backgroundColor: organization?.colors?.primary || '#3B82F6',
+                  borderColor: organization?.colors?.primary || '#3B82F6'
+                }}
               >
                 Verificar y continuar
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -162,24 +168,47 @@ export default function SigninPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: organization?.colors 
+          ? `linear-gradient(135deg, ${organization.colors.primary}15, ${organization.colors.secondary}15)`
+          : 'linear-gradient(135deg, #3B82F615, #1E40AF15)'
+      }}
+    >
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <Building2 className="w-6 h-6 text-blue-600" />
+          <div 
+            className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4"
+            style={{
+              backgroundColor: organization?.colors?.primary ? `${organization.colors.primary}20` : '#3B82F620'
+            }}
+          >
+            {organization?.logo_url ? (
+              <img 
+                src={organization.logo_url} 
+                alt={`${organization.name} logo`}
+                className="w-6 h-6 object-cover rounded"
+              />
+            ) : (
+              <Building2 
+                className="w-6 h-6" 
+                style={{ color: organization?.colors?.primary || '#3B82F6' }}
+              />
+            )}
           </div>
           <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
           <p className="text-gray-600 mt-2">
-            Accede a tu cuenta de organización
+            Accede a tu cuenta de <span className="font-semibold">{organization?.name || 'organización'}</span>
           </p>
-          {orgUuid && (
+          {orgLoading && (
             <p className="text-xs text-gray-500 mt-1">
-              Organización: {orgUuid}
+              Cargando información de la organización...
             </p>
           )}
-          {role && (
-            <p className="text-xs text-gray-500">
-              Rol: {role}
+          {orgError && (
+            <p className="text-xs text-red-500 mt-1">
+              Error al cargar la organización
             </p>
           )}
         </CardHeader>
@@ -199,6 +228,10 @@ export default function SigninPage() {
               loading={isLoading}
               disabled={!isButtonEnabled}
               className="w-full"
+              style={{
+                backgroundColor: organization?.colors?.primary || '#3B82F6',
+                borderColor: organization?.colors?.primary || '#3B82F6'
+              }}
             >
               Continuar
               <ArrowRight className="w-4 h-4 ml-2" />
