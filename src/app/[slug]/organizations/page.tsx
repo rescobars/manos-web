@@ -199,11 +199,39 @@ export default function OrganizationsPage() {
   // Función para copiar la URL de login de la organización
   const handleCopyLoginUrl = async (orgUuid: string) => {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    const loginUrl = `${baseUrl}/${orgUuid}/login`;
+    const loginUrl = `${baseUrl}/signin?org_uuid=${orgUuid}&role=DRIVER`;
     
     try {
       await navigator.clipboard.writeText(loginUrl);
       success('URL copiada', 'La URL de login se ha copiado al portapapeles');
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      showError('Error al copiar', 'No se pudo copiar la URL al portapapeles');
+    }
+  };
+
+  // Función para copiar la URL de registro de la organización
+  const handleCopySignupUrl = async (orgUuid: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const signupUrl = `${baseUrl}/signup?org_uuid=${orgUuid}&role=DRIVER`;
+    
+    try {
+      await navigator.clipboard.writeText(signupUrl);
+      success('URL copiada', 'La URL de registro se ha copiado al portapapeles');
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      showError('Error al copiar', 'No se pudo copiar la URL al portapapeles');
+    }
+  };
+
+  // Función para copiar la URL de verificación de la organización
+  const handleCopyVerifyUrl = async (orgUuid: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const verifyUrl = `${baseUrl}/verify?org_uuid=${orgUuid}&role=DRIVER`;
+    
+    try {
+      await navigator.clipboard.writeText(verifyUrl);
+      success('URL copiada', 'La URL de verificación se ha copiado al portapapeles');
     } catch (error) {
       console.error('Error copying to clipboard:', error);
       showError('Error al copiar', 'No se pudo copiar la URL al portapapeles');
@@ -405,25 +433,72 @@ export default function OrganizationsPage() {
                   )}
                 </div>
 
-                {/* URL de Login */}
+                {/* URLs de Autenticación */}
                 <div className="border-t border-gray-200 pt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <ExternalLink className="w-4 h-4 mr-2 text-gray-500" />
-                      <span className="text-sm text-gray-600">URL de Login:</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <ExternalLink className="w-4 h-4 mr-2 text-gray-500" />
+                        <span className="text-sm text-gray-600">URLs de Autenticación:</span>
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopyLoginUrl(org.uuid)}
-                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Copiar
-                    </Button>
-                  </div>
-                  <div className="mt-1 p-2 bg-gray-50 rounded text-xs text-gray-600 font-mono break-all">
-                    {(process.env.NEXT_PUBLIC_APP_URL || window.location.origin)}/{org.uuid}/login
+                    
+                    {/* URL de Registro */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Registro:</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopySignupUrl(org.uuid)}
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-6 px-2"
+                        >
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copiar
+                        </Button>
+                      </div>
+                      <div className="p-2 bg-gray-50 rounded text-xs text-gray-600 font-mono break-all">
+                        {(process.env.NEXT_PUBLIC_APP_URL || window.location.origin)}/signup?org_uuid={org.uuid}&role=DRIVER
+                      </div>
+                    </div>
+
+                    {/* URL de Login */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Login:</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyLoginUrl(org.uuid)}
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-6 px-2"
+                        >
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copiar
+                        </Button>
+                      </div>
+                      <div className="p-2 bg-gray-50 rounded text-xs text-gray-600 font-mono break-all">
+                        {(process.env.NEXT_PUBLIC_APP_URL || window.location.origin)}/signin?org_uuid={org.uuid}&role=DRIVER
+                      </div>
+                    </div>
+
+                    {/* URL de Verificación */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Verificación:</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyVerifyUrl(org.uuid)}
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-6 px-2"
+                        >
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copiar
+                        </Button>
+                      </div>
+                      <div className="p-2 bg-gray-50 rounded text-xs text-gray-600 font-mono break-all">
+                        {(process.env.NEXT_PUBLIC_APP_URL || window.location.origin)}/verify?org_uuid={org.uuid}&role=DRIVER
+                      </div>
+                    </div>
                   </div>
                 </div>
 
