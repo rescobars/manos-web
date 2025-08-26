@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganizations } from '@/hooks/useApi';
 import { useToast } from '@/hooks/useToast';
+import { useOrganizationSearch } from '@/hooks/useOrganizationSearch';
 import { Organization, OrganizationFilters } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -49,9 +50,27 @@ export default function OrganizationsPage() {
 
   const { toasts, removeToast, success, error: showError, warning, info } = useToast();
 
+  // Hook de búsqueda de organizaciones
+  const {
+    filters,
+    organizations,
+    loading: searchLoading,
+    error: searchError,
+    updateFilters,
+    updateFilter,
+    clearFilters,
+    hasActiveFilters,
+    reload
+  } = useOrganizationSearch({
+    searchFunction: getOrganizations,
+    initialOrganizations: userOrganizations,
+    debounceDelay: 500,
+    onError: (error) => {
+      showError('Error al cargar organizaciones', error.message);
+    }
+  });
+
   // Estados locales
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [filters, setFilters] = useState<OrganizationFilters>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -69,27 +88,7 @@ export default function OrganizationsPage() {
 
 
 
-  // Cargar organizaciones al montar el componente
-  useEffect(() => {
-    loadOrganizations();
-  }, [filters]);
 
-  const loadOrganizations = async () => {
-    try {
-      const response = await getOrganizations(filters);
-      if (response.success && response.data) {
-        setOrganizations(response.data as Organization[]);
-      } else {
-        // Si no hay datos del API, usar las organizaciones del contexto
-        setOrganizations(userOrganizations);
-      }
-    } catch (error) {
-      console.error('Error loading organizations:', error);
-      // Fallback a las organizaciones del contexto
-      setOrganizations(userOrganizations);
-      showError('Error al cargar organizaciones', 'No se pudieron cargar las organizaciones desde el servidor');
-    }
-  };
 
   const handleCreateOrganization = async (data: any) => {
     setActionLoading(true);
@@ -97,7 +96,7 @@ export default function OrganizationsPage() {
       const response = await createOrganization(data);
       
       if (response.success) {
-        await loadOrganizations();
+        await reload();
         setShowCreateModal(false);
         success('Organización creada', 'La organización se ha creado exitosamente');
       } else {
@@ -118,7 +117,7 @@ export default function OrganizationsPage() {
     try {
       const response = await updateOrganization(selectedOrganization.uuid, data);
       if (response.success) {
-        await loadOrganizations();
+        await reload();
         setShowEditModal(false);
         setSelectedOrganization(null);
         success('Organización actualizada', 'La organización se ha actualizado exitosamente');
@@ -138,7 +137,7 @@ export default function OrganizationsPage() {
     try {
       const response = await updateOrganizationStatus(org.uuid, newStatus);
       if (response.success) {
-        await loadOrganizations();
+        await reload();
         success('Estado actualizado', `El estado de "${org.name}" se ha cambiado a ${newStatus}`);
       } else {
         throw new Error(response.error || 'Error al cambiar estado');
@@ -158,7 +157,7 @@ export default function OrganizationsPage() {
     try {
       const response = await deleteOrganization(organizationToDelete.uuid);
       if (response.success) {
-        await loadOrganizations();
+        await reload();
         setShowDeleteDialog(false);
         setOrganizationToDelete(null);
         success('Organización eliminada', `La organización "${organizationToDelete.name}" se ha eliminado exitosamente`);
@@ -189,11 +188,11 @@ export default function OrganizationsPage() {
   };
 
   const handleFiltersChange = (newFilters: OrganizationFilters) => {
-    setFilters(newFilters);
+    updateFilters(newFilters);
   };
 
   const handleClearFilters = () => {
-    setFilters({});
+    clearFilters();
   };
 
   const handleSwitchOrganization = (org: Organization) => {
@@ -225,10 +224,10 @@ export default function OrganizationsPage() {
         <div className="flex items-center space-x-3">
           <Button
             variant="outline"
-            onClick={loadOrganizations}
-            disabled={loading}
+            onClick={reload}
+            disabled={searchLoading}
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 mr-2 ${searchLoading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
           
@@ -248,14 +247,15 @@ export default function OrganizationsPage() {
         filters={filters}
         onFiltersChange={handleFiltersChange}
         onClearFilters={handleClearFilters}
+        loading={searchLoading}
       />
 
       {/* Mensaje de error */}
-      {error && (
+      {(error || searchError) && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <div className="flex items-center">
             <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
-            <p className="text-red-800">{error}</p>
+            <p className="text-red-800">{error || searchError}</p>
             <Button
               variant="ghost"
               size="sm"
@@ -398,17 +398,20 @@ export default function OrganizationsPage() {
       </div>
 
       {/* Sin organizaciones */}
-      {organizations.length === 0 && !loading && (
+      {organizations.length === 0 && !loading && !searchLoading && (
         <Card className="text-center py-12">
           <CardContent>
             <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No tienes organizaciones
+              {hasActiveFilters ? 'No se encontraron organizaciones' : 'No tienes organizaciones'}
             </h3>
             <p className="text-gray-600 mb-4">
-              Aún no has sido agregado a ninguna organización.
+              {hasActiveFilters 
+                ? 'Intenta ajustar los filtros o términos de búsqueda.'
+                : 'Aún no has sido agregado a ninguna organización.'
+              }
             </p>
-            {canCreateOrganizations && (
+            {canCreateOrganizations && !hasActiveFilters && (
               <Button onClick={() => setShowCreateModal(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Crear Organización

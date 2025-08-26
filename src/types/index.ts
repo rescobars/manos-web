@@ -170,6 +170,7 @@ export interface UpdateOrganizationFormData {
 export interface OrganizationFilters {
   status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   plan_type?: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+  search?: string;
 }
 
 export interface OrganizationStatusUpdate {

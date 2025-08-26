@@ -3,20 +3,23 @@
 import React from 'react';
 import { OrganizationFilters } from '@/types';
 import { Button } from './Button';
-import { Filter, X } from 'lucide-react';
+import { Input } from './Input';
+import { Filter, X, Search } from 'lucide-react';
 
 interface OrganizationFiltersProps {
   filters: OrganizationFilters;
   onFiltersChange: (filters: OrganizationFilters) => void;
   onClearFilters: () => void;
+  loading?: boolean;
 }
 
 export function OrganizationFiltersComponent({
   filters,
   onFiltersChange,
-  onClearFilters
+  onClearFilters,
+  loading = false
 }: OrganizationFiltersProps) {
-  const hasActiveFilters = Object.values(filters).some(value => value !== undefined);
+  const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
 
   const handleFilterChange = (key: keyof OrganizationFilters, value: string | undefined) => {
     onFiltersChange({
@@ -31,6 +34,12 @@ export function OrganizationFiltersComponent({
         <div className="flex items-center space-x-2">
           <Filter className="w-4 h-4 text-gray-600" />
           <h3 className="text-sm font-medium text-gray-900">Filtros</h3>
+          {loading && (
+            <div className="flex items-center text-blue-600">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-xs">Buscando...</span>
+            </div>
+          )}
         </div>
         
         {hasActiveFilters && (
@@ -44,6 +53,17 @@ export function OrganizationFiltersComponent({
             Limpiar
           </Button>
         )}
+      </div>
+
+      {/* Campo de búsqueda */}
+      <div className="mb-4">
+        <Input
+          label="Buscar organizaciones"
+          placeholder="Buscar por nombre, descripción, dominio..."
+          value={filters.search || ''}
+          onChange={(e) => handleFilterChange('search', e.target.value || undefined)}
+          helperText="Busca en nombre, descripción, dominio y otros campos"
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -87,6 +107,19 @@ export function OrganizationFiltersComponent({
       {hasActiveFilters && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex flex-wrap gap-2">
+            {filters.search && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                <Search className="w-3 h-3 mr-1" />
+                Búsqueda: "{filters.search}"
+                <button
+                  onClick={() => handleFilterChange('search', undefined)}
+                  className="ml-1 hover:text-purple-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            
             {filters.status && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                 Estado: {filters.status}

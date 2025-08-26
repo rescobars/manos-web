@@ -202,7 +202,7 @@ class ApiService {
   }
 
   // Organization endpoints
-  async getOrganizations(params?: { status?: string; plan_type?: string }): Promise<ApiResponse> {
+  async getOrganizations(params?: { status?: string; plan_type?: string; search?: string }): Promise<ApiResponse> {
     const queryParams = params ? `?${new URLSearchParams(params).toString()}` : '';
     return this.request(`/organizations${queryParams}`, {
       method: 'GET',
