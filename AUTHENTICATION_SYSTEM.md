@@ -17,7 +17,7 @@ Este sistema implementa autenticación específica por organización usando quer
 
 ### Verificación
 ```
-/verify?org_uuid=f329d3a5-760b-4f26-a1af-2ac4064ffb40&role=DRIVER
+/verify-code?org_uuid=f329d3a5-760b-4f26-a1af-2ac4064ffb40&role=DRIVER
 ```
 
 ## Query Parameters
@@ -50,7 +50,7 @@ Este sistema implementa autenticación específica por organización usando quer
 - **Flujo**: Email → Código de verificación → Dashboard
 - **Contexto**: Mantiene `org_uuid` y `role` en toda la sesión
 
-### 3. `/verify` - Verificación de Código
+### 3. `/verify-code` - Verificación de Código
 - **Funcionalidad**: Verificación del código enviado por email
 - **Contexto**: Mantiene parámetros de organización
 - **Redirección**: Al dashboard específico de la organización
@@ -86,7 +86,7 @@ https://tuapp.com/signin?org_uuid=123e4567-e89b-12d3-a456-426614174000&role=HOST
 
 ### Verificación
 ```
-https://tuapp.com/verify?org_uuid=123e4567-e89b-12d3-a456-426614174000&role=DRIVER
+https://tuapp.com/verify-code?org_uuid=123e4567-e89b-12d3-a456-426614174000&role=DRIVER
 ```
 
 ## Implementación Técnica
@@ -123,7 +123,7 @@ router.push(`/dashboard?org_uuid=${orgUuid}&role=${role || 'DRIVER'}`);
 1. **Usuario visita**: `/signup?org_uuid=xxx&role=DRIVER`
 2. **Llena formulario**: Email, nombre, cargo
 3. **API crea usuario**: Con `organization_uuid` y rol específico
-4. **Redirección**: A `/verify?org_uuid=xxx&role=DRIVER`
+4. **Redirección**: A `/verify-code?org_uuid=xxx&role=DRIVER`
 5. **Verificación**: Código por email
 6. **Dashboard**: `/dashboard?org_uuid=xxx&role=DRIVER`
 

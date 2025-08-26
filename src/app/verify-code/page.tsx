@@ -21,14 +21,23 @@ export default function VerifyPage() {
   const { verifyCode, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // Obtener información de la organización para obtener el slug
+  const { organization } = useOrganizationInfo(orgUuid);
 
   useEffect(() => {
     // Obtener los query parameters
     const orgUuidParam = searchParams.get('org_uuid');
     const roleParam = searchParams.get('role');
+    const emailParam = searchParams.get('email');
     
     setOrgUuid(orgUuidParam);
     setRole(roleParam);
+    
+    // Si hay email en la URL, guardarlo en localStorage como respaldo
+    if (emailParam) {
+      localStorage.setItem('pendingEmail', emailParam);
+    }
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,18 +46,26 @@ export default function VerifyPage() {
     setLoading(true);
 
     try {
-      // Necesitamos el email del contexto o de algún lugar
-      // Por ahora asumimos que viene de algún estado global
-      const email = localStorage.getItem('pendingEmail') || '';
+      // Obtener el email de localStorage o de los parámetros de URL
+      const email = localStorage.getItem('pendingEmail') || searchParams.get('email') || '';
+      
+      if (!email) {
+        setError('Email no encontrado. Por favor, regresa al registro.');
+        return;
+      }
       
       await verifyCode(email, code);
       setSuccess(true);
       // Redirigir al dashboard de la organización después de 2 segundos
       setTimeout(() => {
-        if (orgUuid) {
-          router.push(`/dashboard?org_uuid=${orgUuid}&role=${role || 'DRIVER'}`);
+        if (organization?.slug) {
+          // Usar el slug de la organización para la ruta correcta
+          router.push(`/${organization.slug}/dashboard`);
+        } else if (orgUuid) {
+          // Fallback: redirigir a la página raíz si no tenemos el slug
+          router.push(`/?org_uuid=${orgUuid}&role=${role || 'DRIVER'}`);
         } else {
-          router.push('/dashboard');
+          router.push('/');
         }
       }, 2000);
     } catch (err) {
@@ -112,9 +129,9 @@ export default function VerifyPage() {
           <p className="text-gray-600 mt-2">
             Ingresa el código enviado a tu email
           </p>
-          {orgUuid && (
+          {organization?.name && (
             <p className="text-xs text-gray-500 mt-1">
-              Organización: {orgUuid}
+              Organización: {organization.name}
             </p>
           )}
           {role && (

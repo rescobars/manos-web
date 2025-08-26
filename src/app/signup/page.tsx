@@ -68,10 +68,12 @@ export default function SignupPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Guardar el email en localStorage para la verificación
+        localStorage.setItem('pendingEmail', formData.email);
         setSuccess(true);
         // Redirigir a la página de verificación después de 2 segundos
         setTimeout(() => {
-          router.push(`/verify?org_uuid=${orgUuid}&role=${role || 'DRIVER'}`);
+          router.push(`/verify-code?org_uuid=${orgUuid}&role=${role || 'DRIVER'}&email=${encodeURIComponent(formData.email)}`);
         }, 2000);
       } else {
         setError(data.error || data.message || 'Error al registrar usuario');
