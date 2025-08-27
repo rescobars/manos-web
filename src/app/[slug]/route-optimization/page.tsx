@@ -6,11 +6,12 @@ import { ordersApiService } from '@/lib/api/orders';
 import { Order } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { OptimizedRouteMap } from '@/components/ui/OptimizedRouteMap';
+import { IndividualRoutesMap } from '@/components/ui/IndividualRoutesMap';
 import { StatCard } from '@/components/ui/StatCard';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { Page } from '@/components/ui/Page';
 import { Package, MapPin, Route, Clock, Car, AlertCircle } from 'lucide-react';
+import { BRANCH_LOCATION } from '@/lib/constants';
 
 interface PickupLocation {
   lat: number;
@@ -25,7 +26,6 @@ export default function RouteOptimizationPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
-  const [showRoute, setShowRoute] = useState(false);
 
   // Cargar pedidos pendientes y ubicación de pickup
   useEffect(() => {
@@ -56,12 +56,11 @@ export default function RouteOptimizationPage() {
 
   const loadPickupLocation = async () => {
     try {
-      // Aquí deberías obtener la ubicación de tu sucursal desde la configuración
-      // Por ahora uso una ubicación de ejemplo
+      // Usar las coordenadas de la sucursal que ya están definidas en constants.ts
       setPickupLocation({
-        lat: -34.6037,
-        lng: -58.3816,
-        address: 'Sucursal Centro - Av. 9 de Julio 123, Buenos Aires'
+        lat: BRANCH_LOCATION.lat,
+        lng: BRANCH_LOCATION.lng,
+        address: BRANCH_LOCATION.address
       });
     } catch (error) {
       console.error('Error loading pickup location:', error);
@@ -84,22 +83,23 @@ export default function RouteOptimizationPage() {
     }
   };
 
-  const handleGenerateRoute = () => {
-    if (selectedOrders.length === 0) return;
-    setShowRoute(true);
-  };
-
   const getSelectedOrdersData = () => {
     return orders.filter(order => selectedOrders.includes(order.uuid));
   };
 
-  const getDeliveryLocations = () => {
-    return getSelectedOrdersData().map(order => ({
-      lat: order.delivery_lat || 0,
-      lng: order.delivery_lng || 0,
-      address: order.delivery_address || '',
-      id: order.uuid
-    }));
+  const getSelectedOrdersForMap = () => {
+    return getSelectedOrdersData()
+      .filter(order => order.delivery_lat && order.delivery_lng) // Solo pedidos con coordenadas válidas
+      .map(order => ({
+        id: order.uuid,
+        orderNumber: order.order_number,
+        deliveryLocation: {
+          lat: order.delivery_lat!,
+          lng: order.delivery_lng!,
+          address: order.delivery_address || '',
+          id: order.uuid
+        }
+      }));
   };
 
   const formatDate = (dateString: string) => {
@@ -142,7 +142,7 @@ export default function RouteOptimizationPage() {
             <Route className="w-10 h-10 text-blue-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-3">Selecciona una organización</h1>
-          <p className="text-gray-600">Necesitas seleccionar una organización para optimizar rutas</p>
+          <p className="text-gray-600">Necesitas seleccionar una organización para ver las rutas de pedidos</p>
         </div>
       </div>
     );
@@ -158,22 +158,14 @@ export default function RouteOptimizationPage() {
     );
   }
 
-  const headerActions = selectedOrders.length > 0 ? (
-    <Button
-      onClick={handleGenerateRoute}
-      className="bg-blue-600 hover:bg-blue-700 text-white"
-    >
-      <Route className="w-4 h-4 mr-2" />
-      Generar Ruta ({selectedOrders.length})
-    </Button>
-  ) : undefined;
+  const ordersWithLocation = orders.filter(o => o.delivery_lat && o.delivery_lng);
+  const ordersWithoutLocation = orders.filter(o => !o.delivery_lat || !o.delivery_lng);
 
   return (
     <>
       <Page
-        title="Optimización de Rutas"
-        subtitle={`Optimiza rutas de entrega para ${currentOrganization.name}`}
-        headerActions={headerActions}
+        title="Visualización de Rutas"
+        subtitle={`Visualiza rutas individuales de pedidos para ${currentOrganization.name}`}
       >
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -187,10 +179,18 @@ export default function RouteOptimizationPage() {
           
           <StatCard
             title="Con Ubicación"
-            value={orders.filter(o => o.delivery_lat && o.delivery_lng).length}
+            value={ordersWithLocation.length}
             icon={MapPin}
             iconColor="text-green-600"
             iconBgColor="bg-green-100"
+          />
+          
+          <StatCard
+            title="Sin Ubicación"
+            value={ordersWithoutLocation.length}
+            icon={AlertCircle}
+            iconColor="text-yellow-600"
+            iconBgColor="bg-yellow-100"
           />
           
           <StatCard
@@ -200,29 +200,52 @@ export default function RouteOptimizationPage() {
             iconColor="text-purple-600"
             iconBgColor="bg-purple-100"
           />
-          
-          <StatCard
-            title="Valor Total"
-            value={formatCurrency(orders.reduce((sum, order) => sum + (order.total_amount || 0), 0))}
-            icon={Car}
-            iconColor="text-gray-600"
-            iconBgColor="bg-gray-100"
+        </div>
+
+        {/* Filtros y búsqueda */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="flex-1">
+              <FilterBar
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder="Buscar pedidos por número, descripción o dirección..."
+                filterValue="ALL"
+                onFilterChange={() => {}}
+                filterOptions={filterOptions}
+                filterPlaceholder="Todos los pedidos"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleSelectAll}
+                variant="outline"
+                size="sm"
+              >
+                {selectedOrders.length === orders.length ? 'Deseleccionar Todo' : 'Seleccionar Todo'}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mapa de rutas */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <IndividualRoutesMap
+            pickupLocation={pickupLocation}
+            selectedOrders={getSelectedOrdersForMap()}
           />
         </div>
 
-        {/* Filters and Search */}
-        <FilterBar
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          searchPlaceholder="Buscar por número, cliente o dirección..."
-          filterValue="ALL"
-          onFilterChange={() => {}}
-          filterOptions={filterOptions}
-          filterPlaceholder="Todos los pedidos"
-        />
-
-        {/* Orders List */}
+        {/* Lista de pedidos */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between pb-4 border-b border-gray-200 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Pedidos Pendientes</h3>
+            <div className="text-sm text-gray-600">
+              {selectedOrders.length} de {orders.length} seleccionados
+            </div>
+          </div>
+
           {loading ? (
             <div className="p-12 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -237,82 +260,66 @@ export default function RouteOptimizationPage() {
               <p className="text-gray-600 max-w-md mx-auto">
                 {searchTerm 
                   ? 'No se encontraron pedidos con los términos de búsqueda'
-                  : 'No hay pedidos pendientes para optimizar rutas'
+                  : 'No hay pedidos pendientes para visualizar'
                 }
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Header de la lista */}
-              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Pedidos Pendientes</h3>
-                {orders.length > 0 && (
-                  <Button
-                    onClick={handleSelectAll}
-                    variant="outline"
-                    size="sm"
+            <div className="space-y-3">
+              {filteredOrders.map((order) => {
+                const hasLocation = order.delivery_lat && order.delivery_lng;
+                const isSelected = selectedOrders.includes(order.uuid);
+                
+                return (
+                  <div
+                    key={order.uuid}
+                    className={`flex items-center gap-4 p-4 rounded-lg border transition-colors ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50'
+                        : hasLocation
+                        ? 'border-gray-200 hover:border-gray-300'
+                        : 'border-yellow-200 bg-yellow-50'
+                    }`}
                   >
-                    {selectedOrders.length === orders.length ? 'Deseleccionar Todo' : 'Seleccionar Todo'}
-                  </Button>
-                )}
-              </div>
-
-                             {/* Lista de pedidos */}
-               <div className="space-y-3">
-                 {filteredOrders.map((order) => (
-                   <div
-                     key={order.uuid}
-                     className={`flex items-center gap-4 p-4 rounded-lg border transition-colors ${
-                       selectedOrders.includes(order.uuid)
-                         ? 'border-blue-500 bg-blue-50'
-                         : 'border-gray-200 hover:border-gray-300'
-                     }`}
-                   >
-                     <Checkbox
-                       checked={selectedOrders.includes(order.uuid)}
-                       onChange={() => handleOrderSelection(order.uuid)}
-                     />
-                     
-                     <div className="flex-1">
-                       <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-3">
-                           <span className="font-medium text-gray-900">#{order.order_number}</span>
-                           <span className="text-gray-600">- {order.description || 'Sin descripción'}</span>
-                         </div>
-                         <div className="text-right">
-                           <div className="font-semibold text-gray-900">{formatCurrency(order.total_amount || 0)}</div>
-                           <div className="text-sm text-gray-500">{formatDate(order.created_at)}</div>
-                         </div>
-                       </div>
-                       
-                       <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
-                         <MapPin className="w-4 h-4" />
-                         <span>{order.delivery_address}</span>
-                       </div>
-                     </div>
-                   </div>
-                 ))}
-               </div>
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={() => handleOrderSelection(order.uuid)}
+                      disabled={!hasLocation}
+                    />
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-gray-900">#{order.order_number}</span>
+                          <span className="text-gray-600">- {order.description || 'Sin descripción'}</span>
+                          {!hasLocation && (
+                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                              Sin ubicación
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-gray-900">{formatCurrency(order.total_amount || 0)}</div>
+                          <div className="text-sm text-gray-500">{formatDate(order.created_at)}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="w-4 h-4" />
+                        <span>{order.delivery_address}</span>
+                        {hasLocation && (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            Con coordenadas
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
-
-        {/* Mapa de ruta optimizada */}
-        {showRoute && selectedOrders.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Ruta Optimizada ({selectedOrders.length} pedidos)
-            </h2>
-            <OptimizedRouteMap
-              pickupLocation={pickupLocation}
-              deliveryLocations={getDeliveryLocations()}
-              onRouteOptimized={(route) => {
-                console.log('Ruta optimizada generada:', route);
-                // Aquí puedes hacer lo que necesites con la ruta
-              }}
-            />
-          </div>
-        )}
       </Page>
     </>
   );

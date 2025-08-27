@@ -63,20 +63,31 @@ export function useRouteOptimization() {
       const baseUrl = 'https://api.mapbox.com/directions/v5/mapbox';
       const profile = options.profile || 'driving';
       
-      // Coordenadas en formato requerido por Mapbox: lng,lat
-      const coordinates = [
-        `${pickupLocation.lng},${pickupLocation.lat}`, // Punto de partida (sucursal)
-        ...deliveryLocations.map(loc => `${loc.lng},${loc.lat}`) // Puntos de entrega
-      ].join(';');
+      // Construir coordenadas reales de los pedidos
+      // Formato requerido por Mapbox: lng,lat;lng,lat;lng,lat (longitud primero, luego latitud)
+      const allLocations = [pickupLocation, ...deliveryLocations];
+      console.log('🔍 All locations before mapping:', allLocations);
+      
+      const coordinates = allLocations
+        .map(loc => {
+          const coordString = `${loc.lng},${loc.lat}`;
+          console.log(`🔍 Location ${loc.address}: lat=${loc.lat}, lng=${loc.lng} -> "${coordString}"`);
+          return coordString;
+        })
+        .join(';');
+      
+      // Debug: Ver qué coordenadas se envían
+      console.log('🔍 Coordenadas reales de los pedidos:', coordinates);
+      console.log('🔍 Pickup Location:', pickupLocation);
+      console.log('🔍 Delivery Locations:', deliveryLocations);
 
-      // Parámetros de la API - Sin optimize ya que no está disponible
+      // Parámetros de la API - Replicando la petición exitosa de curl
       const params = new URLSearchParams({
         access_token: token,
-        alternatives: 'false',
-        annotations: 'distance,duration',
-        steps: 'true',
+        geometries: 'geojson',
         overview: 'full',
-        geometries: 'geojson'  // Forzar JSON en lugar de PBF
+        steps: 'true',
+        annotations: 'distance,duration'
         // Nota: optimize=true no está disponible en este plan de Mapbox
       });
 
@@ -90,6 +101,11 @@ export function useRouteOptimization() {
       }
 
       const data = await response.json();
+      
+      // Debug: Ver qué recibimos de Mapbox
+      console.log('🔍 Respuesta de Mapbox:', data);
+      console.log('🔍 data.routes:', data.routes);
+      console.log('🔍 data.routes?.length:', data.routes?.length);
 
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];

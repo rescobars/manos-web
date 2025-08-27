@@ -147,6 +147,11 @@ export function OptimizedRouteMap({
   const displayRouteOnMap = (route: any) => {
     if (!map) return;
 
+    // Debug: Ver qué contiene route.route
+    console.log('🔍 Route object completo:', route);
+    console.log('🔍 route.route:', route.route);
+    console.log('🔍 route.route.geometry:', route.route?.geometry);
+
     // Remover capa anterior si existe
     if (routeLayer) {
       map.removeLayer(routeLayer);
