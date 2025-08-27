@@ -4,16 +4,24 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ordersApiService } from '@/lib/api/orders';
 import { Order, OrderStatus } from '@/types';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { useToast } from '@/hooks/useToast';
 import { OrderModal } from '@/components/ui/OrderModal';
+import { StatCard } from '@/components/ui/StatCard';
+import { FilterBar } from '@/components/ui/FilterBar';
+import { OrderCard } from '@/components/ui/OrderCard';
+import { Page } from '@/components/ui/Page';
+import { 
+  Package, 
+  Clock, 
+  Truck, 
+  CheckCircle,
+  Plus
+} from 'lucide-react';
 
 export default function OrdersPage() {
-  const { currentOrganization, user } = useAuth();
+  const { currentOrganization } = useAuth();
   const { success, error: showError, toasts, removeToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
@@ -129,260 +137,128 @@ export default function OrdersPage() {
     return matchesStatus && matchesSearch;
   });
 
-  const getStatusColor = (status: OrderStatus) => {
-    switch (status) {
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'ASSIGNED':
-        return 'bg-blue-100 text-blue-800';
-      case 'COMPLETED':
-        return 'bg-green-100 text-green-800';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status: OrderStatus) => {
-    switch (status) {
-      case 'PENDING':
-        return 'Pendiente';
-      case 'ASSIGNED':
-        return 'Asignado';
-      case 'COMPLETED':
-        return 'Completado';
-      case 'CANCELLED':
-        return 'Cancelado';
-      default:
-        return status;
-    }
-  };
+  const filterOptions = [
+    { value: 'ALL', label: 'Todos los estados' },
+    { value: 'PENDING', label: 'Pendientes' },
+    { value: 'ASSIGNED', label: 'En Camino' },
+    { value: 'COMPLETED', label: 'Entregados' },
+    { value: 'CANCELLED', label: 'Cancelados' }
+  ];
 
   if (!currentOrganization) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Selecciona una organización</h1>
-          <p className="text-gray-600">Necesitas seleccionar una organización para ver los pedidos</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <Package className="w-10 h-10 text-blue-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Selecciona una organización</h1>
+          <p className="text-gray-600">Necesitas seleccionar una organización para gestionar los pedidos</p>
         </div>
       </div>
     );
   }
 
+  const headerActions = (
+    <Button
+      onClick={handleCreateNewOrder}
+      className="bg-blue-600 hover:bg-blue-700 text-white"
+    >
+      <Plus className="w-4 h-4 mr-2" />
+      Nuevo Pedido
+    </Button>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <>
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Pedidos</h1>
-        <p className="text-gray-600">
-          Gestiona los pedidos de {currentOrganization.name}
-        </p>
-      </div>
+      <Page
+        title="Pedidos"
+        subtitle={`Gestiona los pedidos de ${currentOrganization.name}`}
+        headerActions={headerActions}
+      >
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <StatCard
+            title="Total Pedidos"
+            value={orders.length}
+            icon={Package}
+            iconColor="text-blue-600"
+            iconBgColor="bg-blue-100"
+          />
+          
+          <StatCard
+            title="Pendientes"
+            value={pendingOrders.length}
+            icon={Clock}
+            iconColor="text-amber-600"
+            iconBgColor="bg-amber-100"
+          />
+          
+          <StatCard
+            title="En Camino"
+            value={orders.filter(o => o.status === 'ASSIGNED').length}
+            icon={Truck}
+            iconColor="text-blue-600"
+            iconBgColor="bg-blue-100"
+          />
+          
+          <StatCard
+            title="Entregados"
+            value={orders.filter(o => o.status === 'COMPLETED').length}
+            icon={CheckCircle}
+            iconColor="text-green-600"
+            iconBgColor="bg-green-100"
+          />
+        </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-          <div className="flex items-center">
-            <div className="p-2 rounded-lg flex-shrink-0 bg-blue-100">
-              <span className="text-2xl">📦</span>
-            </div>
-            <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Pedidos</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900">{orders.length}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-          <div className="flex items-center">
-            <div className="p-2 rounded-lg flex-shrink-0 bg-yellow-100">
-              <span className="text-2xl">⏳</span>
-            </div>
-            <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Pendientes</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900">{pendingOrders.length}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-          <div className="flex items-center">
-            <div className="p-2 rounded-lg flex-shrink-0 bg-blue-100">
-              <span className="text-2xl">🚚</span>
-            </div>
-            <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Asignados</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900">{orders.filter(o => o.status === 'ASSIGNED').length}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-          <div className="flex items-center">
-            <div className="p-2 rounded-lg flex-shrink-0 bg-green-100">
-              <span className="text-2xl">✅</span>
-            </div>
-            <div className="ml-3 sm:ml-4 flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Completados</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900">{orders.filter(o => o.status === 'COMPLETED').length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Filters and Search */}
+        <FilterBar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Buscar por número, descripción o dirección..."
+          filterValue={selectedStatus}
+          onFilterChange={(value) => setSelectedStatus(value as OrderStatus | 'ALL')}
+          filterOptions={filterOptions}
+          filterPlaceholder="Todos los estados"
+        />
 
-      {/* Filters and Actions */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-col md:flex-row gap-4 flex-1">
-            <div className="flex-1">
-              <Input
-                placeholder="Buscar pedidos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
+        {/* Orders List */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          {loading ? (
+            <div className="p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 font-medium">Cargando pedidos...</p>
             </div>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value as OrderStatus | 'ALL')}
-              className="w-full md:w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="ALL">Todos los estados</option>
-              <option value="PENDING">Pendientes</option>
-              <option value="ASSIGNED">Asignados</option>
-              <option value="COMPLETED">Completados</option>
-              <option value="CANCELLED">Cancelados</option>
-            </select>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={handleCreateNewOrder}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              + Nuevo Pedido
-            </Button>
-            <Button
-              onClick={() => {/* TODO: Implementar creación masiva */}}
-              variant="outline"
-            >
-              + Crear Múltiples
-            </Button>
-          </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Package className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay pedidos</h3>
+              <p className="text-gray-600 max-w-md mx-auto">
+                {searchTerm || selectedStatus !== 'ALL' 
+                  ? 'No se encontraron pedidos con los filtros aplicados'
+                  : 'Comienza creando tu primer pedido para gestionar las entregas'
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {filteredOrders.map((order) => (
+                <OrderCard
+                  key={order.uuid}
+                  order={order}
+                  onEdit={handleEditOrder}
+                  onView={() => {/* TODO: Implementar vista detallada */}}
+                  className="border-0 rounded-none"
+                />
+              ))}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Orders List */}
-      <div className="bg-white rounded-lg shadow-sm">
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando pedidos...</p>
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="p-8 text-center">
-            <div className="text-6xl mb-4">📦</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay pedidos</h3>
-            <p className="text-gray-600">
-              {searchTerm || selectedStatus !== 'ALL' 
-                ? 'No se encontraron pedidos con los filtros aplicados'
-                : 'Comienza creando tu primer pedido'
-              }
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Número
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Descripción
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Direcciones
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Monto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOrders.map((order) => (
-                  <tr key={order.uuid} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {order.order_number}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">
-                        {order.description || 'Sin descripción'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        <div className="mb-1">
-                          <span className="font-medium text-xs text-gray-500">Recogida:</span>
-                          <div className="text-xs">{order.pickup_address}</div>
-                        </div>
-                        <div>
-                          <span className="font-medium text-xs text-gray-500">Entrega:</span>
-                          <div className="text-xs">{order.delivery_address}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        Q{order.total_amount.toFixed(2)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                        {getStatusText(order.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.created_at).toLocaleDateString('es-GT')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditOrder(order)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {/* TODO: Implementar vista detallada */}}
-                        >
-                          Ver
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      </Page>
 
       {/* Order Modal */}
       <OrderModal
@@ -393,6 +269,6 @@ export default function OrdersPage() {
         organizationUuid={currentOrganization.uuid}
         mode={modalMode}
       />
-    </div>
+    </>
   );
 }

@@ -104,6 +104,14 @@ export default function DefaultDashboard() {
           iconColor="text-blue-600"
           iconBgColor="bg-blue-100"
         />
+        
+        <StatCard
+          icon={Package}
+          title="Pedidos Hoy"
+          value="24"
+          iconColor="text-orange-600"
+          iconBgColor="bg-orange-100"
+        />
 
         <StatCard
           icon={Users}
@@ -121,13 +129,7 @@ export default function DefaultDashboard() {
           iconBgColor="bg-purple-100"
         />
 
-        <StatCard
-          icon={Package}
-          title="Pedidos Hoy"
-          value="24"
-          iconColor="text-orange-600"
-          iconBgColor="bg-orange-100"
-        />
+
       </div>
 
       {/* Permisos del usuario */}

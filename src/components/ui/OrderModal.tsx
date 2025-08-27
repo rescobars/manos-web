@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { Order, CreateOrderFormData, UpdateOrderFormData, OrderStatus } from '@/types';
-import { Card } from './Card';
+import { BaseModal } from './BaseModal';
+import { InputField, TextAreaField, SelectField } from './FormField';
+import { ModalActions } from './ModalActions';
+import { Package, Save } from 'lucide-react';
 import { Button } from './Button';
-import { Input } from './Input';
-import { TextArea } from './TextArea';
-import { Select } from './Select';
 
 interface OrderModalProps {
   isOpen: boolean;
@@ -121,191 +121,151 @@ export function OrderModal({
     }
   };
 
-  if (!isOpen) return null;
+  const statusOptions = [
+    { value: 'PENDING', label: 'Pendiente' },
+    { value: 'ASSIGNED', label: 'Asignado' },
+    { value: 'COMPLETED', label: 'Completado' },
+    { value: 'CANCELLED', label: 'Cancelado' }
+  ];
+
+  const modalIcon = <Package className="w-5 h-5 text-gray-600" />;
+  const modalTitle = mode === 'create' ? 'Crear Pedido' : 'Editar Pedido';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {mode === 'create' ? 'Crear Nuevo Pedido' : 'Editar Pedido'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl"
-            >
-              ×
-            </button>
-          </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={modalTitle}
+      icon={modalIcon}
+      loading={loading}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Organization UUID (hidden) */}
+        <input type="hidden" value={organizationUuid} />
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Organization UUID (hidden) */}
-            <input type="hidden" value={organizationUuid} />
+        {/* Description */}
+        <TextAreaField
+          label="Descripción del Pedido"
+          value={formData.description || ''}
+          onChange={(value) => handleInputChange('description', value)}
+          placeholder="Describe qué contiene el pedido..."
+          rows={3}
+          error={errors.description}
+        />
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Descripción
-              </label>
-              <TextArea
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Descripción del pedido (opcional)"
-                rows={3}
-                className={errors.description ? 'border-red-500' : ''}
-              />
-              {errors.description && (
-                <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-              )}
-            </div>
+        {/* Total Amount */}
+        <InputField
+          label="Monto Total"
+          type="number"
+          value={formData.total_amount}
+          onChange={(value) => handleInputChange('total_amount', parseFloat(value as string) || 0)}
+          placeholder="0.00"
+          step="0.01"
+          min={0}
+          required
+          error={errors.total_amount}
+        />
 
-            {/* Total Amount */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monto Total *
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.total_amount}
-                onChange={(e) => handleInputChange('total_amount', parseFloat(e.target.value) || 0)}
-                placeholder="0.00"
-                className={errors.total_amount ? 'border-red-500' : ''}
-              />
-              {errors.total_amount && (
-                <p className="mt-1 text-sm text-red-600">{errors.total_amount}</p>
-              )}
-            </div>
+        {/* Pickup Address */}
+        <InputField
+          label="Dirección de Recogida"
+          type="text"
+          value={formData.pickup_address}
+          onChange={(value) => handleInputChange('pickup_address', value)}
+          placeholder="¿Dónde se recogerá el pedido?"
+          required
+          error={errors.pickup_address}
+        />
 
-            {/* Pickup Address */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dirección de Recogida *
-              </label>
-              <Input
-                value={formData.pickup_address}
-                onChange={(e) => handleInputChange('pickup_address', e.target.value)}
-                placeholder="Dirección donde se recogerá el pedido"
-                className={errors.pickup_address ? 'border-red-500' : ''}
-              />
-              {errors.pickup_address && (
-                <p className="mt-1 text-sm text-red-600">{errors.pickup_address}</p>
-              )}
-            </div>
-
-            {/* Pickup Coordinates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Latitud de Recogida
-                </label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={formData.pickup_lat || ''}
-                  onChange={(e) => handleInputChange('pickup_lat', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="14.6349"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Longitud de Recogida
-                </label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={formData.pickup_lng || ''}
-                  onChange={(e) => handleInputChange('pickup_lng', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="-90.5069"
-                />
-              </div>
-            </div>
-
-            {/* Delivery Address */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dirección de Entrega *
-              </label>
-              <Input
-                value={formData.delivery_address}
-                onChange={(e) => handleInputChange('delivery_address', e.target.value)}
-                placeholder="Dirección donde se entregará el pedido"
-                className={errors.delivery_address ? 'border-red-500' : ''}
-              />
-              {errors.delivery_address && (
-                <p className="mt-1 text-sm text-red-600">{errors.delivery_address}</p>
-              )}
-            </div>
-
-            {/* Delivery Coordinates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Latitud de Entrega
-                </label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={formData.delivery_lat || ''}
-                  onChange={(e) => handleInputChange('delivery_lat', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="14.6349"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Longitud de Entrega
-                </label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={formData.delivery_lng || ''}
-                  onChange={(e) => handleInputChange('delivery_lng', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="-90.5069"
-                />
-              </div>
-            </div>
-
-            {/* Status (only for edit mode) */}
-            {mode === 'edit' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estado
-                </label>
-                <Select
-                  value={formData.status || 'PENDING'}
-                  onChange={(e) => handleInputChange('status', e.target.value as OrderStatus)}
-                >
-                  <option value="PENDING">Pendiente</option>
-                  <option value="ASSIGNED">Asignado</option>
-                  <option value="COMPLETED">Completado</option>
-                  <option value="CANCELLED">Cancelado</option>
-                </Select>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex justify-end gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={loading}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {loading ? 'Guardando...' : mode === 'create' ? 'Crear Pedido' : 'Actualizar Pedido'}
-              </Button>
-            </div>
-          </form>
+        {/* Pickup Coordinates */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputField
+            label="Latitud de Recogida"
+            type="number"
+            value={formData.pickup_lat || ''}
+            onChange={(value) => handleInputChange('pickup_lat', value ? parseFloat(value as string) : undefined)}
+            placeholder="14.6349"
+            step="any"
+          />
+          <InputField
+            label="Longitud de Recogida"
+            type="number"
+            value={formData.pickup_lng || ''}
+            onChange={(value) => handleInputChange('pickup_lng', value ? parseFloat(value as string) : undefined)}
+            placeholder="-90.5069"
+            step="any"
+          />
         </div>
-      </Card>
-    </div>
+
+        {/* Delivery Address */}
+        <InputField
+          label="Dirección de Entrega"
+          type="text"
+          value={formData.delivery_address}
+          onChange={(value) => handleInputChange('delivery_address', value)}
+          placeholder="¿Dónde se entregará el pedido?"
+          required
+          error={errors.delivery_address}
+        />
+
+        {/* Delivery Coordinates */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputField
+            label="Latitud de Entrega"
+            type="number"
+            value={formData.delivery_lat || ''}
+            onChange={(value) => handleInputChange('delivery_lat', value ? parseFloat(value as string) : undefined)}
+            placeholder="14.6349"
+            step="any"
+          />
+          <InputField
+            label="Longitud de Entrega"
+            type="number"
+            value={formData.delivery_lng || ''}
+            onChange={(value) => handleInputChange('delivery_lng', value ? parseFloat(value as string) : undefined)}
+            placeholder="-90.5069"
+            step="any"
+          />
+        </div>
+
+        {/* Status (only for edit mode) */}
+        {mode === 'edit' && (
+          <SelectField
+            label="Estado del Pedido"
+            value={((formData as any).status as string) || 'PENDING'}
+            onChange={(value) => (formData as any).status = value as OrderStatus}
+            options={statusOptions}
+          />
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 mr-2 animate-spin rounded-full border-b-2 border-blue-600"></div>
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {mode === 'create' ? 'Crear' : 'Actualizar'}
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
   );
 }
