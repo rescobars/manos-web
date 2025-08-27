@@ -9,6 +9,7 @@ import { ToastContainer } from '@/components/ui/ToastContainer';
 import { useToast } from '@/hooks/useToast';
 import { OrderModal } from '@/components/ui/OrderModal';
 import { OrderDetail } from '@/components/ui/OrderDetail';
+import { QuickOrderScreen } from '@/components/ui/QuickOrderScreen';
 import { StatCard } from '@/components/ui/StatCard';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { OrderCard } from '@/components/ui/OrderCard';
@@ -18,7 +19,8 @@ import {
   Clock, 
   Truck, 
   CheckCircle,
-  Plus
+  Plus,
+  Map
 } from 'lucide-react';
 
 export default function OrdersPage() {
@@ -34,6 +36,7 @@ export default function OrdersPage() {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
+  const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
 
   useEffect(() => {
     if (currentOrganization) {
@@ -129,6 +132,10 @@ export default function OrdersPage() {
     setIsModalOpen(true);
   };
 
+  const handleQuickOrder = () => {
+    setIsQuickOrderOpen(true);
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingOrder(null);
@@ -137,6 +144,10 @@ export default function OrdersPage() {
   const handleCloseDetailModal = () => {
     setIsDetailModalOpen(false);
     setSelectedOrderForDetail(null);
+  };
+
+  const handleCloseQuickOrder = () => {
+    setIsQuickOrderOpen(false);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -173,13 +184,23 @@ export default function OrdersPage() {
   }
 
   const headerActions = (
-    <Button
-      onClick={handleCreateNewOrder}
-      className="bg-blue-600 hover:bg-blue-700 text-white"
-    >
-      <Plus className="w-4 h-4 mr-2" />
-      Nuevo Pedido
-    </Button>
+    <div className="flex gap-3">
+      <Button
+        onClick={handleQuickOrder}
+        className="bg-green-600 hover:bg-green-700 text-white"
+      >
+        <Map className="w-4 h-4 mr-2" />
+        Pedido Rápido
+      </Button>
+      
+      <Button
+        onClick={handleCreateNewOrder}
+        className="bg-blue-600 hover:bg-blue-700 text-white"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        Nuevo Pedido
+      </Button>
+    </div>
   );
 
   return (
@@ -288,6 +309,15 @@ export default function OrdersPage() {
         onClose={handleCloseDetailModal}
         order={selectedOrderForDetail}
       />
+
+      {/* Quick Order Screen */}
+      {isQuickOrderOpen && (
+        <QuickOrderScreen
+          organizationUuid={currentOrganization.uuid}
+          onClose={handleCloseQuickOrder}
+          onSubmit={handleCreateOrder}
+        />
+      )}
     </>
   );
 }
