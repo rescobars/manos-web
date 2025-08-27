@@ -22,6 +22,7 @@ export default function RouteOptimizationPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Cargar pedidos pendientes y ubicación de pickup
   useEffect(() => {
@@ -30,6 +31,35 @@ export default function RouteOptimizationPage() {
       loadPickupLocation();
     }
   }, [currentOrganization]);
+
+  // Inicializar automáticamente con los últimos 20 pedidos
+  useEffect(() => {
+    if (orders.length > 0 && pickupLocation && !isInitialized) {
+      initializeWithLastOrders();
+    }
+  }, [orders, pickupLocation, isInitialized]);
+
+  // Detectar cambios en los pedidos y actualizar caché si es necesario
+  useEffect(() => {
+    if (isInitialized && selectedOrders.length > 0) {
+      // Verificar si algún pedido seleccionado ya no existe o no tiene coordenadas
+      const validSelectedOrders = selectedOrders.filter(id => 
+        orders.some(order => order.uuid === id && order.delivery_lat && order.delivery_lng)
+      );
+      
+      if (validSelectedOrders.length !== selectedOrders.length) {
+        console.log('🔄 Actualizando caché debido a cambios en pedidos');
+        if (validSelectedOrders.length > 0) {
+          setSelectedOrders(validSelectedOrders);
+          saveToCache(validSelectedOrders);
+        } else {
+          setSelectedOrders([]);
+          const cacheKey = getCacheKey();
+          if (cacheKey) localStorage.removeItem(cacheKey);
+        }
+      }
+    }
+  }, [orders, selectedOrders, isInitialized]);
 
   const loadPendingOrders = async () => {
     if (!currentOrganization) return;
@@ -69,6 +99,15 @@ export default function RouteOptimizationPage() {
         ? prev.filter(id => id !== orderId)
         : [...prev, orderId];
       
+      // Actualizar caché cuando cambie la selección
+      if (newSelection.length > 0) {
+        saveToCache(newSelection);
+      } else {
+        // Si no hay selección, limpiar caché
+        const cacheKey = getCacheKey();
+        if (cacheKey) localStorage.removeItem(cacheKey);
+      }
+      
       return newSelection;
     });
   };
@@ -76,13 +115,115 @@ export default function RouteOptimizationPage() {
   const handleSelectAll = () => {
     if (selectedOrders.length === orders.length) {
       setSelectedOrders([]);
+      // Limpiar caché cuando se deselecciona todo
+      const cacheKey = getCacheKey();
+      if (cacheKey) localStorage.removeItem(cacheKey);
     } else {
-      setSelectedOrders(orders.map(order => order.uuid));
+      const allOrderIds = orders
+        .filter(order => order.delivery_lat && order.delivery_lng)
+        .map(order => order.uuid);
+      setSelectedOrders(allOrderIds);
+      // Guardar en caché cuando se selecciona todo
+      saveToCache(allOrderIds);
     }
   };
 
   const handleClearAll = () => {
     setSelectedOrders([]);
+    // Limpiar caché cuando se limpia todo
+    const cacheKey = getCacheKey();
+    if (cacheKey) localStorage.removeItem(cacheKey);
+  };
+
+  // Función para inicializar automáticamente con los últimos 20 pedidos
+  const initializeWithLastOrders = () => {
+    if (orders.length === 0) return;
+
+    // Primero intentar cargar desde caché
+    const cachedOrderIds = loadFromCache();
+    
+          if (cachedOrderIds && cachedOrderIds.length > 0) {
+        // Verificar que los pedidos en caché aún existen en la lista actual
+        const validCachedOrders = cachedOrderIds.filter((id: string) => 
+          orders.some(order => order.uuid === id && order.delivery_lat && order.delivery_lng)
+        );
+      
+      if (validCachedOrders.length > 0) {
+        setSelectedOrders(validCachedOrders);
+        setIsInitialized(true);
+        console.log(`📦 Cargando ${validCachedOrders.length} pedidos desde caché`);
+        return;
+      }
+    }
+
+    // Si no hay caché válido, usar los últimos 20 pedidos
+    const validOrders = orders
+      .filter(order => order.delivery_lat && order.delivery_lng)
+      .slice(0, 20); // Solo los últimos 20
+
+    if (validOrders.length > 0) {
+      const orderIds = validOrders.map(order => order.uuid);
+      setSelectedOrders(orderIds);
+      setIsInitialized(true);
+      
+      // Guardar en caché para futuras visitas
+      saveToCache(orderIds);
+      
+      console.log(`🚀 Inicializando automáticamente con ${validOrders.length} pedidos`);
+    }
+  };
+
+  // Función para obtener la clave del caché
+  const getCacheKey = () => {
+    if (!currentOrganization) return null;
+    return `route-cache-${currentOrganization.uuid}`;
+  };
+
+  // Función para guardar en caché
+  const saveToCache = (orderIds: string[]) => {
+    const cacheKey = getCacheKey();
+    if (!cacheKey) return;
+
+    try {
+      const cacheData = {
+        orderIds,
+        timestamp: Date.now(),
+        organizationId: currentOrganization!.uuid
+      };
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log('💾 Guardando en caché:', cacheData);
+    } catch (error) {
+      console.error('Error guardando en caché:', error);
+    }
+  };
+
+  // Función para cargar desde caché
+  const loadFromCache = () => {
+    const cacheKey = getCacheKey();
+    if (!cacheKey) return null;
+
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        
+        // Verificar que el caché sea válido (misma organización y no muy antiguo)
+        const isExpired = Date.now() - cacheData.timestamp > 24 * 60 * 60 * 1000; // 24 horas
+        const isValidOrg = cacheData.organizationId === currentOrganization?.uuid;
+        
+        if (!isExpired && isValidOrg) {
+          console.log('📦 Cargando desde caché:', cacheData);
+          return cacheData.orderIds;
+        } else {
+          console.log('🗑️ Caché expirado o inválido, limpiando...');
+          localStorage.removeItem(cacheKey);
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando desde caché:', error);
+    }
+    
+    return null;
   };
 
   const getOrdersForMap = () => {
@@ -137,6 +278,19 @@ export default function RouteOptimizationPage() {
       >
         {/* Mapa de rutas con lista de pedidos integrada */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          {/* Indicador de estado de caché */}
+          {isInitialized && selectedOrders.length > 0 && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-blue-700">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                <span>
+                  {loadFromCache() ? '📦 Cargando desde caché' : '🚀 Cargando automáticamente'} 
+                  - {selectedOrders.length} pedidos seleccionados
+                </span>
+              </div>
+            </div>
+          )}
+          
           <IndividualRoutesMap
             pickupLocation={pickupLocation}
             orders={getOrdersForMap()}
