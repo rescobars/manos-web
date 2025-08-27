@@ -28,6 +28,7 @@ interface IndividualRoutesMapProps {
   selectedOrders: string[];
   onOrderSelection: (orderId: string) => void;
   onSelectAll: () => void;
+  onClearAll: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
 }
@@ -52,6 +53,7 @@ export function IndividualRoutesMap({
   selectedOrders,
   onOrderSelection,
   onSelectAll,
+  onClearAll,
   searchTerm,
   onSearchChange
 }: IndividualRoutesMapProps) {
@@ -212,12 +214,24 @@ export function IndividualRoutesMap({
   };
 
   const loadIndividualRoutes = async () => {
-    if (!map || !isMapReady || selectedOrders.length === 0) {
-      console.log('🔍 loadIndividualRoutes: condiciones no cumplidas', {
+    if (!map || !isMapReady) {
+      console.log('🔍 loadIndividualRoutes: mapa no está listo', {
         hasMap: !!map,
-        isMapReady,
-        selectedOrdersLength: selectedOrders.length
+        isMapReady
       });
+      return;
+    }
+
+    if (selectedOrders.length === 0) {
+      console.log('🔍 loadIndividualRoutes: no hay pedidos seleccionados, limpiando mapa');
+      clearAllRoutes();
+      // Centrar en pickup location cuando no hay rutas
+      try {
+        map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+        map.setZoom(12);
+      } catch (error) {
+        console.error('Error centrando mapa en pickup location:', error);
+      }
       return;
     }
 
@@ -411,6 +425,13 @@ export function IndividualRoutesMap({
     if (!map || selectedOrders.length === 0) return;
 
     try {
+      // Validar que pickupLocation tenga coordenadas válidas
+      if (!pickupLocation.lat || !pickupLocation.lng || 
+          isNaN(Number(pickupLocation.lat)) || isNaN(Number(pickupLocation.lng))) {
+        console.warn('Pickup location no tiene coordenadas válidas');
+        return;
+      }
+
       const bounds = new window.mapboxgl.LngLatBounds();
       
       // Agregar pickup - usar formato correcto [lng, lat]
@@ -418,27 +439,47 @@ export function IndividualRoutesMap({
       
       // Agregar todas las entregas con validación
       const selectedOrdersData = getSelectedOrdersForMap();
+      let validDeliveryPoints = 0;
+      
       selectedOrdersData.forEach(order => {
         const lat = Number(order.deliveryLocation.lat);
         const lng = Number(order.deliveryLocation.lng);
         
-        if (!isNaN(lat) && !isNaN(lng)) {
+        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
           // Usar formato correcto [lng, lat] según documentación de Mapbox
           bounds.extend([lng, lat]);
+          validDeliveryPoints++;
         } else {
           console.warn(`Pedido ${order.orderNumber} tiene coordenadas inválidas para bounds: lat=${lat}, lng=${lng}`);
         }
       });
       
-      // Verificar que bounds tenga al menos 2 puntos
-      if (bounds.isEmpty()) {
-        console.warn('Bounds está vacío, no se puede ajustar la vista');
+      // Verificar que bounds tenga al menos 2 puntos válidos
+      if (bounds.isEmpty() || validDeliveryPoints === 0) {
+        console.warn('No hay suficientes puntos válidos para ajustar la vista del mapa');
+        // Centrar en pickup location con zoom por defecto
+        map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+        map.setZoom(12);
         return;
       }
       
-      map.fitBounds(bounds, { padding: 50 });
+      // Solo usar fitBounds si hay múltiples puntos
+      if (validDeliveryPoints > 0) {
+        map.fitBounds(bounds, { padding: 50 });
+      } else {
+        // Si solo hay pickup, centrar ahí
+        map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+        map.setZoom(12);
+      }
     } catch (error) {
       console.error('Error ajustando bounds del mapa:', error);
+      // Fallback: centrar en pickup location
+      try {
+        map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+        map.setZoom(12);
+      } catch (fallbackError) {
+        console.error('Error en fallback de centrado:', fallbackError);
+      }
     }
   };
 
@@ -551,7 +592,10 @@ export function IndividualRoutesMap({
         
         {selectedOrders.length > 0 && (
           <Button
-            onClick={clearAllRoutes}
+            onClick={() => {
+              clearAllRoutes();
+              onClearAll();
+            }}
             variant="outline"
             size="sm"
           >

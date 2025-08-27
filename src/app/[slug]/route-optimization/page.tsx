@@ -81,6 +81,10 @@ export default function RouteOptimizationPage() {
     }
   };
 
+  const handleClearAll = () => {
+    setSelectedOrders([]);
+  };
+
   const getOrdersForMap = () => {
     const mappedOrders = orders
       .filter(order => order.delivery_lat && order.delivery_lng) // Solo pedidos con coordenadas válidas
@@ -139,6 +143,7 @@ export default function RouteOptimizationPage() {
             selectedOrders={selectedOrders}
             onOrderSelection={handleOrderSelection}
             onSelectAll={handleSelectAll}
+            onClearAll={handleClearAll}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
           />
