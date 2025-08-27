@@ -176,3 +176,60 @@ export interface OrganizationFilters {
 export interface OrganizationStatusUpdate {
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 }
+
+// Tipos para el sistema de pedidos
+export interface Order {
+  uuid: string;
+  order_number: string;
+  organization_uuid: string;
+  user_uuid?: string;
+  description?: string;
+  total_amount: number;
+  pickup_address: string;
+  delivery_address: string;
+  pickup_lat?: number;
+  pickup_lng?: number;
+  delivery_lat?: number;
+  delivery_lng?: number;
+  status: OrderStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type OrderStatus = 'PENDING' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
+
+export interface CreateOrderFormData {
+  organization_uuid: string;
+  user_uuid?: string;
+  description?: string;
+  total_amount: number;
+  pickup_address: string;
+  delivery_address: string;
+  pickup_lat?: number;
+  pickup_lng?: number;
+  delivery_lat?: number;
+  delivery_lng?: number;
+}
+
+export interface UpdateOrderFormData {
+  description?: string;
+  total_amount?: number;
+  pickup_address?: string;
+  delivery_address?: string;
+  pickup_lat?: number;
+  pickup_lng?: number;
+  delivery_lat?: number;
+  delivery_lng?: number;
+  status?: OrderStatus;
+}
+
+export interface BulkCreateOrderData {
+  orders: CreateOrderFormData[];
+}
+
+export interface OrderFilters {
+  status?: OrderStatus;
+  organization_uuid?: string;
+  date_from?: string;
+  date_to?: string;
+}

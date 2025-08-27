@@ -26,3 +26,4 @@ export { RoleBadge } from './RoleBadge';
 export { Sidebar } from './Sidebar';
 export { StatCard } from './StatCard';
 export { UserCapabilities } from './UserCapabilities';
+export { OrderModal } from './OrderModal';
