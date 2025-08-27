@@ -34,6 +34,22 @@ export function useRouteOptimization() {
       return null;
     }
 
+    // Validaciones según documentación de Mapbox
+    if (deliveryLocations.length > 24) {
+      throw new Error('Mapbox Directions API solo permite máximo 25 waypoints (1 pickup + 24 entregas)');
+    }
+    
+    // Nota: El parámetro optimize=true no está disponible en este plan de Mapbox
+    // Usaremos optimización manual basada en distancia
+
+    if (!pickupLocation.lat || !pickupLocation.lng) {
+      throw new Error('Ubicación de pickup inválida');
+    }
+
+    if (deliveryLocations.some(loc => !loc.lat || !loc.lng)) {
+      throw new Error('Algunas ubicaciones de entrega son inválidas');
+    }
+
     setIsOptimizing(true);
     setError(null);
 
@@ -53,16 +69,15 @@ export function useRouteOptimization() {
         ...deliveryLocations.map(loc => `${loc.lng},${loc.lat}`) // Puntos de entrega
       ].join(';');
 
-      // Parámetros de la API
+      // Parámetros de la API - Sin optimize ya que no está disponible
       const params = new URLSearchParams({
         access_token: token,
         alternatives: 'false',
         annotations: 'distance,duration',
         steps: 'true',
         overview: 'full',
-        geometries: 'geojson',
-        ...(options.optimize !== false && { optimize: 'true' }), // Optimizar por defecto
-        ...(options.avoid && { avoid: options.avoid })
+        geometries: 'geojson'  // Forzar JSON en lugar de PBF
+        // Nota: optimize=true no está disponible en este plan de Mapbox
       });
 
       const url = `${baseUrl}/${profile}/${coordinates}?${params}`;
@@ -70,7 +85,8 @@ export function useRouteOptimization() {
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Error en la API: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Error en la API Mapbox: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -78,24 +94,22 @@ export function useRouteOptimization() {
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         
-        // Crear array de waypoints optimizados
-        const waypoints: Location[] = [];
+        // Como optimize=true no está disponible, usamos optimización manual simple
+        // Basada en distancia desde el pickup
+        const optimizedDeliveryLocations = [...deliveryLocations].sort((a, b) => {
+          const distA = Math.sqrt(
+            Math.pow(a.lat - pickupLocation.lat, 2) + 
+            Math.pow(a.lng - pickupLocation.lng, 2)
+          );
+          const distB = Math.sqrt(
+            Math.pow(b.lat - pickupLocation.lat, 2) + 
+            Math.pow(b.lng - pickupLocation.lng, 2)
+          );
+          return distA - distB; // Ordenar por distancia (más cercano primero)
+        });
         
-        // Agregar punto de partida
-        waypoints.push(pickupLocation);
-        
-        // Agregar puntos de entrega en el orden optimizado
-        if (route.legs && route.legs.length > 1) {
-          // El primer leg es del pickup al primer delivery
-          // Los siguientes legs son entre deliveries
-          for (let i = 1; i < route.legs.length; i++) {
-            const leg = route.legs[i];
-            const deliveryIndex = i - 1;
-            if (deliveryIndex < deliveryLocations.length) {
-              waypoints.push(deliveryLocations[deliveryIndex]);
-            }
-          }
-        }
+        // Crear array de waypoints optimizados manualmente
+        const waypoints: Location[] = [pickupLocation, ...optimizedDeliveryLocations];
 
         const optimizedRoute: OptimizedRoute = {
           waypoints,

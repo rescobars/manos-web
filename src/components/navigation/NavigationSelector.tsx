@@ -11,7 +11,8 @@ import {
   Settings, 
   Globe,
   Shield,
-  Crown
+  Crown,
+  Route
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -86,6 +87,15 @@ export function getNavigationItems(slug: string, userRole: string, isOwner: bool
         label: 'Pedidos',
         icon: Package,
         href: `/${slug}/orders`,
+        roles: ['OWNER', 'ADMIN'],
+        showForOwner: true,
+        showForAdmin: true,
+        showForDriver: false
+      },
+      {
+        label: 'Optimización de Rutas',
+        icon: Route,
+        href: `/${slug}/route-optimization`,
         roles: ['OWNER', 'ADMIN'],
         showForOwner: true,
         showForAdmin: true,

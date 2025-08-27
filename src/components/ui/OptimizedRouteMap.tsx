@@ -67,18 +67,25 @@ export function OptimizedRouteMap({
   const initializeMap = () => {
     if (!mapContainerRef.current || !window.mapboxgl) return;
 
-    const newMap = new window.mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [pickupLocation.lng, pickupLocation.lat],
-      zoom: 12
-    });
+    try {
+      const newMap = new window.mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [pickupLocation.lng, pickupLocation.lat],
+        zoom: 12,
+        // Deshabilitar eventos de analytics que pueden causar problemas
+        trackResize: false,
+        attributionControl: false
+      });
 
-    newMap.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
-    setMap(newMap);
+      newMap.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
+      setMap(newMap);
 
-    // Agregar marcador de pickup
-    addPickupMarker(newMap);
+      // Agregar marcador de pickup
+      addPickupMarker(newMap);
+    } catch (error) {
+      console.error('Error initializing Mapbox map:', error);
+    }
   };
 
   const addPickupMarker = (mapInstance: any) => {

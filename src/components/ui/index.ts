@@ -3,6 +3,7 @@ export { Button } from './Button';
 export { Card } from './Card';
 export { ConfirmDialog } from './ConfirmDialog';
 export { Input } from './Input';
+export { Checkbox } from './Checkbox';
 export { LocationSelector } from './LocationSelector';
 export { QuickOrderScreen } from './QuickOrderScreen';
 export { OrderCard } from './OrderCard';
