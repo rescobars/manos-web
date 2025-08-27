@@ -32,3 +32,4 @@ export { ModalActions } from './ModalActions';
 export { FilterBar } from './FilterBar';
 export { OrderCard } from './OrderCard';
 export { Page, PageHeader, PageContent } from './Page';
+export { OrderDetail } from './OrderDetail';

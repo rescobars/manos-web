@@ -68,85 +68,89 @@ export function OrderCard({ order, onEdit, onView, className = '' }: OrderCardPr
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200 ${className}`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
-            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}>
-              <StatusIcon className="w-4 h-4" />
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 ${className}`}>
+      {/* Header de la tarjeta */}
+      <div className="p-4 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}>
+              <StatusIcon className="w-3 h-3" />
               {statusConfig.text}
-            </div>
-            <span className="text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              {order.order_number}
             </span>
           </div>
-          
-          <h3 className="font-medium text-gray-900 mb-2">
-            {order.description || 'Pedido sin descripción'}
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-blue-50 text-blue-600 mt-1">
-                <MapPin className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Recogida</p>
-                <p className="text-sm text-gray-900">{order.pickup_address}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-green-50 text-green-600 mt-1">
-                <MapPin className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Entrega</p>
-                <p className="text-sm text-gray-900">{order.delivery_address}</p>
-              </div>
-            </div>
+          <span className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded">
+            #{order.order_number}
+          </span>
+        </div>
+        
+        <h3 className="font-medium text-gray-900 text-sm line-clamp-2 mb-2">
+          {order.description || 'Pedido sin descripción'}
+        </h3>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+            <DollarSign className="w-4 h-4 text-green-600" />
+            Q{typeof order.total_amount === 'number' ? order.total_amount.toFixed(2) : '0.00'}
           </div>
-          
-          <div className="flex items-center gap-6 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              <span className="font-medium">Q{order.total_amount.toFixed(2)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span>{new Date(order.created_at).toLocaleDateString('es-GT', { 
-                day: '2-digit', 
-                month: 'short', 
-                year: 'numeric' 
-              })}</span>
-            </div>
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <Clock className="w-3 h-3" />
+            {new Date(order.created_at).toLocaleDateString('es-GT', { 
+              day: '2-digit', 
+              month: 'short'
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Contenido de la tarjeta */}
+      <div className="p-4 space-y-3">
+        {/* Dirección de recogida */}
+        <div className="flex items-start gap-2">
+          <div className="p-1.5 rounded-md bg-blue-50 text-blue-600 mt-0.5 flex-shrink-0">
+            <MapPin className="w-3 h-3" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Recogida</p>
+            <p className="text-xs text-gray-700 line-clamp-2">{order.pickup_address}</p>
           </div>
         </div>
         
-        <div className="flex items-center gap-2 ml-4">
-          {onEdit && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onEdit(order)}
-              className="border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-700"
-            >
-              <Edit3 className="w-4 h-4 mr-2" />
-              Editar
-            </Button>
-          )}
-          {onView && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onView(order)}
-              className="border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              Ver
-            </Button>
-          )}
+        {/* Dirección de entrega */}
+        <div className="flex items-start gap-2">
+          <div className="p-1.5 rounded-md bg-green-50 text-green-600 mt-0.5 flex-shrink-0">
+            <MapPin className="w-3 h-3" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Entrega</p>
+            <p className="text-xs text-gray-700 line-clamp-2">{order.delivery_address}</p>
+          </div>
         </div>
+      </div>
+
+      {/* Footer con acciones */}
+      <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex items-center gap-2">
+        {onEdit && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onEdit(order)}
+            className="flex-1 h-8 text-xs border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-700"
+          >
+            <Edit3 className="w-3 h-3 mr-1" />
+            Editar
+          </Button>
+        )}
+        {onView && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onView(order)}
+            className="flex-1 h-8 text-xs border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+          >
+            <Eye className="w-3 h-3 mr-1" />
+            Ver
+          </Button>
+        )}
       </div>
     </div>
   );

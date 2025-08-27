@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { useToast } from '@/hooks/useToast';
 import { OrderModal } from '@/components/ui/OrderModal';
+import { OrderDetail } from '@/components/ui/OrderDetail';
 import { StatCard } from '@/components/ui/StatCard';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { OrderCard } from '@/components/ui/OrderCard';
@@ -31,6 +32,8 @@ export default function OrdersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
 
   useEffect(() => {
     if (currentOrganization) {
@@ -115,6 +118,11 @@ export default function OrdersPage() {
     setIsModalOpen(true);
   };
 
+  const handleViewOrder = (order: Order) => {
+    setSelectedOrderForDetail(order);
+    setIsDetailModalOpen(true);
+  };
+
   const handleCreateNewOrder = () => {
     setEditingOrder(null);
     setModalMode('create');
@@ -124,6 +132,11 @@ export default function OrdersPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingOrder(null);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedOrderForDetail(null);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -225,7 +238,7 @@ export default function OrdersPage() {
         />
 
         {/* Orders List */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           {loading ? (
             <div className="p-12 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -245,14 +258,13 @@ export default function OrdersPage() {
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredOrders.map((order) => (
                 <OrderCard
                   key={order.uuid}
                   order={order}
                   onEdit={handleEditOrder}
-                  onView={() => {/* TODO: Implementar vista detallada */}}
-                  className="border-0 rounded-none"
+                  onView={handleViewOrder}
                 />
               ))}
             </div>
@@ -268,6 +280,13 @@ export default function OrdersPage() {
         order={editingOrder}
         organizationUuid={currentOrganization.uuid}
         mode={modalMode}
+      />
+
+      {/* Order Detail Modal */}
+      <OrderDetail
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        order={selectedOrderForDetail}
       />
     </>
   );

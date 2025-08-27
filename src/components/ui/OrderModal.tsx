@@ -45,13 +45,13 @@ export function OrderModal({
       setFormData({
         organization_uuid: order.organization_uuid,
         description: order.description || '',
-        total_amount: order.total_amount,
+        total_amount: typeof order.total_amount === 'number' ? order.total_amount : parseFloat(order.total_amount) || 0,
         pickup_address: order.pickup_address,
         delivery_address: order.delivery_address,
-        pickup_lat: order.pickup_lat,
-        pickup_lng: order.pickup_lng,
-        delivery_lat: order.delivery_lat,
-        delivery_lng: order.delivery_lng,
+        pickup_lat: typeof order.pickup_lat === 'number' ? order.pickup_lat : (order.pickup_lat ? parseFloat(order.pickup_lat) : undefined),
+        pickup_lng: typeof order.pickup_lng === 'number' ? order.pickup_lng : (order.pickup_lng ? parseFloat(order.pickup_lng) : undefined),
+        delivery_lat: typeof order.delivery_lat === 'number' ? order.delivery_lat : (order.delivery_lat ? parseFloat(order.delivery_lat) : undefined),
+        delivery_lng: typeof order.delivery_lng === 'number' ? order.delivery_lng : (order.delivery_lng ? parseFloat(order.delivery_lng) : undefined),
       });
     } else {
       setFormData({
@@ -80,8 +80,9 @@ export function OrderModal({
       newErrors.delivery_address = 'La dirección de entrega es requerida';
     }
 
-    if (formData.total_amount <= 0) {
-      newErrors.total_amount = 'El monto debe ser mayor a 0';
+    const amount = typeof formData.total_amount === 'number' ? formData.total_amount : parseFloat(formData.total_amount) || 0;
+    if (amount <= 0 || isNaN(amount)) {
+      newErrors.total_amount = 'El monto debe ser un número válido mayor a 0';
     }
 
     setErrors(newErrors);
@@ -107,9 +108,26 @@ export function OrderModal({
   };
 
   const handleInputChange = (field: keyof CreateOrderFormData, value: any) => {
+    let processedValue = value;
+    
+    // Asegurar que total_amount sea siempre un número
+    if (field === 'total_amount') {
+      processedValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+    }
+    
+    // Asegurar que las coordenadas sean números válidos o undefined
+    if (field === 'pickup_lat' || field === 'pickup_lng' || field === 'delivery_lat' || field === 'delivery_lng') {
+      if (value === '' || value === null || value === undefined) {
+        processedValue = undefined;
+      } else {
+        const numValue = typeof value === 'number' ? value : parseFloat(value);
+        processedValue = isNaN(numValue) ? undefined : numValue;
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
     
     // Clear error when user starts typing
@@ -157,8 +175,8 @@ export function OrderModal({
         <InputField
           label="Monto Total"
           type="number"
-          value={formData.total_amount}
-          onChange={(value) => handleInputChange('total_amount', parseFloat(value as string) || 0)}
+          value={typeof formData.total_amount === 'number' ? formData.total_amount : 0}
+          onChange={(value) => handleInputChange('total_amount', value)}
           placeholder="0.00"
           step="0.01"
           min={0}
