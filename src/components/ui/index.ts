@@ -23,5 +23,3 @@ export { StatCard } from './StatCard';
 export { TextArea } from './TextArea';
 export { Toast } from './Toast';
 export { UserCapabilities } from './UserCapabilities';
-export { OptimizedRouteMap } from './OptimizedRouteMap';
-export { OrderRouteOptimizer } from './OrderRouteOptimizer';
