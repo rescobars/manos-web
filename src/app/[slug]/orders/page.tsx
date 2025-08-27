@@ -7,7 +7,6 @@ import { Order, OrderStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { useToast } from '@/hooks/useToast';
-import { OrderModal } from '@/components/ui/OrderModal';
 import { OrderDetail } from '@/components/ui/OrderDetail';
 import { QuickOrderScreen } from '@/components/ui/QuickOrderScreen';
 import { StatCard } from '@/components/ui/StatCard';
@@ -31,9 +30,6 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'ALL'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
   const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
@@ -96,49 +92,17 @@ export default function OrdersPage() {
     }
   };
 
-  const handleUpdateOrder = async (data: any) => {
-    if (!editingOrder) return;
-    
-    try {
-      const response = await ordersApiService.updateOrder(editingOrder.uuid, data);
-      
-      if (response.success) {
-        success('Pedido actualizado exitosamente');
-        loadOrders();
-        loadPendingOrders();
-      } else {
-        showError(response.error || 'Error al actualizar el pedido');
-      }
-    } catch (error) {
-      console.error('Error updating order:', error);
-      showError('Error al actualizar el pedido');
-    }
-  };
 
-  const handleEditOrder = (order: Order) => {
-    setEditingOrder(order);
-    setModalMode('edit');
-    setIsModalOpen(true);
-  };
+
+
 
   const handleViewOrder = (order: Order) => {
     setSelectedOrderForDetail(order);
     setIsDetailModalOpen(true);
   };
 
-  const handleCreateNewOrder = () => {
-    setEditingOrder(null);
-    setModalMode('create');
-    setIsModalOpen(true);
-  };
-
   const handleQuickOrder = () => {
     setIsQuickOrderOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingOrder(null);
   };
 
   const handleCloseDetailModal = () => {
@@ -184,23 +148,13 @@ export default function OrdersPage() {
   }
 
   const headerActions = (
-    <div className="flex gap-3">
-      <Button
-        onClick={handleQuickOrder}
-        className="bg-green-600 hover:bg-green-700 text-white"
-      >
-        <Map className="w-4 h-4 mr-2" />
-        Pedido Rápido
-      </Button>
-      
-      <Button
-        onClick={handleCreateNewOrder}
-        className="bg-blue-600 hover:bg-blue-700 text-white"
-      >
-        <Plus className="w-4 h-4 mr-2" />
-        Nuevo Pedido
-      </Button>
-    </div>
+    <Button
+      onClick={handleQuickOrder}
+      className="bg-green-600 hover:bg-green-700 text-white"
+    >
+      <Map className="w-4 h-4 mr-2" />
+      Pedido Rápido
+    </Button>
   );
 
   return (
@@ -284,7 +238,7 @@ export default function OrdersPage() {
                 <OrderCard
                   key={order.uuid}
                   order={order}
-                  onEdit={handleEditOrder}
+                  onEdit={() => {}} // Función vacía ya que no hay modal de edición
                   onView={handleViewOrder}
                 />
               ))}
@@ -293,15 +247,7 @@ export default function OrdersPage() {
         </div>
       </Page>
 
-      {/* Order Modal */}
-      <OrderModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSubmit={modalMode === 'create' ? handleCreateOrder : handleUpdateOrder}
-        order={editingOrder}
-        organizationUuid={currentOrganization.uuid}
-        mode={modalMode}
-      />
+
 
       {/* Order Detail Modal */}
       <OrderDetail
