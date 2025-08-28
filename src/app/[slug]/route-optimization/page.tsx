@@ -116,8 +116,6 @@ export default function RouteOptimizationPage() {
     setIsOptimizing(true);
     
     try {
-      console.log('🚀 Iniciando optimización de ruta...');
-      
       const selectedOrdersData = getOrdersForMap().filter(order => 
         selectedOrders.includes(order.id)
       );
@@ -131,24 +129,11 @@ export default function RouteOptimizationPage() {
         orders: routeOptimizationService.convertOrdersForAPI(selectedOrdersData, pickupLocation)
       };
 
-      console.log('📤 Enviando request a FastAPI:', JSON.stringify(request, null, 2));
-      console.log('🌐 URL de la API:', 'http://localhost:8000/api/v1/routes/optimize');
-
       const response = await routeOptimizationService.optimizeRoute(request);
-      
-      console.log('📥 Respuesta de FastAPI:', response);
-      console.log('🔍 Estructura de la respuesta:', {
-        success: response.success,
-        hasOptimizedRoute: !!response.optimized_route,
-        stopsCount: response.optimized_route?.stops?.length,
-        firstStop: response.optimized_route?.stops?.[0],
-        pickupLocation: response.optimized_route?.stops?.[0]?.order?.delivery_location
-      });
       
       if (response.success) {
         setOptimizedRoute(response);
         setShowOptimizedRoute(true);
-        console.log('✅ Ruta optimizada exitosamente!');
       } else {
         console.error('❌ Error optimizing route:', response.error_message);
       }

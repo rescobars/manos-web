@@ -69,8 +69,6 @@ export const routeOptimizationService = {
   // Optimizar una sola ruta
   async optimizeRoute(request: RouteOptimizationRequest): Promise<RouteOptimizationResponse> {
     try {
-      console.log('🔍 Request completo:', JSON.stringify(request, null, 2));
-      
       const response = await fetch(`${API_BASE_URL}/api/v1/routes/optimize`, {
         method: 'POST',
         headers: {
@@ -81,15 +79,12 @@ export const routeOptimizationService = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Error response:', response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Response exitoso:', data);
       return data;
     } catch (error) {
-      console.error('💥 Error optimizing route:', error);
       throw error;
     }
   },

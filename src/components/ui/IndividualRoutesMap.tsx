@@ -152,8 +152,6 @@ export function IndividualRoutesMap({
   // Mostrar ruta optimizada de la API cuando esté disponible
   useEffect(() => {
     if (externalShowOptimizedRoute && externalOptimizedRoute && map && isMapReady) {
-      console.log('🎯 Mostrando ruta optimizada de FastAPI en el mapa');
-      // Primero obtener la geometría de Mapbox, luego mostrar
       getRouteGeometryFromMapbox();
     }
   }, [externalShowOptimizedRoute, externalOptimizedRoute, map, isMapReady, pickupLocation]);
@@ -161,11 +159,6 @@ export function IndividualRoutesMap({
   // Función para obtener la geometría de la ruta desde Mapbox usando el orden optimizado de FastAPI
   const getRouteGeometryFromMapbox = async () => {
     if (!map || !externalOptimizedRoute?.optimized_route?.stops) return;
-
-    console.log('🗺️ Obteniendo geometría de ruta desde Mapbox...');
-    console.log('🔍 externalOptimizedRoute:', externalOptimizedRoute);
-    console.log('🔍 externalOptimizedRoute.optimized_route:', externalOptimizedRoute?.optimized_route);
-    console.log('🔍 externalOptimizedRoute.optimized_route.stops:', externalOptimizedRoute?.optimized_route?.stops);
     
     try {
       const token = getMapboxToken();
@@ -177,22 +170,15 @@ export function IndividualRoutesMap({
       let coordinates = `${pickupLocation.lng},${pickupLocation.lat}`;
       
       // Agregar coordenadas de los pedidos en el orden optimizado
-      externalOptimizedRoute.optimized_route.stops.forEach((stop: any, index: number) => {
-        console.log(`🔍 Procesando stop ${index} para coordenadas:`, stop);
+      externalOptimizedRoute.optimized_route.stops.forEach((stop: any) => {
         const deliveryLocation = stop.order.delivery_location;
-        console.log(`📍 Delivery location del stop ${index}:`, deliveryLocation);
-        
         if (deliveryLocation.lat && deliveryLocation.lng) {
           coordinates += `;${deliveryLocation.lng},${deliveryLocation.lat}`;
-        } else {
-          console.error(`❌ Coordenadas inválidas en stop ${index}:`, deliveryLocation);
         }
       });
       
       // Agregar regreso a sucursal
       coordinates += `;${pickupLocation.lng},${pickupLocation.lat}`;
-
-      console.log('📍 Coordenadas para Mapbox:', coordinates);
 
       const baseUrl = 'https://api.mapbox.com/directions/v5/mapbox';
       const profile = 'driving';
@@ -212,12 +198,11 @@ export function IndividualRoutesMap({
       }
 
       const data = await response.json();
-      console.log('🗺️ Respuesta de Mapbox:', data);
       
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         
-        // Ahora mostrar la ruta completa en el mapa
+        // Mostrar la ruta completa en el mapa
         displayOptimizedRouteWithGeometry(route);
         
         // Ajustar vista para mostrar toda la ruta
@@ -228,7 +213,6 @@ export function IndividualRoutesMap({
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      console.error('❌ Error obteniendo geometría de Mapbox:', errorMessage);
       setError(errorMessage);
     }
   };
@@ -236,8 +220,6 @@ export function IndividualRoutesMap({
   // Función para mostrar la ruta optimizada con geometría completa
   const displayOptimizedRouteWithGeometry = (route: any) => {
     if (!map) return;
-
-    console.log('🎨 Mostrando ruta con geometría completa...');
     
     try {
       // Limpiar marcadores anteriores
@@ -283,56 +265,38 @@ export function IndividualRoutesMap({
 
       // Agregar marcadores numerados para cada parada
       const stops = externalOptimizedRoute.optimized_route.stops;
-      console.log('🛑 Total de stops a procesar:', stops.length);
       
-      stops.forEach((stop: any, index: number) => {
-        try {
-          console.log(`🔍 Procesando stop ${index + 1}/${stops.length}:`, stop);
+      stops.forEach((stop: any) => {
+        const order = stop.order;
+        const deliveryLocation = order.delivery_location;
+        
+        if (deliveryLocation.lat && deliveryLocation.lng) {
+          const stopColor = generateStopColor(stop.stop_number, stops.length);
           
-          const order = stop.order;
-          const deliveryLocation = order.delivery_location;
-          
-          console.log(`📍 Parada ${stop.stop_number}:`, {
-            orderId: order.id,
-            orderNumber: order.order_number,
-            lat: deliveryLocation.lat,
-            lng: deliveryLocation.lng
-          });
-          
-          if (deliveryLocation.lat && deliveryLocation.lng) {
-            const stopColor = generateStopColor(stop.stop_number, stops.length);
-            
-            // Crear marcador numerado
-            const marker = new window.mapboxgl.Marker({
-              element: createNumberedMarker(stop.stop_number, stopColor),
-              anchor: 'bottom'
-            })
-            .setLngLat([deliveryLocation.lng, deliveryLocation.lat])
-            .addTo(map);
+          // Crear marcador numerado
+          const marker = new window.mapboxgl.Marker({
+            element: createNumberedMarker(stop.stop_number, stopColor),
+            anchor: 'bottom'
+          })
+          .setLngLat([deliveryLocation.lng, deliveryLocation.lat])
+          .addTo(map);
 
-            // Agregar popup con información del pedido
-            const popup = new window.mapboxgl.Popup({ offset: 25 })
-              .setHTML(`
-                <div class="p-2">
-                  <div class="font-semibold text-sm">Parada #${stop.stop_number}</div>
-                  <div class="text-xs text-gray-600">Pedido: ${order.order_number}</div>
-                  <div class="text-xs text-gray-600">${order.description}</div>
-                  <div class="text-xs text-gray-500">Distancia: ${stop.distance_from_previous.toFixed(3)} km</div>
-                </div>
-              `);
-            
-            marker.setPopup(popup);
-            
-            // Guardar referencia del marcador
-            if (!map._markers) map._markers = [];
-            map._markers.push(marker);
-            
-            console.log(`✅ Marcador creado exitosamente para parada ${stop.stop_number}`);
-          } else {
-            console.error(`❌ Coordenadas inválidas en stop ${stop.stop_number}:`, deliveryLocation);
-          }
-        } catch (stopError) {
-          console.error(`❌ Error procesando stop ${index}:`, stopError);
+          // Agregar popup con información del pedido
+          const popup = new window.mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+              <div class="p-2">
+                <div class="font-semibold text-sm">Parada #${stop.stop_number}</div>
+                <div class="text-xs text-gray-600">Pedido: ${order.order_number}</div>
+                <div class="text-xs text-gray-600">${order.description}</div>
+                <div class="text-xs text-gray-500">Distancia: ${stop.distance_from_previous.toFixed(3)} km</div>
+              </div>
+            `);
+          
+          marker.setPopup(popup);
+          
+          // Guardar referencia del marcador
+          if (!map._markers) map._markers = [];
+          map._markers.push(marker);
         }
       });
 
@@ -347,10 +311,7 @@ export function IndividualRoutesMap({
       if (!map._markers) map._markers = [];
       map._markers.push(pickupMarker);
       
-      console.log('✅ Todos los marcadores creados exitosamente');
-      
     } catch (error) {
-      console.error('❌ Error en displayOptimizedRouteWithGeometry:', error);
       setError(error instanceof Error ? error.message : 'Error mostrando ruta optimizada');
     }
   };
@@ -371,7 +332,6 @@ export function IndividualRoutesMap({
         map.fitBounds(bounds, { padding: 50 });
       }
     } catch (error) {
-      console.error('Error ajustando vista del mapa:', error);
       map.setCenter([pickupLocation.lng, pickupLocation.lat]);
       map.setZoom(12);
     }
