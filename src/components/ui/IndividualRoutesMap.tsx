@@ -66,6 +66,11 @@ export function IndividualRoutesMap({
   const currentOptimizedRoute = externalOptimizedRoute || optimizedRoute;
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const optimizedMapContainerRef = useRef<HTMLDivElement>(null);
+
+  // Estado para el segundo mapa (ruta optimizada)
+  const [optimizedMap, setOptimizedMap] = useState<any>(null);
+  const [isOptimizedMapReady, setIsOptimizedMapReady] = useState(false);
 
   // Generar colores únicos para cada pedido
   const generateRouteColor = (orderId: string) => {
@@ -104,6 +109,164 @@ export function IndividualRoutesMap({
     return `rgb(${red}, ${green}, ${blue})`;
   };
 
+  // Inicializar el segundo mapa para la ruta optimizada
+  const initializeOptimizedMap = () => {
+    if (!optimizedMapContainerRef.current) return;
+
+    const mapInstance = new window.mapboxgl.Map({
+      container: optimizedMapContainerRef.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [pickupLocation.lng, pickupLocation.lat],
+      zoom: 11
+    });
+
+    mapInstance.on('load', () => {
+      setOptimizedMap(mapInstance);
+      setIsOptimizedMapReady(true);
+    });
+  };
+
+  // Mostrar la ruta optimizada en el segundo mapa
+  const displayOptimizedRouteOnSecondMap = (routeGeometry: any) => {
+    if (!optimizedMap || !isOptimizedMapReady || !externalOptimizedRoute) return;
+
+    try {
+      // Limpiar marcadores y capas anteriores
+      if (optimizedMap._markers) {
+        optimizedMap._markers.forEach((marker: any) => marker.remove());
+        optimizedMap._markers = [];
+      }
+
+      // Remover capas anteriores si existen
+      if (optimizedMap.getLayer('optimized-route')) {
+        optimizedMap.removeLayer('optimized-route');
+      }
+      if (optimizedMap.getSource('optimized-route')) {
+        optimizedMap.removeSource('optimized-route');
+      }
+
+      // Agregar la geometría de la ruta
+      optimizedMap.addSource('optimized-route', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: routeGeometry
+        }
+      });
+
+      // Agregar la capa de la ruta
+      optimizedMap.addLayer({
+        id: 'optimized-route',
+        type: 'line',
+        source: 'optimized-route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#10B981',
+          'line-width': 4,
+          'line-opacity': 0.8
+        }
+      });
+
+      // Agregar marcadores para cada parada
+      const bounds = new window.mapboxgl.LngLatBounds();
+      
+      // Agregar pickup
+      bounds.extend([pickupLocation.lng, pickupLocation.lat]);
+      
+      // Agregar marcador de pickup
+      const pickupMarker = new window.mapboxgl.Marker({
+        element: createPickupMarker(),
+        anchor: 'bottom'
+      })
+      .setLngLat([pickupLocation.lng, pickupLocation.lat])
+      .addTo(optimizedMap);
+
+      if (!optimizedMap._markers) optimizedMap._markers = [];
+      optimizedMap._markers.push(pickupMarker);
+
+      // Agregar marcadores para cada parada optimizada
+      externalOptimizedRoute.optimized_route.stops.forEach((stop: any) => {
+        const stopColor = generateStopColor(stop.stop_number, externalOptimizedRoute.optimized_route.stops.length);
+        
+        const marker = new window.mapboxgl.Marker({
+          element: createNumberedMarker(stop.stop_number, stopColor),
+          anchor: 'bottom'
+        })
+        .setLngLat([stop.order.delivery_location.lng, stop.order.delivery_location.lat])
+        .addTo(optimizedMap);
+
+        // Agregar popup con información
+        const popup = new window.mapboxgl.Popup({ offset: 25 }).setHTML(`
+          <div class="p-2">
+            <div class="font-semibold text-sm">Parada #${stop.stop_number}</div>
+            <div class="text-xs text-gray-600">Pedido: ${stop.order.order_number}</div>
+            <div class="text-xs text-gray-600">${stop.order.description}</div>
+            <div class="text-xs text-gray-500">Distancia: ${stop.distance_from_previous.toFixed(3)} km</div>
+          </div>
+        `);
+        
+        marker.setPopup(popup);
+        
+        if (!optimizedMap._markers) optimizedMap._markers = [];
+        optimizedMap._markers.push(marker);
+        
+        // Extender bounds
+        bounds.extend([stop.order.delivery_location.lng, stop.order.delivery_location.lat]);
+      });
+
+      // Ajustar vista del mapa optimizado
+      if (!bounds.isEmpty()) {
+        optimizedMap.fitBounds(bounds, { 
+          padding: 80,
+          duration: 1000,
+          essential: true
+        });
+      }
+
+    } catch (error) {
+      console.error('Error mostrando ruta optimizada en segundo mapa:', error);
+    }
+  };
+
+  // Función para obtener geometría de ruta para el segundo mapa
+  const getRouteGeometryForSecondMap = async () => {
+    if (!externalOptimizedRoute || !pickupLocation) return;
+
+    try {
+      // Construir coordenadas para Mapbox Directions API
+      const coordinates = [
+        `${pickupLocation.lng},${pickupLocation.lat}`, // Pickup
+        ...externalOptimizedRoute.optimized_route.stops.map((stop: any) => 
+          `${stop.order.delivery_location.lng},${stop.order.delivery_location.lat}`
+        ),
+        `${pickupLocation.lng},${pickupLocation.lat}` // Regreso a pickup
+      ].join(';');
+
+      // Llamar a Mapbox Directions API
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&geometries=geojson&overview=full`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Error en Mapbox API: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.routes && data.routes[0]) {
+        const route = data.routes[0];
+        displayOptimizedRouteOnSecondMap(route.geometry);
+      }
+
+    } catch (error) {
+      console.error('Error obteniendo geometría para segundo mapa:', error);
+    }
+  };
+
   // 1. Cargar el mapa
   useEffect(() => {
     if (!mapContainerRef.current || !isMapboxConfigured()) return;
@@ -134,6 +297,26 @@ export function IndividualRoutesMap({
 
     loadMapbox();
   }, []);
+
+  // useEffect para inicializar el segundo mapa cuando se muestre la ruta optimizada
+  useEffect(() => {
+    if (externalShowOptimizedRoute && externalOptimizedRoute && !optimizedMap) {
+      // Pequeño delay para asegurar que el DOM esté listo
+      const timer = setTimeout(() => {
+        initializeOptimizedMap();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [externalShowOptimizedRoute, externalOptimizedRoute, optimizedMap, pickupLocation]);
+
+  // useEffect para mostrar la ruta optimizada en el segundo mapa
+  useEffect(() => {
+    if (isOptimizedMapReady && externalOptimizedRoute && optimizedMap) {
+      // Obtener geometría de Mapbox y mostrarla en el segundo mapa
+      getRouteGeometryForSecondMap();
+    }
+  }, [isOptimizedMapReady, externalOptimizedRoute, optimizedMap]);
 
   // 2. Una vez el mapa cargado, cargar todas las rutas
   useEffect(() => {
@@ -1188,6 +1371,24 @@ export function IndividualRoutesMap({
               </div>
               <div>
                 <span className="font-medium">Tiempo de procesamiento:</span> {externalOptimizedRoute.processing_time.toFixed(3)}s
+              </div>
+            </div>
+          </div>
+
+          {/* NUEVO MAPA PARA LA RUTA OPTIMIZADA */}
+          <div className="mt-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              🗺️ Mapa de la Ruta Optimizada
+            </h4>
+            <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
+              <div 
+                ref={optimizedMapContainerRef}
+                className="w-full h-96 rounded-lg overflow-hidden"
+                style={{ minHeight: '400px' }}
+              />
+              <div className="mt-3 text-center text-sm text-gray-600">
+                Mapa dedicado mostrando la ruta optimizada con {externalOptimizedRoute.optimized_route.stops.length} paradas
               </div>
             </div>
           </div>
