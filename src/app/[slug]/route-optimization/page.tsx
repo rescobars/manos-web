@@ -145,11 +145,6 @@ export default function RouteOptimizationPage() {
     }
   };
 
-  const handleShowIndividualRoutes = () => {
-    setShowOptimizedRoute(false);
-    setOptimizedRoute(null);
-  };
-
   if (!currentOrganization) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
@@ -227,6 +222,8 @@ export default function RouteOptimizationPage() {
           
           {/* Información de la ruta optimizada - REMOVIDA DE AQUÍ */}
           
+          {/* Mapa de ruta optimizada just show if showOptimizedRoute is true */}
+          {!showOptimizedRoute && (
           <IndividualRoutesMap
             pickupLocation={pickupLocation}
             orders={getOrdersForMap()}
@@ -237,7 +234,8 @@ export default function RouteOptimizationPage() {
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
           />
-
+          )}
+            
           {/* Mapa de ruta optimizada */}
           {showOptimizedRoute && optimizedRoute && (
             <OptimizedRouteMap
