@@ -101,10 +101,19 @@ export function IndividualRoutesMap({
 
   // Cargar rutas cuando el mapa esté listo y haya pedidos seleccionados
   useEffect(() => {
-    if (isMapReady && map && selectedOrders.length > 0) {
+    // Flujo secuencial:
+    // 1. Mapa debe estar completamente cargado
+    // 2. Pedidos del backend deben estar disponibles
+    // 3. Debe haber pedidos seleccionados
+    if (isMapReady && map && orders.length > 0 && selectedOrders.length > 0) {
+      console.log('🗺️ Mapa listo + Pedidos disponibles + Pedidos seleccionados = Cargando rutas');
       loadAllRoutes();
+    } else if (isMapReady && map) {
+      console.log('🗺️ Mapa listo, esperando pedidos del backend...');
+    } else if (orders.length > 0 && selectedOrders.length > 0) {
+      console.log('📦 Pedidos disponibles, esperando que el mapa esté listo...');
     }
-  }, [isMapReady, map, selectedOrders]);
+  }, [isMapReady, map, orders, selectedOrders]);
 
   const initializeMap = () => {
     if (!mapContainerRef.current) return;
@@ -407,16 +416,17 @@ export function IndividualRoutesMap({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Mapa - ocupa 2/3 del espacio */}
         <div className="lg:col-span-2">
-          <div className="relative">
-            {/* Indicador de estado del mapa */}
-            {!isMapReady && (
-              <div className="absolute inset-0 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center z-10">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-sm text-gray-600">Inicializando mapa...</p>
-                </div>
+            {/* Status indicator */}
+            <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="text-sm text-gray-600">
+                {!isMapReady && <span className="text-blue-600">🗺️ Cargando mapa...</span>}
+                {isMapReady && orders.length === 0 && <span className="text-yellow-600">📦 Esperando pedidos del backend...</span>}
+                {isMapReady && orders.length > 0 && selectedOrders.length === 0 && <span className="text-yellow-600">✅ Mapa listo, selecciona pedidos</span>}
+                {isMapReady && orders.length > 0 && selectedOrders.length > 0 && <span className="text-green-600">🚀 Cargando rutas...</span>}
               </div>
-            )}
+            </div>
+
+            <div className="relative">
             
             <div 
               ref={mapContainerRef} 
