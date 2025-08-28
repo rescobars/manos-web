@@ -224,77 +224,7 @@ export default function RouteOptimizationPage() {
             </div>
           )}
           
-          {/* Información de la ruta optimizada */}
-          {showOptimizedRoute && optimizedRoute && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h3 className="text-lg font-semibold text-green-800 mb-3">
-                🚀 Ruta Optimizada con IA (Google OR-Tools)
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {optimizedRoute.optimized_route.stops.length}
-                  </div>
-                  <div className="text-sm text-green-700">Paradas</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {optimizedRoute.optimized_route.total_distance.toFixed(2)} km
-                  </div>
-                  <div className="text-sm text-green-700">Distancia Total</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {optimizedRoute.optimized_route.total_time.toFixed(1)} min
-                  </div>
-                  <div className="text-sm text-green-700">Tiempo Total</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {optimizedRoute.processing_time.toFixed(3)}s
-                  </div>
-                  <div className="text-sm text-green-700">Tiempo de Cálculo</div>
-                </div>
-              </div>
-              
-              {/* Métricas de optimización */}
-              <div className="mt-4 p-3 bg-white rounded border border-green-200">
-                <h4 className="text-sm font-medium text-green-800 mb-2">Métricas de Optimización:</h4>
-                <div className="grid grid-cols-3 gap-4 text-center text-xs">
-                  <div>
-                    <div className="font-medium text-gray-900">Algoritmo</div>
-                    <div className="text-gray-600">{optimizedRoute.optimized_route.optimization_metrics.algorithm}</div>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Tiempo Solver</div>
-                    <div className="text-gray-600">{optimizedRoute.optimized_route.optimization_metrics.solver_time}ms</div>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Locaciones</div>
-                    <div className="text-gray-600">{optimizedRoute.optimized_route.optimization_metrics.locations_optimized}</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Lista de paradas optimizadas */}
-              <div className="mt-4">
-                <h4 className="text-sm font-medium text-green-800 mb-2">Orden de Paradas Optimizado:</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {optimizedRoute.optimized_route.stops.map((stop) => (
-                    <div key={stop.order.id} className="flex items-center gap-2 p-2 bg-white rounded border border-green-200">
-                      <div className="w-6 h-6 bg-green-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                        {stop.stop_number}
-                      </div>
-                      <div className="text-xs">
-                        <div className="font-medium text-gray-900">#{stop.order.order_number}</div>
-                        <div className="text-gray-500">{stop.distance_from_previous.toFixed(3)} km</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Información de la ruta optimizada - REMOVIDA DE AQUÍ */}
           
           <IndividualRoutesMap
             pickupLocation={pickupLocation}

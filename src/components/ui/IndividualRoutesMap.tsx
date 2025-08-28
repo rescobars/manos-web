@@ -156,6 +156,44 @@ export function IndividualRoutesMap({
     }
   }, [externalShowOptimizedRoute, externalOptimizedRoute, map, isMapReady, pickupLocation]);
 
+  // Auto-enfoque del mapa cuando se muestra la ruta optimizada
+  useEffect(() => {
+    if (externalShowOptimizedRoute && externalOptimizedRoute && map && map.isStyleLoaded()) {
+      // Pequeño delay para asegurar que el mapa esté completamente cargado
+      const timer = setTimeout(() => {
+        // Hacer zoom al mapa principal para mostrar toda la ruta optimizada
+        if (map && pickupLocation) {
+          try {
+            const bounds = new window.mapboxgl.LngLatBounds();
+            
+            // Agregar la ubicación de pickup
+            bounds.extend([pickupLocation.lng, pickupLocation.lat]);
+            
+            // Agregar todas las ubicaciones de entrega de la ruta optimizada
+            externalOptimizedRoute.optimized_route.stops.forEach((stop: any) => {
+              bounds.extend([stop.order.delivery_location.lng, stop.order.delivery_location.lat]);
+            });
+            
+            if (!bounds.isEmpty()) {
+              map.fitBounds(bounds, { 
+                padding: 80,
+                duration: 1000,
+                essential: true
+              });
+            }
+          } catch (error) {
+            console.warn('Error en auto-enfoque:', error);
+            // Fallback: centrar en pickup con zoom apropiado
+            map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+            map.setZoom(11);
+          }
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [externalShowOptimizedRoute, externalOptimizedRoute, map, pickupLocation]);
+
   // Función para obtener la geometría de la ruta desde Mapbox usando el orden optimizado de FastAPI
   const getRouteGeometryFromMapbox = async () => {
     if (!map || !externalOptimizedRoute?.optimized_route?.stops) return;
@@ -1031,6 +1069,127 @@ export function IndividualRoutesMap({
             <p>• Los pedidos se visitan en el orden más eficiente</p>
             <p>• El tiempo incluye el tiempo de conducción entre paradas</p>
             <p>• La distancia total considera el regreso a la sucursal</p>
+          </div>
+        </div>
+      )}
+
+      {/* Mapa de Ruta Optimizada - Se muestra debajo del mapa principal */}
+      {isShowingOptimizedRoute && externalOptimizedRoute && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-4">
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-lg">🚀</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  Ruta Optimizada con IA
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Algoritmo: {externalOptimizedRoute.optimized_route.optimization_metrics.algorithm}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Métricas principales en tarjetas elegantes */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-700">
+                  {externalOptimizedRoute.optimized_route.stops.length}
+                </div>
+                <div className="text-sm font-medium text-green-800">Paradas</div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-700">
+                  {externalOptimizedRoute.optimized_route.total_distance.toFixed(1)}
+                </div>
+                <div className="text-sm font-medium text-blue-800">km Total</div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-700">
+                  {externalOptimizedRoute.optimized_route.total_time.toFixed(0)}
+                </div>
+                <div className="text-sm font-medium text-purple-800">min Total</div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-orange-700">
+                  {externalOptimizedRoute.optimized_route.optimization_metrics.solver_time}
+                </div>
+                <div className="text-sm font-medium text-orange-800">ms Solver</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Lista detallada de paradas con mejor diseño */}
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              Secuencia de Paradas Optimizada
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {externalOptimizedRoute.optimized_route.stops.map((stop: any) => (
+                <div key={stop.order.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-4">
+                    <div 
+                      className="w-10 h-10 text-white text-sm font-bold rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: generateStopColor(stop.stop_number, externalOptimizedRoute.optimized_route.stops.length) }}
+                    >
+                      {stop.stop_number}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold text-gray-900">
+                          #{stop.order.order_number}
+                        </span>
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                          +{stop.distance_from_previous.toFixed(2)} km
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-700 mb-1 line-clamp-2">
+                        {stop.order.description}
+                      </div>
+                      <div className="text-xs text-gray-500 flex items-center gap-1">
+                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                        {stop.order.delivery_location.address}
+                      </div>
+                    </div>
+                    <div className="text-right text-xs text-gray-500 flex-shrink-0">
+                      <div className="font-medium text-gray-700">
+                        {stop.cumulative_distance.toFixed(2)} km
+                      </div>
+                      <div className="text-gray-500">acumulado</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Información adicional */}
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              <span className="text-sm font-medium text-gray-700">Información de la Optimización</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-gray-600">
+              <div>
+                <span className="font-medium">Algoritmo:</span> {externalOptimizedRoute.optimized_route.optimization_metrics.algorithm}
+              </div>
+              <div>
+                <span className="font-medium">Locaciones optimizadas:</span> {externalOptimizedRoute.optimized_route.optimization_metrics.locations_optimized}
+              </div>
+              <div>
+                <span className="font-medium">Tiempo de procesamiento:</span> {externalOptimizedRoute.processing_time.toFixed(3)}s
+              </div>
+            </div>
           </div>
         </div>
       )}
