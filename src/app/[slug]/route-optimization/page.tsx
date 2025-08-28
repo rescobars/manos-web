@@ -9,6 +9,7 @@ import { Page } from '@/components/ui/Page';
 import { Route, AlertCircle, Zap } from 'lucide-react';
 import { BRANCH_LOCATION } from '@/lib/constants';
 import { routeOptimizationService, type RouteOptimizationResponse } from '@/lib/api/routeOptimization';
+import { OptimizedRouteMap } from '@/components/ui/OptimizedRouteMap';
 
 interface PickupLocation {
   lat: number;
@@ -235,9 +236,16 @@ export default function RouteOptimizationPage() {
             onClearAll={handleClearAll}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            optimizedRoute={showOptimizedRoute ? optimizedRoute : undefined}
-            showOptimizedRoute={showOptimizedRoute}
           />
+
+          {/* Mapa de ruta optimizada */}
+          {showOptimizedRoute && optimizedRoute && (
+            <OptimizedRouteMap
+              pickupLocation={pickupLocation}
+              optimizedRoute={optimizedRoute}
+              showOptimizedRoute={showOptimizedRoute}
+            />
+          )}
         </div>
       </Page>
     </>
