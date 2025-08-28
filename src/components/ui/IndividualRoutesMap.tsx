@@ -31,7 +31,6 @@ interface IndividualRoutesMapProps {
   onClearAll: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
-  isReady: boolean;
 }
 
 export function IndividualRoutesMap({
@@ -42,29 +41,34 @@ export function IndividualRoutesMap({
   onSelectAll,
   onClearAll,
   searchTerm,
-  onSearchChange,
-  isReady
+  onSearchChange
 }: IndividualRoutesMapProps) {
   const [map, setMap] = useState<any>(null);
-  const [routeLayers, setRouteLayers] = useState<string[]>([]);
-  const [markers, setMarkers] = useState<any[]>([]);
+  const [isMapReady, setIsMapReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isMapReady, setIsMapReady] = useState(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  // Generar colores automáticamente para las rutas
-  const generateRouteColor = (index: number) => {
+  // Generar colores únicos para cada pedido
+  const generateRouteColor = (orderId: string) => {
     const colors = [
       '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-      '#F97316', '#06B6D4', '#84CC16', '#EC4899', '#6366F1',
-      '#84CC16', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'
+      '#F97316', '#06B6D4', '#84CC16', '#EC4899', '#6366F1'
     ];
-    return colors[index % colors.length];
+    
+    let hash = 0;
+    for (let i = 0; i < orderId.length; i++) {
+      const char = orderId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
   };
 
-  // Inicializar mapa
+  // 1. Cargar el mapa
   useEffect(() => {
     if (!mapContainerRef.current || !isMapboxConfigured()) return;
 
@@ -95,6 +99,13 @@ export function IndividualRoutesMap({
     loadMapbox();
   }, []);
 
+  // 2. Una vez el mapa cargado, cargar todas las rutas
+  useEffect(() => {
+    if (isMapReady && map && selectedOrders.length > 0) {
+      loadAllRoutes();
+    }
+  }, [isMapReady, map, selectedOrders]);
+
   const initializeMap = () => {
     if (!mapContainerRef.current) return;
 
@@ -115,18 +126,33 @@ export function IndividualRoutesMap({
   const createCustomMarker = (label: string, color: string) => {
     const el = document.createElement('div');
     el.className = 'custom-marker';
-    el.innerHTML = `
-      <div class="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-sm font-bold text-white" 
-           style="background-color: ${color}">
-        ${label.charAt(0)}
-      </div>
-    `;
+    
+    const isOrderNumber = label.length > 1 && !isNaN(Number(label));
+    
+    if (isOrderNumber) {
+      el.innerHTML = `
+        <div class="w-16 h-16 rounded-full border-3 border-white shadow-xl flex items-center justify-center text-white font-bold" 
+             style="background-color: ${color}; font-size: 16px;">
+          ${label}
+        </div>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="w-20 h-12 flex items-center justify-center text-white font-bold shadow-xl rounded-lg" 
+             style="background-color: ${color}; border: 3px solid white;">
+          <div class="text-center text-sm">
+            ${label}
+          </div>
+        </div>
+      `;
+    }
+    
     return el;
   };
 
   const addPickupMarker = (mapInstance: any) => {
     const pickupMarker = new window.mapboxgl.Marker({ 
-      element: createCustomMarker('Sucursal', '#DC2626')
+      element: createCustomMarker('Sucursal', '#2563EB')
     })
       .setLngLat([pickupLocation.lng, pickupLocation.lat])
       .addTo(mapInstance);
@@ -134,56 +160,36 @@ export function IndividualRoutesMap({
     const popup = new window.mapboxgl.Popup({ offset: 25 })
       .setHTML(`
         <div class="text-center">
-          <div class="font-semibold text-red-600">🏪 Sucursal</div>
+          <div class="font-semibold text-blue-600">🏪 Sucursal</div>
           <div class="text-sm text-gray-600">${pickupLocation.address}</div>
         </div>
       `);
     pickupMarker.setPopup(popup);
-
-    setMarkers(prev => [...prev, pickupMarker]);
   };
 
-  // Cargar rutas cuando cambien los pedidos seleccionados
-  useEffect(() => {
-    if (isReady && isMapReady && map) {
-      loadIndividualRoutes();
-    }
-  }, [selectedOrders, isReady, isMapReady, map]);
-
-  const loadIndividualRoutes = async () => {
-    if (!map || !isMapReady || !isReady) return;
-
-    if (selectedOrders.length === 0) {
-      clearAllRoutes();
-      map.setCenter([pickupLocation.lng, pickupLocation.lat]);
-      map.setZoom(12);
-      return;
-    }
+  const loadAllRoutes = async () => {
+    if (!map || !isMapReady) return;
 
     setIsLoading(true);
     setError(null);
-    clearAllRoutes();
-    
-    ensurePickupMarker();
 
-    const selectedOrdersData = orders.filter(order => selectedOrders.includes(order.id));
-    
     try {
+      // Limpiar todas las rutas existentes
+      clearAllRoutes();
+
       const token = getMapboxToken();
       if (!token) {
         throw new Error('Mapbox token no configurado');
       }
 
-      // Limpiar marcadores anteriores (excepto pickup)
-      markers.slice(1).forEach(marker => marker.remove());
-      setMarkers(prev => prev.slice(0, 1));
-
       // Cargar ruta para cada pedido seleccionado
-      for (let i = 0; i < selectedOrdersData.length; i++) {
-        const order = selectedOrdersData[i];
-        const color = generateRouteColor(i);
-        
-        await loadRouteForOrder(order, color, i);
+      for (let i = 0; i < selectedOrders.length; i++) {
+        const orderId = selectedOrders[i];
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+          const color = generateRouteColor(order.id);
+          await loadRouteForOrder(order, color);
+        }
       }
 
       // Ajustar vista para mostrar todas las rutas
@@ -197,11 +203,7 @@ export function IndividualRoutesMap({
     }
   };
 
-  const loadRouteForOrder = async (
-    order: Order,
-    color: string,
-    index: number
-  ) => {
+  const loadRouteForOrder = async (order: Order, color: string) => {
     try {
       if (!order.deliveryLocation.lat || !order.deliveryLocation.lng) {
         return;
@@ -272,11 +274,9 @@ export function IndividualRoutesMap({
           }
         });
 
-        setRouteLayers(prev => [...prev, routeId]);
-
         // Agregar marcador de entrega
         const marker = new window.mapboxgl.Marker({ 
-          element: createCustomMarker('E', color)
+          element: createCustomMarker(order.orderNumber, color)
         })
           .setLngLat([lng, lat])
           .addTo(map);
@@ -293,8 +293,6 @@ export function IndividualRoutesMap({
             </div>
           `);
         marker.setPopup(popup);
-
-        setMarkers(prev => [...prev, marker]);
       }
 
     } catch (error) {
@@ -310,22 +308,15 @@ export function IndividualRoutesMap({
       
       bounds.extend([pickupLocation.lng, pickupLocation.lat]);
       
-      const selectedOrdersData = orders.filter(order => selectedOrders.includes(order.id));
-      
-      selectedOrdersData.forEach(order => {
-        const lat = Number(order.deliveryLocation.lat);
-        const lng = Number(order.deliveryLocation.lng);
-        
-        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-          bounds.extend([lng, lat]);
+      selectedOrders.forEach(orderId => {
+        const order = orders.find(o => o.id === orderId);
+        if (order && order.deliveryLocation.lat && order.deliveryLocation.lng) {
+          bounds.extend([order.deliveryLocation.lng, order.deliveryLocation.lat]);
         }
       });
       
       if (!bounds.isEmpty()) {
         map.fitBounds(bounds, { padding: 50 });
-      } else {
-        map.setCenter([pickupLocation.lng, pickupLocation.lat]);
-        map.setZoom(12);
       }
     } catch (error) {
       map.setCenter([pickupLocation.lng, pickupLocation.lat]);
@@ -336,7 +327,15 @@ export function IndividualRoutesMap({
   const clearAllRoutes = () => {
     if (!map) return;
 
-    routeLayers.forEach(layerId => {
+    // Limpiar todas las capas de rutas
+    const layersToRemove: string[] = [];
+    map.getStyle().layers?.forEach((layer: any) => {
+      if (layer.id.startsWith('route-')) {
+        layersToRemove.push(layer.id);
+      }
+    });
+
+    layersToRemove.forEach(layerId => {
       if (map.getLayer(layerId)) {
         map.removeLayer(layerId);
       }
@@ -346,54 +345,22 @@ export function IndividualRoutesMap({
       }
     });
 
-    setRouteLayers([]);
-
-    const deliveryMarkers = markers.filter(marker => {
+    // Limpiar todos los marcadores excepto el de pickup
+    const markersToRemove: any[] = [];
+    map._markers?.forEach((marker: any) => {
       if (marker._lngLat) {
         const isPickup = marker._lngLat.lng === pickupLocation.lng && 
                         marker._lngLat.lat === pickupLocation.lat;
-        return !isPickup;
+        if (!isPickup) {
+          markersToRemove.push(marker);
+        }
       }
-      return true;
     });
 
-    deliveryMarkers.forEach(marker => marker.remove());
-    
-    setMarkers(prev => prev.filter(marker => {
-      if (marker._lngLat) {
-        const isPickup = marker._lngLat.lng === pickupLocation.lng && 
-                        marker._lngLat.lat === pickupLocation.lat;
-        return isPickup;
-      }
-      return false;
-    }));
-  };
-
-  const ensurePickupMarker = () => {
-    if (!map) return;
-    
-    const existingPickupMarker = markers.find(marker => 
-      marker._lngLat && 
-      marker._lngLat.lng === pickupLocation.lng && 
-      marker._lngLat.lat === pickupLocation.lat
-    );
-    
-    if (!existingPickupMarker) {
-      addPickupMarker(map);
-    }
+    markersToRemove.forEach(marker => marker.remove());
   };
 
   const clearError = () => setError(null);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -509,9 +476,6 @@ export function IndividualRoutesMap({
                 <div className="text-xs text-gray-500">
                   {selectedOrders.length} de {orders.length}
                 </div>
-                <div className="text-xs text-gray-400">
-                  {orders.filter(o => o.deliveryLocation.lat && o.deliveryLocation.lng).length} con ubicación
-                </div>
               </div>
             </div>
 
@@ -534,20 +498,16 @@ export function IndividualRoutesMap({
                 size="sm"
                 className="w-full text-xs"
               >
-                {selectedOrders.length === orders.filter(o => o.deliveryLocation.lat && o.deliveryLocation.lng).length 
+                {selectedOrders.length === orders.length 
                   ? 'Deseleccionar Todo' 
                   : 'Seleccionar Todo'
                 }
               </Button>
-              <div className="text-xs text-gray-500 mt-1 text-center">
-                Solo pedidos con ubicación válida
-              </div>
             </div>
 
             {/* Lista de pedidos */}
             <div className="flex-1 overflow-y-auto space-y-2">
               {filteredOrders.map((order) => {
-                const hasLocation = order.deliveryLocation.lat && order.deliveryLocation.lng;
                 const isSelected = selectedOrders.includes(order.id);
                 
                 return (
@@ -556,25 +516,20 @@ export function IndividualRoutesMap({
                     className={`p-3 rounded-lg border transition-colors cursor-pointer ${
                       isSelected
                         ? 'border-blue-500 bg-blue-50'
-                        : hasLocation
-                        ? 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        : 'border-yellow-200 bg-yellow-50'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                     onClick={(e) => {
                       if ((e.target as HTMLElement).closest('.checkbox-container')) {
                         return;
                       }
-                      hasLocation && onOrderSelection(order.id);
+                      onOrderSelection(order.id);
                     }}
                   >
                     <div className="flex items-start gap-2">
                       <div className="checkbox-container">
                         <Checkbox
                           checked={isSelected}
-                          onChange={() => {
-                            hasLocation && onOrderSelection(order.id);
-                          }}
-                          disabled={!hasLocation}
+                          onChange={() => onOrderSelection(order.id)}
                           className="mt-0.5"
                         />
                       </div>
@@ -582,11 +537,6 @@ export function IndividualRoutesMap({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-sm text-gray-900">#{order.orderNumber}</span>
-                          {!hasLocation && (
-                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                              Sin ubicación
-                            </span>
-                          )}
                         </div>
                         
                         {order.description && (
@@ -620,11 +570,11 @@ export function IndividualRoutesMap({
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-gray-900 mb-3">Leyenda de Rutas:</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {orders.filter(order => selectedOrders.includes(order.id)).map((order, index) => (
+            {orders.filter(order => selectedOrders.includes(order.id)).map((order) => (
               <div key={order.id} className="flex items-center gap-2">
                 <div 
                   className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: generateRouteColor(index) }}
+                  style={{ backgroundColor: generateRouteColor(order.id) }}
                 />
                 <span className="text-sm text-gray-700">
                   Pedido #{order.orderNumber}

@@ -22,7 +22,6 @@ export default function RouteOptimizationPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
-  const [isReady, setIsReady] = useState(false);
 
   // Cargar pedidos y ubicación de pickup
   useEffect(() => {
@@ -40,7 +39,15 @@ export default function RouteOptimizationPage() {
       // Cargar pedidos pendientes
       const response = await ordersApiService.getPendingOrders(currentOrganization.uuid);
       if (response.success && response.data) {
-        setOrders(response.data);
+        const validOrders = response.data.filter(order => 
+          order.delivery_lat && order.delivery_lat !== 0 && 
+          order.delivery_lng && order.delivery_lng !== 0
+        );
+        setOrders(validOrders);
+        
+        // Seleccionar automáticamente todos los pedidos válidos
+        const validOrderIds = validOrders.map(order => order.uuid);
+        setSelectedOrders(validOrderIds);
       }
       
       // Cargar ubicación de pickup
@@ -57,114 +64,44 @@ export default function RouteOptimizationPage() {
     }
   };
 
-  // Restaurar estado desde caché cuando los datos estén listos
-  useEffect(() => {
-    if (orders.length > 0 && pickupLocation && !isReady) {
-      restoreFromCache();
-    }
-  }, [orders, pickupLocation, isReady]);
-
-  const restoreFromCache = () => {
-    if (!currentOrganization) return;
-    
-    const cacheKey = `route-cache-${currentOrganization.uuid}`;
-    const cached = localStorage.getItem(cacheKey);
-    
-    if (cached) {
-      try {
-        const cacheData = JSON.parse(cached);
-        const validOrderIds = cacheData.orderIds.filter((id: string) => 
-          orders.some(order => order.uuid === id && order.delivery_lat && order.delivery_lng)
-        );
-        
-        if (validOrderIds.length > 0) {
-          setSelectedOrders(validOrderIds);
-        } else {
-          // Si no hay pedidos válidos en caché, seleccionar todos los disponibles
-          const allValidOrderIds = orders
-            .filter(order => order.delivery_lat && order.delivery_lng)
-            .map(order => order.uuid);
-          setSelectedOrders(allValidOrderIds);
-          saveToCache(allValidOrderIds);
-        }
-      } catch (error) {
-        // Si hay error en caché, seleccionar todos los disponibles
-        const allValidOrderIds = orders
-          .filter(order => order.delivery_lat && order.delivery_lng)
-          .map(order => order.uuid);
-        setSelectedOrders(allValidOrderIds);
-        saveToCache(allValidOrderIds);
-      }
-    } else {
-      // Si no hay caché, seleccionar todos los disponibles
-      const allValidOrderIds = orders
-        .filter(order => order.delivery_lat && order.delivery_lng)
-        .map(order => order.uuid);
-      setSelectedOrders(allValidOrderIds);
-      saveToCache(allValidOrderIds);
-    }
-    
-    setIsReady(true);
-  };
-
-  const saveToCache = (orderIds: string[]) => {
-    if (!currentOrganization) return;
-    
-    const cacheKey = `route-cache-${currentOrganization.uuid}`;
-    const cacheData = {
-      orderIds,
-      timestamp: Date.now(),
-      organizationId: currentOrganization.uuid
-    };
-    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-  };
-
   const handleOrderSelection = (orderId: string) => {
     setSelectedOrders(prev => {
-      const newSelection = prev.includes(orderId) 
-        ? prev.filter(id => id !== orderId)
-        : [...prev, orderId];
-      
-      saveToCache(newSelection);
-      return newSelection;
+      if (prev.includes(orderId)) {
+        return prev.filter(id => id !== orderId);
+      } else {
+        return [...prev, orderId];
+      }
     });
   };
 
   const handleSelectAll = () => {
-    const validOrders = orders.filter(order => order.delivery_lat && order.delivery_lng);
-    const allValidOrderIds = validOrders.map(order => order.uuid);
+    const validOrderIds = orders.map(order => order.uuid);
     
-    if (selectedOrders.length === allValidOrderIds.length) {
+    if (selectedOrders.length === validOrderIds.length) {
       setSelectedOrders([]);
-      saveToCache([]);
     } else {
-      setSelectedOrders(allValidOrderIds);
-      saveToCache(allValidOrderIds);
+      setSelectedOrders(validOrderIds);
     }
   };
 
   const handleClearAll = () => {
     setSelectedOrders([]);
-    saveToCache([]);
   };
 
   const getOrdersForMap = () => {
-    return orders
-      .filter(order => order.delivery_lat && order.delivery_lat !== 0 && 
-                      order.delivery_lng && order.delivery_lng !== 0)
-      .map(order => ({
-        id: order.uuid,
-        orderNumber: order.order_number,
-        deliveryLocation: {
-          lat: order.delivery_lat!,
-          lng: order.delivery_lng!,
-          address: order.delivery_address || '',
-          id: order.uuid
-        },
-        description: order.description,
-        totalAmount: order.total_amount,
-        createdAt: order.created_at
-      }));
+    return orders.map(order => ({
+      id: order.uuid,
+      orderNumber: order.order_number,
+      deliveryLocation: {
+        lat: order.delivery_lat!,
+        lng: order.delivery_lng!,
+        address: order.delivery_address || '',
+        id: order.uuid
+      },
+      description: order.description,
+      totalAmount: order.total_amount,
+      createdAt: order.created_at
+    }));
   };
 
   if (!currentOrganization) {
@@ -209,7 +146,7 @@ export default function RouteOptimizationPage() {
         subtitle={`Visualiza rutas individuales de pedidos para ${currentOrganization.name}`}
       >
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          {isReady && selectedOrders.length > 0 && (
+          {selectedOrders.length > 0 && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-blue-700">
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
@@ -227,7 +164,6 @@ export default function RouteOptimizationPage() {
             onClearAll={handleClearAll}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            isReady={isReady}
           />
         </div>
       </Page>
