@@ -31,21 +31,8 @@ interface IndividualRoutesMapProps {
   onClearAll: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
+  isReady: boolean;
 }
-
-// Colores para las diferentes rutas
-const ROUTE_COLORS = [
-  '#3B82F6', // Azul
-  '#10B981', // Verde
-  '#F59E0B', // Amarillo
-  '#EF4444', // Rojo
-  '#8B5CF6', // Púrpura
-  '#F97316', // Naranja
-  '#06B6D4', // Cian
-  '#84CC16', // Verde lima
-  '#EC4899', // Rosa
-  '#6366F1', // Índigo
-];
 
 export function IndividualRoutesMap({
   pickupLocation,
@@ -55,7 +42,8 @@ export function IndividualRoutesMap({
   onSelectAll,
   onClearAll,
   searchTerm,
-  onSearchChange
+  onSearchChange,
+  isReady
 }: IndividualRoutesMapProps) {
   const [map, setMap] = useState<any>(null);
   const [routeLayers, setRouteLayers] = useState<string[]>([]);
@@ -63,13 +51,17 @@ export function IndividualRoutesMap({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [pendingRoutes, setPendingRoutes] = useState<string[]>([]);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  // Obtener pedidos seleccionados para el mapa
-  const getSelectedOrdersForMap = () => {
-    return orders.filter(order => selectedOrders.includes(order.id));
+  // Generar colores automáticamente para las rutas
+  const generateRouteColor = (index: number) => {
+    const colors = [
+      '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+      '#F97316', '#06B6D4', '#84CC16', '#EC4899', '#6366F1',
+      '#84CC16', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'
+    ];
+    return colors[index % colors.length];
   };
 
   // Inicializar mapa
@@ -106,8 +98,6 @@ export function IndividualRoutesMap({
   const initializeMap = () => {
     if (!mapContainerRef.current) return;
 
-    console.log('🔍 Inicializando mapa...');
-
     const mapInstance = new window.mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
@@ -116,16 +106,9 @@ export function IndividualRoutesMap({
     });
 
     mapInstance.on('load', () => {
-      console.log('🔍 Mapa cargado completamente');
       setMap(mapInstance);
       setIsMapReady(true);
       addPickupMarker(mapInstance);
-      
-      // Procesar rutas pendientes si las hay
-      if (pendingRoutes.length > 0) {
-        console.log('🔍 Procesando rutas pendientes:', pendingRoutes);
-        processPendingRoutes();
-      }
     });
   };
 
@@ -142,7 +125,6 @@ export function IndividualRoutesMap({
   };
 
   const addPickupMarker = (mapInstance: any) => {
-    // Crear un marcador personalizado con icono de sucursal
     const pickupMarker = new window.mapboxgl.Marker({ 
       element: createCustomMarker('Sucursal', '#DC2626')
     })
@@ -163,75 +145,18 @@ export function IndividualRoutesMap({
 
   // Cargar rutas cuando cambien los pedidos seleccionados
   useEffect(() => {
-    if (selectedOrders.length > 0) {
-      if (isMapReady && map) {
-        // Si el mapa está listo, cargar rutas inmediatamente
-        console.log('🔍 Mapa listo, cargando rutas inmediatamente');
-        loadIndividualRoutes();
-      } else {
-        // Si el mapa no está listo, guardar en cola de espera
-        console.log('🔍 Mapa no listo, guardando rutas en cola de espera');
-        setPendingRoutes(selectedOrders);
-      }
-    } else if (isMapReady && map) {
-      // Si no hay pedidos seleccionados y el mapa está listo, limpiar rutas
-      clearAllRoutes();
-      ensurePickupMarker();
+    if (isReady && isMapReady && map) {
+      loadIndividualRoutes();
     }
-  }, [selectedOrders, isMapReady, map]);
-
-  // Procesar rutas pendientes cuando el mapa esté listo
-  const processPendingRoutes = () => {
-    if (!isMapReady || !map) return;
-    
-    console.log('🔍 Procesando rutas pendientes...');
-    setPendingRoutes([]); // Limpiar cola de espera
-    loadIndividualRoutes(); // Cargar rutas
-  };
-
-  // Asegurar que el marcador de la sucursal esté presente cuando el mapa se inicialice
-  useEffect(() => {
-    if (map && isMapReady) {
-      ensurePickupMarker();
-    }
-  }, [map, isMapReady]);
-
-  // Asegurar que el marcador de la sucursal esté siempre presente
-  const ensurePickupMarker = () => {
-    if (!map) return;
-    
-    // Verificar si ya existe el marcador de pickup
-    const existingPickupMarker = markers.find(marker => 
-      marker._lngLat && 
-      marker._lngLat.lng === pickupLocation.lng && 
-      marker._lngLat.lat === pickupLocation.lat
-    );
-    
-    if (!existingPickupMarker) {
-      console.log('🔍 Agregando marcador de sucursal que faltaba');
-      addPickupMarker(map);
-    }
-  };
+  }, [selectedOrders, isReady, isMapReady, map]);
 
   const loadIndividualRoutes = async () => {
-    if (!map || !isMapReady) {
-      console.log('🔍 loadIndividualRoutes: mapa no está listo', {
-        hasMap: !!map,
-        isMapReady
-      });
-      return;
-    }
+    if (!map || !isMapReady || !isReady) return;
 
     if (selectedOrders.length === 0) {
-      console.log('🔍 loadIndividualRoutes: no hay pedidos seleccionados, limpiando mapa');
       clearAllRoutes();
-      // Centrar en pickup location cuando no hay rutas
-      try {
-        map.setCenter([pickupLocation.lng, pickupLocation.lat]);
-        map.setZoom(12);
-      } catch (error) {
-        console.error('Error centrando mapa en pickup location:', error);
-      }
+      map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+      map.setZoom(12);
       return;
     }
 
@@ -239,24 +164,10 @@ export function IndividualRoutesMap({
     setError(null);
     clearAllRoutes();
     
-    // Asegurar que el marcador de la sucursal esté presente
     ensurePickupMarker();
 
-    const selectedOrdersData = getSelectedOrdersForMap();
+    const selectedOrdersData = orders.filter(order => selectedOrders.includes(order.id));
     
-    console.log('🔍 Iniciando carga de rutas individuales:', {
-      totalOrders: selectedOrdersData.length,
-      orders: selectedOrdersData.map(order => ({
-        id: order.id,
-        orderNumber: order.orderNumber,
-        coordinates: {
-          lat: order.deliveryLocation.lat,
-          lng: order.deliveryLocation.lng
-        },
-        address: order.deliveryLocation.address
-      }))
-    });
-
     try {
       const token = getMapboxToken();
       if (!token) {
@@ -270,7 +181,7 @@ export function IndividualRoutesMap({
       // Cargar ruta para cada pedido seleccionado
       for (let i = 0; i < selectedOrdersData.length; i++) {
         const order = selectedOrdersData[i];
-        const color = ROUTE_COLORS[i % ROUTE_COLORS.length];
+        const color = generateRouteColor(i);
         
         await loadRouteForOrder(order, color, i);
       }
@@ -281,7 +192,6 @@ export function IndividualRoutesMap({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);
-      console.error('Error cargando rutas:', err);
     } finally {
       setIsLoading(false);
     }
@@ -293,32 +203,21 @@ export function IndividualRoutesMap({
     index: number
   ) => {
     try {
-      // Validar que las coordenadas estén en el formato correcto
       if (!order.deliveryLocation.lat || !order.deliveryLocation.lng) {
-        console.error(`Pedido ${order.orderNumber} no tiene coordenadas válidas:`, order.deliveryLocation);
         return;
       }
 
-      // Asegurar que las coordenadas sean números
       const lat = Number(order.deliveryLocation.lat);
       const lng = Number(order.deliveryLocation.lng);
       
       if (isNaN(lat) || isNaN(lng)) {
-        console.error(`Pedido ${order.orderNumber} tiene coordenadas inválidas: lat=${lat}, lng=${lng}`);
         return;
       }
-
-      console.log(`🔍 Cargando ruta para pedido ${order.orderNumber}:`, {
-        orderId: order.id,
-        coordinates: { lat, lng },
-        address: order.deliveryLocation.address
-      });
 
       const token = getMapboxToken();
       const baseUrl = 'https://api.mapbox.com/directions/v5/mapbox';
       const profile = 'driving';
       
-      // Construir coordenadas: pickup -> delivery
       const coordinates = `${pickupLocation.lng},${pickupLocation.lat};${lng},${lat}`;
       
       const params = new URLSearchParams({
@@ -337,34 +236,19 @@ export function IndividualRoutesMap({
 
       const data = await response.json();
       
-      console.log(`🔍 Respuesta completa de Mapbox para pedido ${order.orderNumber}:`, data);
-      console.log(`🔍 Estructura de la ruta:`, {
-        hasRoutes: !!data.routes,
-        routesLength: data.routes?.length,
-        firstRoute: data.routes?.[0],
-        geometry: data.routes?.[0]?.geometry,
-        coordinates: data.routes?.[0]?.geometry?.coordinates
-      });
-      
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         
-        // Verificar que la ruta tenga la estructura correcta de GeoJSON
         if (!route.geometry || !route.geometry.coordinates) {
-          console.warn(`Ruta para pedido ${order.orderNumber} no tiene geometría válida:`, route);
           return;
         }
         
-        // Crear un objeto GeoJSON válido para la ruta
         const routeGeoJSON = {
           type: 'Feature',
           properties: {},
           geometry: route.geometry
         };
         
-        console.log(`🔍 GeoJSON de ruta para pedido ${order.orderNumber}:`, routeGeoJSON);
-        
-        // Agregar la ruta al mapa
         const routeId = `route-${order.id}`;
         const sourceId = `source-${order.id}`;
         
@@ -390,11 +274,11 @@ export function IndividualRoutesMap({
 
         setRouteLayers(prev => [...prev, routeId]);
 
-        // Agregar marcador de entrega con coordenadas validadas
+        // Agregar marcador de entrega
         const marker = new window.mapboxgl.Marker({ 
           element: createCustomMarker('E', color)
         })
-          .setLngLat([lng, lat]) // Usar las coordenadas validadas
+          .setLngLat([lng, lat])
           .addTo(map);
 
         const popup = new window.mapboxgl.Popup({ offset: 25 })
@@ -411,9 +295,6 @@ export function IndividualRoutesMap({
         marker.setPopup(popup);
 
         setMarkers(prev => [...prev, marker]);
-
-      } else {
-        console.warn(`No se pudo generar ruta para el pedido ${order.orderNumber}:`, data);
       }
 
     } catch (error) {
@@ -425,68 +306,36 @@ export function IndividualRoutesMap({
     if (!map || selectedOrders.length === 0) return;
 
     try {
-      // Validar que pickupLocation tenga coordenadas válidas
-      if (!pickupLocation.lat || !pickupLocation.lng || 
-          isNaN(Number(pickupLocation.lat)) || isNaN(Number(pickupLocation.lng))) {
-        console.warn('Pickup location no tiene coordenadas válidas');
-        return;
-      }
-
       const bounds = new window.mapboxgl.LngLatBounds();
       
-      // Agregar pickup - usar formato correcto [lng, lat]
       bounds.extend([pickupLocation.lng, pickupLocation.lat]);
       
-      // Agregar todas las entregas con validación
-      const selectedOrdersData = getSelectedOrdersForMap();
-      let validDeliveryPoints = 0;
+      const selectedOrdersData = orders.filter(order => selectedOrders.includes(order.id));
       
       selectedOrdersData.forEach(order => {
         const lat = Number(order.deliveryLocation.lat);
         const lng = Number(order.deliveryLocation.lng);
         
         if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-          // Usar formato correcto [lng, lat] según documentación de Mapbox
           bounds.extend([lng, lat]);
-          validDeliveryPoints++;
-        } else {
-          console.warn(`Pedido ${order.orderNumber} tiene coordenadas inválidas para bounds: lat=${lat}, lng=${lng}`);
         }
       });
       
-      // Verificar que bounds tenga al menos 2 puntos válidos
-      if (bounds.isEmpty() || validDeliveryPoints === 0) {
-        console.warn('No hay suficientes puntos válidos para ajustar la vista del mapa');
-        // Centrar en pickup location con zoom por defecto
-        map.setCenter([pickupLocation.lng, pickupLocation.lat]);
-        map.setZoom(12);
-        return;
-      }
-      
-      // Solo usar fitBounds si hay múltiples puntos
-      if (validDeliveryPoints > 0) {
+      if (!bounds.isEmpty()) {
         map.fitBounds(bounds, { padding: 50 });
       } else {
-        // Si solo hay pickup, centrar ahí
         map.setCenter([pickupLocation.lng, pickupLocation.lat]);
         map.setZoom(12);
       }
     } catch (error) {
-      console.error('Error ajustando bounds del mapa:', error);
-      // Fallback: centrar en pickup location
-      try {
-        map.setCenter([pickupLocation.lng, pickupLocation.lat]);
-        map.setZoom(12);
-      } catch (fallbackError) {
-        console.error('Error en fallback de centrado:', fallbackError);
-      }
+      map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+      map.setZoom(12);
     }
   };
 
   const clearAllRoutes = () => {
     if (!map) return;
 
-    // Remover todas las capas de ruta
     routeLayers.forEach(layerId => {
       if (map.getLayer(layerId)) {
         map.removeLayer(layerId);
@@ -499,31 +348,39 @@ export function IndividualRoutesMap({
 
     setRouteLayers([]);
 
-    // Limpiar solo los marcadores de entrega, preservar el de sucursal
     const deliveryMarkers = markers.filter(marker => {
-      // Verificar si es el marcador de pickup (sucursal)
       if (marker._lngLat) {
         const isPickup = marker._lngLat.lng === pickupLocation.lng && 
                         marker._lngLat.lat === pickupLocation.lat;
-        if (isPickup) {
-          return false; // No remover el marcador de pickup
-        }
+        return !isPickup;
       }
-      return true; // Remover todos los demás marcadores
+      return true;
     });
 
-    // Remover marcadores de entrega del mapa
     deliveryMarkers.forEach(marker => marker.remove());
     
-    // Actualizar el estado de marcadores, manteniendo solo el de pickup
     setMarkers(prev => prev.filter(marker => {
       if (marker._lngLat) {
         const isPickup = marker._lngLat.lng === pickupLocation.lng && 
                         marker._lngLat.lat === pickupLocation.lat;
-        return isPickup; // Solo mantener el marcador de pickup
+        return isPickup;
       }
       return false;
     }));
+  };
+
+  const ensurePickupMarker = () => {
+    if (!map) return;
+    
+    const existingPickupMarker = markers.find(marker => 
+      marker._lngLat && 
+      marker._lngLat.lng === pickupLocation.lng && 
+      marker._lngLat.lat === pickupLocation.lat
+    );
+    
+    if (!existingPickupMarker) {
+      addPickupMarker(map);
+    }
   };
 
   const clearError = () => setError(null);
@@ -552,16 +409,6 @@ export function IndividualRoutesMap({
       order.deliveryLocation.address.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesSearch;
-  });
-
-  // Debug: Log para ver qué está pasando
-  console.log('🔍 Debug - IndividualRoutesMap:', {
-    totalOrders: orders.length,
-    selectedOrders,
-    isMapReady,
-    pendingRoutes: pendingRoutes.length,
-    ordersSample: orders.slice(0, 2).map(o => ({ id: o.id, orderNumber: o.orderNumber })),
-    selectedOrdersSample: selectedOrders.slice(0, 2)
   });
 
   if (!isMapboxConfigured()) {
@@ -662,11 +509,9 @@ export function IndividualRoutesMap({
                 <div className="text-xs text-gray-500">
                   {selectedOrders.length} de {orders.length}
                 </div>
-                {pendingRoutes.length > 0 && !isMapReady && (
-                  <div className="text-xs text-blue-600 mt-1">
-                    ⏳ Esperando mapa...
-                  </div>
-                )}
+                <div className="text-xs text-gray-400">
+                  {orders.filter(o => o.deliveryLocation.lat && o.deliveryLocation.lng).length} con ubicación
+                </div>
               </div>
             </div>
 
@@ -689,8 +534,14 @@ export function IndividualRoutesMap({
                 size="sm"
                 className="w-full text-xs"
               >
-                {selectedOrders.length === orders.length ? 'Deseleccionar Todo' : 'Seleccionar Todo'}
+                {selectedOrders.length === orders.filter(o => o.deliveryLocation.lat && o.deliveryLocation.lng).length 
+                  ? 'Deseleccionar Todo' 
+                  : 'Seleccionar Todo'
+                }
               </Button>
+              <div className="text-xs text-gray-500 mt-1 text-center">
+                Solo pedidos con ubicación válida
+              </div>
             </div>
 
             {/* Lista de pedidos */}
@@ -709,19 +560,24 @@ export function IndividualRoutesMap({
                         ? 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         : 'border-yellow-200 bg-yellow-50'
                     }`}
-                    onClick={() => {
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest('.checkbox-container')) {
+                        return;
+                      }
                       hasLocation && onOrderSelection(order.id);
                     }}
                   >
                     <div className="flex items-start gap-2">
-                      <Checkbox
-                        checked={isSelected}
-                        onChange={() => {
-                          hasLocation && onOrderSelection(order.id);
-                        }}
-                        disabled={!hasLocation}
-                        className="mt-0.5"
-                      />
+                      <div className="checkbox-container">
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => {
+                            hasLocation && onOrderSelection(order.id);
+                          }}
+                          disabled={!hasLocation}
+                          className="mt-0.5"
+                        />
+                      </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -764,11 +620,11 @@ export function IndividualRoutesMap({
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-gray-900 mb-3">Leyenda de Rutas:</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {getSelectedOrdersForMap().map((order, index) => (
+            {orders.filter(order => selectedOrders.includes(order.id)).map((order, index) => (
               <div key={order.id} className="flex items-center gap-2">
                 <div 
                   className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: ROUTE_COLORS[index % ROUTE_COLORS.length] }}
+                  style={{ backgroundColor: generateRouteColor(index) }}
                 />
                 <span className="text-sm text-gray-700">
                   Pedido #{order.orderNumber}
