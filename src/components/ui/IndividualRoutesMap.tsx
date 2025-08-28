@@ -48,7 +48,13 @@ export function IndividualRoutesMap({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
+  const [optimizedRoute, setOptimizedRoute] = useState<{
+    distance: number;
+    duration: number;
+    geometry: any;
+    legs: any[];
+    optimizedOrderSequence: { order: Order; stopNumber: number }[];
+  } | null>(null);
   const [showOptimizedRoute, setShowOptimizedRoute] = useState(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -407,18 +413,39 @@ export function IndividualRoutesMap({
       }
     });
 
+    // Crear un array para almacenar el orden correcto de los pedidos
+    const optimizedOrderSequence: { order: Order; stopNumber: number }[] = [];
+
     // Agregar marcadores numerados para cada parada
     if (route.legs && route.legs.length > 0) {
-      route.legs.forEach((leg: any, index: number) => {
-        if (index === 0) return; // Saltar la primera parada (sucursal)
-        
-        const coordinates = leg.steps[0].maneuver.location;
-        const orderId = selectedOrders[index - 1];
+      // Crear un array de pedidos seleccionados en el orden que los enviamos a Mapbox
+      const selectedOrdersArray = selectedOrders.map(orderId => {
         const order = orders.find(o => o.id === orderId);
+        return order;
+      }).filter(Boolean) as Order[];
+      
+      // Mapbox devuelve legs donde cada leg representa un segmento de la ruta
+      // Para N pedidos, tendremos N+1 legs (incluyendo el regreso a sucursal)
+      // Necesitamos procesar solo los primeros N legs (excluyendo el regreso)
+      const legsToProcess = Math.min(route.legs.length - 1, selectedOrdersArray.length);
+      
+      for (let i = 0; i < legsToProcess; i++) {
+        const leg = route.legs[i];
+        const coordinates = leg.steps[0].maneuver.location;
+        const [lng, lat] = coordinates;
         
-        if (order) {
+        // El pedido correspondiente a este leg
+        const matchingOrder = selectedOrdersArray[i];
+        
+        if (matchingOrder) {
+          // Agregar a la secuencia optimizada
+          optimizedOrderSequence.push({
+            order: matchingOrder,
+            stopNumber: i + 1 // Parada 1, 2, 3, etc.
+          });
+          
           const marker = new window.mapboxgl.Marker({ 
-            element: createCustomMarker(`${index}`, '#10B981')
+            element: createCustomMarker(`${i + 1}`, '#10B981')
           })
             .setLngLat(coordinates)
             .addTo(map);
@@ -426,17 +453,23 @@ export function IndividualRoutesMap({
           const popup = new window.mapboxgl.Popup({ offset: 25 })
             .setHTML(`
               <div class="text-center">
-                <div class="font-semibold text-green-600">Parada #${index}</div>
-                <div class="text-sm text-gray-600">Pedido #${order.orderNumber}</div>
+                <div class="font-semibold text-green-600">Parada #${i + 1}</div>
+                <div class="text-sm text-gray-600">Pedido #${matchingOrder.orderNumber}</div>
                 <div class="text-xs text-gray-500 mt-1">
-                  ${order.deliveryLocation.address}
+                  ${matchingOrder.deliveryLocation.address}
                 </div>
               </div>
             `);
           marker.setPopup(popup);
         }
-      });
+      }
     }
+
+    // Guardar la secuencia optimizada para usar en la lista
+    setOptimizedRoute({
+      ...route,
+      optimizedOrderSequence
+    });
   };
 
   const fitMapToOptimizedRoute = (route: any) => {
@@ -751,7 +784,10 @@ export function IndividualRoutesMap({
               </h4>
               <div className="text-right">
                 <div className="text-xs text-gray-500">
-                  {selectedOrders.length} de {orders.length}
+                  {showOptimizedRoute && optimizedRoute 
+                    ? `${optimizedRoute.optimizedOrderSequence.length} paradas`
+                    : `${selectedOrders.length} de ${orders.length}`
+                  }
                 </div>
               </div>
             </div>
@@ -788,44 +824,17 @@ export function IndividualRoutesMap({
 
             {/* Lista de pedidos */}
             <div className="flex-1 overflow-y-auto space-y-2">
-              {filteredOrders.map((order, index) => {
-                const isSelected = selectedOrders.includes(order.id);
-                const stopNumber = showOptimizedRoute ? index + 1 : null;
-                
-                return (
+              {showOptimizedRoute && optimizedRoute ? (
+                // Mostrar solo los pedidos optimizados en el orden correcto
+                optimizedRoute.optimizedOrderSequence.map(({ order, stopNumber }) => (
                   <div
                     key={order.id}
-                    className={`p-3 rounded-lg border transition-colors cursor-pointer ${
-                      showOptimizedRoute
-                        ? 'border-green-500 bg-green-50'
-                        : isSelected
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onClick={(e) => {
-                      if (showOptimizedRoute) return; // No permitir selección en modo optimizado
-                      if ((e.target as HTMLElement).closest('.checkbox-container')) {
-                        return;
-                      }
-                      onOrderSelection(order.id);
-                    }}
+                    className="p-3 rounded-lg border border-green-500 bg-green-50"
                   >
                     <div className="flex items-start gap-2">
-                      {!showOptimizedRoute && (
-                        <div className="checkbox-container">
-                          <Checkbox
-                            checked={isSelected}
-                            onChange={() => onOrderSelection(order.id)}
-                            className="mt-0.5"
-                          />
-                        </div>
-                      )}
-                      
-                      {showOptimizedRoute && stopNumber && (
-                        <div className="w-6 h-6 bg-green-600 text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">
-                          {stopNumber}
-                        </div>
-                      )}
+                      <div className="w-6 h-6 bg-green-600 text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">
+                        {stopNumber}
+                      </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -851,8 +860,63 @@ export function IndividualRoutesMap({
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                ))
+              ) : (
+                // Mostrar todos los pedidos filtrados en modo normal
+                filteredOrders.map((order) => {
+                  const isSelected = selectedOrders.includes(order.id);
+                  
+                  return (
+                    <div
+                      key={order.id}
+                      className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('.checkbox-container')) {
+                          return;
+                        }
+                        onOrderSelection(order.id);
+                      }}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="checkbox-container">
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={() => onOrderSelection(order.id)}
+                            className="mt-0.5"
+                          />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm text-gray-900">#{order.orderNumber}</span>
+                          </div>
+                          
+                          {order.description && (
+                            <p className="text-xs text-gray-600 mb-1 line-clamp-2">
+                              {order.description}
+                            </p>
+                          )}
+                          
+                          <div className="text-xs text-gray-500 mb-1">
+                            <MapPin className="w-3 h-3 inline mr-1" />
+                            <span className="line-clamp-1">{order.deliveryLocation.address}</span>
+                          </div>
+                          
+                          {order.totalAmount && (
+                            <div className="text-xs font-medium text-gray-900">
+                              {formatCurrency(order.totalAmount)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
