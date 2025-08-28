@@ -77,6 +77,22 @@ export function IndividualRoutesMap({
     return colors[index];
   };
 
+  // Generar color verde que va de claro a oscuro según el número de parada
+  const generateStopColor = (stopNumber: number, totalStops: number) => {
+    // Base verde claro
+    const baseGreen = [34, 197, 94]; // #22C55E
+    
+    // Calcular qué tan oscuro debe ser (0 = muy claro, 1 = muy oscuro)
+    const darknessFactor = (stopNumber - 1) / Math.max(totalStops - 1, 1);
+    
+    // Aplicar factor de oscuridad
+    const red = Math.round(baseGreen[0] * (1 - darknessFactor * 0.6));
+    const green = Math.round(baseGreen[1] * (1 - darknessFactor * 0.4));
+    const blue = Math.round(baseGreen[2] * (1 - darknessFactor * 0.6));
+    
+    return `rgb(${red}, ${green}, ${blue})`;
+  };
+
   // 1. Cargar el mapa
   useEffect(() => {
     if (!mapContainerRef.current || !isMapboxConfigured()) return;
@@ -444,8 +460,11 @@ export function IndividualRoutesMap({
             stopNumber: i + 1 // Parada 1, 2, 3, etc.
           });
           
+          // Generar color verde graduado para esta parada
+          const stopColor = generateStopColor(i + 1, selectedOrdersArray.length);
+          
           const marker = new window.mapboxgl.Marker({ 
-            element: createCustomMarker(`${i + 1}`, '#10B981')
+            element: createCustomMarker(`${i + 1}`, stopColor)
           })
             .setLngLat(coordinates)
             .addTo(map);
@@ -453,7 +472,7 @@ export function IndividualRoutesMap({
           const popup = new window.mapboxgl.Popup({ offset: 25 })
             .setHTML(`
               <div class="text-center">
-                <div class="font-semibold text-green-600">Parada #${i + 1}</div>
+                <div class="font-semibold" style="color: ${stopColor}">Parada #${i + 1}</div>
                 <div class="text-sm text-gray-600">Pedido #${matchingOrder.orderNumber}</div>
                 <div class="text-xs text-gray-500 mt-1">
                   ${matchingOrder.deliveryLocation.address}
@@ -826,41 +845,52 @@ export function IndividualRoutesMap({
             <div className="flex-1 overflow-y-auto space-y-2">
               {showOptimizedRoute && optimizedRoute ? (
                 // Mostrar solo los pedidos optimizados en el orden correcto
-                optimizedRoute.optimizedOrderSequence.map(({ order, stopNumber }) => (
-                  <div
-                    key={order.id}
-                    className="p-3 rounded-lg border border-green-500 bg-green-50"
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="w-6 h-6 bg-green-600 text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">
-                        {stopNumber}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm text-gray-900">#{order.orderNumber}</span>
+                optimizedRoute.optimizedOrderSequence.map(({ order, stopNumber }) => {
+                  const stopColor = generateStopColor(stopNumber, optimizedRoute.optimizedOrderSequence.length);
+                  
+                  return (
+                    <div
+                      key={order.id}
+                      className="p-3 rounded-lg border"
+                      style={{ 
+                        borderColor: stopColor,
+                        backgroundColor: `${stopColor}10` // 10% de opacidad del color
+                      }}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div 
+                          className="w-6 h-6 text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5"
+                          style={{ backgroundColor: stopColor }}
+                        >
+                          {stopNumber}
                         </div>
                         
-                        {order.description && (
-                          <p className="text-xs text-gray-600 mb-1 line-clamp-2">
-                            {order.description}
-                          </p>
-                        )}
-                        
-                        <div className="text-xs text-gray-500 mb-1">
-                          <MapPin className="w-3 h-3 inline mr-1" />
-                          <span className="line-clamp-1">{order.deliveryLocation.address}</span>
-                        </div>
-                        
-                        {order.totalAmount && (
-                          <div className="text-xs font-medium text-gray-900">
-                            {formatCurrency(order.totalAmount)}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm text-gray-900">#{order.orderNumber}</span>
                           </div>
-                        )}
+                          
+                          {order.description && (
+                            <p className="text-xs text-gray-600 mb-1 line-clamp-2">
+                              {order.description}
+                            </p>
+                          )}
+                          
+                          <div className="text-xs text-gray-500 mb-1">
+                            <MapPin className="w-3 h-3 inline mr-1" />
+                            <span className="line-clamp-1">{order.deliveryLocation.address}</span>
+                          </div>
+                          
+                          {order.totalAmount && (
+                            <div className="text-xs font-medium text-gray-900">
+                              {formatCurrency(order.totalAmount)}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 // Mostrar todos los pedidos filtrados en modo normal
                 filteredOrders.map((order) => {
