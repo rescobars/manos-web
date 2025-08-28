@@ -31,6 +31,8 @@ interface IndividualRoutesMapProps {
   onClearAll: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
+  optimizedRoute?: any; // Tipo de la respuesta del API de optimización
+  showOptimizedRoute?: boolean;
 }
 
 export function IndividualRoutesMap({
@@ -41,7 +43,9 @@ export function IndividualRoutesMap({
   onSelectAll,
   onClearAll,
   searchTerm,
-  onSearchChange
+  onSearchChange,
+  optimizedRoute: externalOptimizedRoute,
+  showOptimizedRoute: externalShowOptimizedRoute
 }: IndividualRoutesMapProps) {
   const [map, setMap] = useState<any>(null);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -56,6 +60,10 @@ export function IndividualRoutesMap({
     optimizedOrderSequence: { order: Order; stopNumber: number }[];
   } | null>(null);
   const [showOptimizedRoute, setShowOptimizedRoute] = useState(false);
+  
+  // Usar la prop externa si está disponible, sino el estado interno
+  const isShowingOptimizedRoute = externalShowOptimizedRoute !== undefined ? externalShowOptimizedRoute : showOptimizedRoute;
+  const currentOptimizedRoute = externalOptimizedRoute || optimizedRoute;
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
@@ -129,10 +137,245 @@ export function IndividualRoutesMap({
 
   // 2. Una vez el mapa cargado, cargar todas las rutas
   useEffect(() => {
-    if (isMapReady && map && selectedOrders.length > 0 && !showOptimizedRoute) {
+    if (isMapReady && map && selectedOrders.length > 0 && !isShowingOptimizedRoute) {
       loadAllRoutes();
     }
-  }, [isMapReady, map, selectedOrders, showOptimizedRoute]);
+  }, [isMapReady, map, selectedOrders, isShowingOptimizedRoute]);
+
+  // 3. Cuando se recibe una ruta optimizada externa, calcular la ruta con Mapbox
+  useEffect(() => {
+    if (isMapReady && map && currentOptimizedRoute && currentOptimizedRoute.optimized_route) {
+      calculateOptimizedRouteWithMapbox();
+    }
+  }, [isMapReady, map, currentOptimizedRoute]);
+
+  // Mostrar ruta optimizada de la API cuando esté disponible
+  useEffect(() => {
+    if (externalShowOptimizedRoute && externalOptimizedRoute && map && isMapReady) {
+      console.log('🎯 Mostrando ruta optimizada de FastAPI en el mapa');
+      // Primero obtener la geometría de Mapbox, luego mostrar
+      getRouteGeometryFromMapbox();
+    }
+  }, [externalShowOptimizedRoute, externalOptimizedRoute, map, isMapReady, pickupLocation]);
+
+  // Función para obtener la geometría de la ruta desde Mapbox usando el orden optimizado de FastAPI
+  const getRouteGeometryFromMapbox = async () => {
+    if (!map || !externalOptimizedRoute?.optimized_route?.stops) return;
+
+    console.log('🗺️ Obteniendo geometría de ruta desde Mapbox...');
+    console.log('🔍 externalOptimizedRoute:', externalOptimizedRoute);
+    console.log('🔍 externalOptimizedRoute.optimized_route:', externalOptimizedRoute?.optimized_route);
+    console.log('🔍 externalOptimizedRoute.optimized_route.stops:', externalOptimizedRoute?.optimized_route?.stops);
+    
+    try {
+      const token = getMapboxToken();
+      if (!token) {
+        throw new Error('Mapbox token no configurado');
+      }
+
+      // Construir coordenadas usando el orden optimizado de FastAPI
+      let coordinates = `${pickupLocation.lng},${pickupLocation.lat}`;
+      
+      // Agregar coordenadas de los pedidos en el orden optimizado
+      externalOptimizedRoute.optimized_route.stops.forEach((stop: any, index: number) => {
+        console.log(`🔍 Procesando stop ${index} para coordenadas:`, stop);
+        const deliveryLocation = stop.order.delivery_location;
+        console.log(`📍 Delivery location del stop ${index}:`, deliveryLocation);
+        
+        if (deliveryLocation.lat && deliveryLocation.lng) {
+          coordinates += `;${deliveryLocation.lng},${deliveryLocation.lat}`;
+        } else {
+          console.error(`❌ Coordenadas inválidas en stop ${index}:`, deliveryLocation);
+        }
+      });
+      
+      // Agregar regreso a sucursal
+      coordinates += `;${pickupLocation.lng},${pickupLocation.lat}`;
+
+      console.log('📍 Coordenadas para Mapbox:', coordinates);
+
+      const baseUrl = 'https://api.mapbox.com/directions/v5/mapbox';
+      const profile = 'driving';
+      
+      const params = new URLSearchParams({
+        access_token: token,
+        geometries: 'geojson',
+        overview: 'full',
+        steps: 'true'
+      });
+
+      const url = `${baseUrl}/${profile}/${coordinates}?${params}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Error en la API Mapbox: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('🗺️ Respuesta de Mapbox:', data);
+      
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        
+        // Ahora mostrar la ruta completa en el mapa
+        displayOptimizedRouteWithGeometry(route);
+        
+        // Ajustar vista para mostrar toda la ruta
+        fitMapToOptimizedRouteWithGeometry(route);
+      } else {
+        throw new Error('No se pudo generar la geometría de la ruta desde Mapbox');
+      }
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      console.error('❌ Error obteniendo geometría de Mapbox:', errorMessage);
+      setError(errorMessage);
+    }
+  };
+
+  // Función para mostrar la ruta optimizada con geometría completa
+  const displayOptimizedRouteWithGeometry = (route: any) => {
+    if (!map) return;
+
+    console.log('🎨 Mostrando ruta con geometría completa...');
+    
+    try {
+      // Limpiar marcadores anteriores
+      if (map._markers) {
+        map._markers.forEach((marker: any) => marker.remove());
+        map._markers = [];
+      }
+
+      // Limpiar capas de ruta anteriores
+      if (map.getLayer('optimized-route-layer')) {
+        map.removeLayer('optimized-route-layer');
+      }
+      if (map.getSource('optimized-route')) {
+        map.removeSource('optimized-route');
+      }
+
+      // Agregar la geometría de la ruta
+      const routeGeoJSON = {
+        type: 'Feature',
+        properties: {},
+        geometry: route.geometry
+      };
+
+      map.addSource('optimized-route', {
+        type: 'geojson',
+        data: routeGeoJSON
+      });
+
+      map.addLayer({
+        id: 'optimized-route-layer',
+        type: 'line',
+        source: 'optimized-route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#10B981',
+          'line-width': 6,
+          'line-opacity': 0.9
+        }
+      });
+
+      // Agregar marcadores numerados para cada parada
+      const stops = externalOptimizedRoute.optimized_route.stops;
+      console.log('🛑 Total de stops a procesar:', stops.length);
+      
+      stops.forEach((stop: any, index: number) => {
+        try {
+          console.log(`🔍 Procesando stop ${index + 1}/${stops.length}:`, stop);
+          
+          const order = stop.order;
+          const deliveryLocation = order.delivery_location;
+          
+          console.log(`📍 Parada ${stop.stop_number}:`, {
+            orderId: order.id,
+            orderNumber: order.order_number,
+            lat: deliveryLocation.lat,
+            lng: deliveryLocation.lng
+          });
+          
+          if (deliveryLocation.lat && deliveryLocation.lng) {
+            const stopColor = generateStopColor(stop.stop_number, stops.length);
+            
+            // Crear marcador numerado
+            const marker = new window.mapboxgl.Marker({
+              element: createNumberedMarker(stop.stop_number, stopColor),
+              anchor: 'bottom'
+            })
+            .setLngLat([deliveryLocation.lng, deliveryLocation.lat])
+            .addTo(map);
+
+            // Agregar popup con información del pedido
+            const popup = new window.mapboxgl.Popup({ offset: 25 })
+              .setHTML(`
+                <div class="p-2">
+                  <div class="font-semibold text-sm">Parada #${stop.stop_number}</div>
+                  <div class="text-xs text-gray-600">Pedido: ${order.order_number}</div>
+                  <div class="text-xs text-gray-600">${order.description}</div>
+                  <div class="text-xs text-gray-500">Distancia: ${stop.distance_from_previous.toFixed(3)} km</div>
+                </div>
+              `);
+            
+            marker.setPopup(popup);
+            
+            // Guardar referencia del marcador
+            if (!map._markers) map._markers = [];
+            map._markers.push(marker);
+            
+            console.log(`✅ Marcador creado exitosamente para parada ${stop.stop_number}`);
+          } else {
+            console.error(`❌ Coordenadas inválidas en stop ${stop.stop_number}:`, deliveryLocation);
+          }
+        } catch (stopError) {
+          console.error(`❌ Error procesando stop ${index}:`, stopError);
+        }
+      });
+
+      // Crear marcador para la ubicación de pickup
+      const pickupMarker = new window.mapboxgl.Marker({
+        element: createPickupMarker(),
+        anchor: 'bottom'
+      })
+      .setLngLat([pickupLocation.lng, pickupLocation.lat])
+      .addTo(map);
+
+      if (!map._markers) map._markers = [];
+      map._markers.push(pickupMarker);
+      
+      console.log('✅ Todos los marcadores creados exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Error en displayOptimizedRouteWithGeometry:', error);
+      setError(error instanceof Error ? error.message : 'Error mostrando ruta optimizada');
+    }
+  };
+
+  // Función para ajustar la vista del mapa a la ruta con geometría
+  const fitMapToOptimizedRouteWithGeometry = (route: any) => {
+    if (!map || !route.geometry || !route.geometry.coordinates) return;
+
+    try {
+      const bounds = new window.mapboxgl.LngLatBounds();
+      
+      // Agregar todas las coordenadas de la geometría de la ruta
+      route.geometry.coordinates.forEach((coord: number[]) => {
+        bounds.extend(coord);
+      });
+      
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds, { padding: 50 });
+      }
+    } catch (error) {
+      console.error('Error ajustando vista del mapa:', error);
+      map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+      map.setZoom(12);
+    }
+  };
 
   const initializeMap = () => {
     if (!mapContainerRef.current) return;
@@ -328,13 +571,14 @@ export function IndividualRoutesMap({
     }
   };
 
-  const optimizeRoute = async () => {
-    if (selectedOrders.length < 2) {
-      setError('Selecciona al menos 2 pedidos para optimizar la ruta');
-      return;
-    }
+  // Función optimizeRoute removida - solo usamos la API de FastAPI
 
-    setIsOptimizing(true);
+  // Funciones displayOptimizedRoute y fitMapToOptimizedRoute removidas - solo usamos la API de FastAPI
+
+  const calculateOptimizedRouteWithMapbox = async () => {
+    if (!map || !currentOptimizedRoute || !currentOptimizedRoute.optimized_route) return;
+
+    setIsLoading(true);
     setError(null);
 
     try {
@@ -343,15 +587,14 @@ export function IndividualRoutesMap({
         throw new Error('Mapbox token no configurado');
       }
 
-      // Construir coordenadas para la ruta optimizada
+      // Construir coordenadas para la ruta optimizada usando el orden de la respuesta del API
       // Formato: sucursal;pedido1;pedido2;pedido3;sucursal
       let coordinates = `${pickupLocation.lng},${pickupLocation.lat}`;
       
-      // Agregar coordenadas de los pedidos seleccionados
-      selectedOrders.forEach(orderId => {
-        const order = orders.find(o => o.id === orderId);
-        if (order && order.deliveryLocation.lat && order.deliveryLocation.lng) {
-          coordinates += `;${order.deliveryLocation.lng},${order.deliveryLocation.lat}`;
+      // Agregar coordenadas de los pedidos en el orden optimizado
+      currentOptimizedRoute.optimized_route.stops.forEach((stop: any) => {
+        if (stop.order.deliveryLocation.lat && stop.order.deliveryLocation.lng) {
+          coordinates += `;${stop.order.deliveryLocation.lng},${stop.order.deliveryLocation.lat}`;
         }
       });
       
@@ -383,10 +626,10 @@ export function IndividualRoutesMap({
         setShowOptimizedRoute(true);
         
         // Mostrar la ruta optimizada en el mapa
-        displayOptimizedRoute(route);
+        displayOptimizedRouteWithGeometry(route);
         
         // Ajustar vista para mostrar toda la ruta
-        fitMapToOptimizedRoute(route);
+        fitMapToOptimizedRouteWithGeometry(route);
       } else {
         throw new Error('No se pudo generar la ruta optimizada');
       }
@@ -395,121 +638,7 @@ export function IndividualRoutesMap({
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);
     } finally {
-      setIsOptimizing(false);
-    }
-  };
-
-  const displayOptimizedRoute = (route: any) => {
-    if (!map) return;
-
-    // Limpiar rutas individuales
-    clearAllRoutes();
-
-    // Agregar la ruta optimizada
-    const routeGeoJSON = {
-      type: 'Feature',
-      properties: {},
-      geometry: route.geometry
-    };
-
-    map.addSource('optimized-route', {
-      type: 'geojson',
-      data: routeGeoJSON
-    });
-
-    map.addLayer({
-      id: 'optimized-route-layer',
-      type: 'line',
-      source: 'optimized-route',
-      layout: {
-        'line-join': 'round',
-        'line-cap': 'round'
-      },
-      paint: {
-        'line-color': '#10B981',
-        'line-width': 6,
-        'line-opacity': 0.9
-      }
-    });
-
-    // Crear un array para almacenar el orden correcto de los pedidos
-    const optimizedOrderSequence: { order: Order; stopNumber: number }[] = [];
-
-    // Agregar marcadores numerados para cada parada
-    if (route.legs && route.legs.length > 0) {
-      // Crear un array de pedidos seleccionados en el orden que los enviamos a Mapbox
-      const selectedOrdersArray = selectedOrders.map(orderId => {
-        const order = orders.find(o => o.id === orderId);
-        return order;
-      }).filter(Boolean) as Order[];
-      
-      // Mapbox devuelve legs donde cada leg representa un segmento de la ruta
-      // Para N pedidos, tendremos N+1 legs (incluyendo el regreso a sucursal)
-      // Necesitamos procesar solo los primeros N legs (excluyendo el regreso)
-      const legsToProcess = Math.min(route.legs.length - 1, selectedOrdersArray.length);
-      
-      for (let i = 0; i < legsToProcess; i++) {
-        const leg = route.legs[i];
-        const coordinates = leg.steps[0].maneuver.location;
-        const [lng, lat] = coordinates;
-        
-        // El pedido correspondiente a este leg
-        const matchingOrder = selectedOrdersArray[i];
-        
-        if (matchingOrder) {
-          // Agregar a la secuencia optimizada
-          optimizedOrderSequence.push({
-            order: matchingOrder,
-            stopNumber: i + 1 // Parada 1, 2, 3, etc.
-          });
-          
-          // Generar color verde graduado para esta parada
-          const stopColor = generateStopColor(i + 1, selectedOrdersArray.length);
-          
-          const marker = new window.mapboxgl.Marker({ 
-            element: createCustomMarker(`${i + 1}`, stopColor)
-          })
-            .setLngLat(coordinates)
-            .addTo(map);
-
-          const popup = new window.mapboxgl.Popup({ offset: 25 })
-            .setHTML(`
-              <div class="text-center">
-                <div class="font-semibold" style="color: ${stopColor}">Parada #${i + 1}</div>
-                <div class="text-sm text-gray-600">Pedido #${matchingOrder.orderNumber}</div>
-                <div class="text-xs text-gray-500 mt-1">
-                  ${matchingOrder.deliveryLocation.address}
-                </div>
-              </div>
-            `);
-          marker.setPopup(popup);
-        }
-      }
-    }
-
-    // Guardar la secuencia optimizada para usar en la lista
-    setOptimizedRoute({
-      ...route,
-      optimizedOrderSequence
-    });
-  };
-
-  const fitMapToOptimizedRoute = (route: any) => {
-    if (!map || !route.geometry || !route.geometry.coordinates) return;
-
-    try {
-      const bounds = new window.mapboxgl.LngLatBounds();
-      
-      route.geometry.coordinates.forEach((coord: number[]) => {
-        bounds.extend(coord);
-      });
-      
-      if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, { padding: 50 });
-      }
-    } catch (error) {
-      map.setCenter([pickupLocation.lng, pickupLocation.lat]);
-      map.setZoom(12);
+      setIsLoading(false);
     }
   };
 
@@ -666,50 +795,8 @@ export function IndividualRoutesMap({
         </div>
         
         <div className="flex gap-2">
-          {selectedOrders.length >= 2 && !showOptimizedRoute && (
-            <Button
-              onClick={optimizeRoute}
-              disabled={isOptimizing}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              {isOptimizing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Optimizando...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 mr-2" />
-                  Optimizar Ruta
-                </>
-              )}
-            </Button>
-          )}
           
-          {showOptimizedRoute && (
-            <Button
-              onClick={clearOptimizedRoute}
-              variant="outline"
-              size="sm"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Volver a Rutas Individuales
-            </Button>
-          )}
-          
-          {selectedOrders.length > 0 && !showOptimizedRoute && (
-            <Button
-              onClick={() => {
-                clearAllRoutes();
-                onClearAll();
-              }}
-              variant="outline"
-              size="sm"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Limpiar Rutas
-            </Button>
-          )}
+
         </div>
       </div>
 
@@ -989,4 +1076,47 @@ export function IndividualRoutesMap({
       )}
     </div>
   );
+}
+
+// Funciones auxiliares para crear marcadores
+function createNumberedMarker(stopNumber: number, color: string) {
+  const el = document.createElement('div');
+  el.className = 'numbered-marker';
+  el.style.cssText = `
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: ${color};
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  `;
+  el.textContent = stopNumber.toString();
+  return el;
+}
+
+function createPickupMarker() {
+  const el = document.createElement('div');
+  el.className = 'pickup-marker';
+  el.style.cssText = `
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #3B82F6;
+    color: white;
+    font-weight: bold;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  `;
+  el.innerHTML = '��';
+  return el;
 }

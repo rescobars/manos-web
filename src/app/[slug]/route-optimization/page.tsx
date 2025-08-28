@@ -6,8 +6,9 @@ import { ordersApiService } from '@/lib/api/orders';
 import { Order } from '@/types';
 import { IndividualRoutesMap } from '@/components/ui/IndividualRoutesMap';
 import { Page } from '@/components/ui/Page';
-import { Route, AlertCircle } from 'lucide-react';
+import { Route, AlertCircle, Zap } from 'lucide-react';
 import { BRANCH_LOCATION } from '@/lib/constants';
+import { routeOptimizationService, type RouteOptimizationResponse } from '@/lib/api/routeOptimization';
 
 interface PickupLocation {
   lat: number;
@@ -22,6 +23,9 @@ export default function RouteOptimizationPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
+  const [optimizedRoute, setOptimizedRoute] = useState<RouteOptimizationResponse | null>(null);
+  const [showOptimizedRoute, setShowOptimizedRoute] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
   // Cargar pedidos y ubicación de pickup
   useEffect(() => {
@@ -86,6 +90,8 @@ export default function RouteOptimizationPage() {
 
   const handleClearAll = () => {
     setSelectedOrders([]);
+    setOptimizedRoute(null);
+    setShowOptimizedRoute(false);
   };
 
   const getOrdersForMap = () => {
@@ -102,6 +108,60 @@ export default function RouteOptimizationPage() {
       totalAmount: order.total_amount,
       createdAt: order.created_at
     }));
+  };
+
+  const handleOptimizeRoute = async () => {
+    if (selectedOrders.length < 2 || !pickupLocation) return;
+    
+    setIsOptimizing(true);
+    
+    try {
+      console.log('🚀 Iniciando optimización de ruta...');
+      
+      const selectedOrdersData = getOrdersForMap().filter(order => 
+        selectedOrders.includes(order.id)
+      );
+
+      const request = {
+        pickup_location: {
+          lat: pickupLocation.lat,
+          lng: pickupLocation.lng,
+          address: pickupLocation.address
+        },
+        orders: routeOptimizationService.convertOrdersForAPI(selectedOrdersData, pickupLocation)
+      };
+
+      console.log('📤 Enviando request a FastAPI:', JSON.stringify(request, null, 2));
+      console.log('🌐 URL de la API:', 'http://localhost:8000/api/v1/routes/optimize');
+
+      const response = await routeOptimizationService.optimizeRoute(request);
+      
+      console.log('📥 Respuesta de FastAPI:', response);
+      console.log('🔍 Estructura de la respuesta:', {
+        success: response.success,
+        hasOptimizedRoute: !!response.optimized_route,
+        stopsCount: response.optimized_route?.stops?.length,
+        firstStop: response.optimized_route?.stops?.[0],
+        pickupLocation: response.optimized_route?.stops?.[0]?.order?.delivery_location
+      });
+      
+      if (response.success) {
+        setOptimizedRoute(response);
+        setShowOptimizedRoute(true);
+        console.log('✅ Ruta optimizada exitosamente!');
+      } else {
+        console.error('❌ Error optimizing route:', response.error_message);
+      }
+    } catch (error) {
+      console.error('💥 Error optimizing route:', error);
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const handleShowIndividualRoutes = () => {
+    setShowOptimizedRoute(false);
+    setOptimizedRoute(null);
   };
 
   if (!currentOrganization) {
@@ -148,9 +208,105 @@ export default function RouteOptimizationPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           {selectedOrders.length > 0 && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-blue-700">
-                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                <span>{selectedOrders.length} pedidos seleccionados</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-blue-700">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                  <span>{selectedOrders.length} pedidos seleccionados</span>
+                </div>
+                
+                <div className="flex gap-2">
+                  {selectedOrders.length >= 2 && (
+                    <button
+                      onClick={handleOptimizeRoute}
+                      disabled={isOptimizing}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      {isOptimizing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Optimizando...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4" />
+                          Optimizar Ruta
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Información de la ruta optimizada */}
+          {showOptimizedRoute && optimizedRoute && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h3 className="text-lg font-semibold text-green-800 mb-3">
+                🚀 Ruta Optimizada con IA (Google OR-Tools)
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {optimizedRoute.optimized_route.stops.length}
+                  </div>
+                  <div className="text-sm text-green-700">Paradas</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {optimizedRoute.optimized_route.total_distance.toFixed(2)} km
+                  </div>
+                  <div className="text-sm text-green-700">Distancia Total</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {optimizedRoute.optimized_route.total_time.toFixed(1)} min
+                  </div>
+                  <div className="text-sm text-green-700">Tiempo Total</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {optimizedRoute.processing_time.toFixed(3)}s
+                  </div>
+                  <div className="text-sm text-green-700">Tiempo de Cálculo</div>
+                </div>
+              </div>
+              
+              {/* Métricas de optimización */}
+              <div className="mt-4 p-3 bg-white rounded border border-green-200">
+                <h4 className="text-sm font-medium text-green-800 mb-2">Métricas de Optimización:</h4>
+                <div className="grid grid-cols-3 gap-4 text-center text-xs">
+                  <div>
+                    <div className="font-medium text-gray-900">Algoritmo</div>
+                    <div className="text-gray-600">{optimizedRoute.optimized_route.optimization_metrics.algorithm}</div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Tiempo Solver</div>
+                    <div className="text-gray-600">{optimizedRoute.optimized_route.optimization_metrics.solver_time}ms</div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Locaciones</div>
+                    <div className="text-gray-600">{optimizedRoute.optimized_route.optimization_metrics.locations_optimized}</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Lista de paradas optimizadas */}
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-green-800 mb-2">Orden de Paradas Optimizado:</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {optimizedRoute.optimized_route.stops.map((stop) => (
+                    <div key={stop.order.id} className="flex items-center gap-2 p-2 bg-white rounded border border-green-200">
+                      <div className="w-6 h-6 bg-green-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {stop.stop_number}
+                      </div>
+                      <div className="text-xs">
+                        <div className="font-medium text-gray-900">#{stop.order.order_number}</div>
+                        <div className="text-gray-500">{stop.distance_from_previous.toFixed(3)} km</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -164,6 +320,8 @@ export default function RouteOptimizationPage() {
             onClearAll={handleClearAll}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
+            optimizedRoute={showOptimizedRoute ? optimizedRoute : undefined}
+            showOptimizedRoute={showOptimizedRoute}
           />
         </div>
       </Page>
