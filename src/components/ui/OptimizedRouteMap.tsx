@@ -241,23 +241,15 @@ export function OptimizedRouteMap({
 
   // Función para mostrar la ruta optimizada con geometría completa
   const displayOptimizedRouteWithGeometry = (route: any) => {
-    console.log('🔍 displayOptimizedRouteWithGeometry iniciado');
-    console.log('🔍 route:', route);
-    
-    if (!map) {
-      console.log('❌ No hay mapa disponible');
-      return;
-    }
+    if (!map) return;
     
     try {
-      console.log('🔍 Limpiando marcadores anteriores...');
       // Limpiar marcadores anteriores
       if (map._markers) {
         map._markers.forEach((marker: any) => marker.remove());
         map._markers = [];
       }
 
-      console.log('🔍 Limpiando capas anteriores...');
       // Limpiar capas de ruta anteriores
       if (map.getLayer('optimized-route-layer')) {
         map.removeLayer('optimized-route-layer');
@@ -266,7 +258,6 @@ export function OptimizedRouteMap({
         map.removeSource('optimized-route');
       }
 
-      console.log('🔍 Agregando geometría de la ruta...');
       // Agregar la geometría de la ruta
       const routeGeoJSON = {
         type: 'Feature',
@@ -294,7 +285,6 @@ export function OptimizedRouteMap({
         }
       });
 
-      console.log('🔍 Agregando marcadores numerados...');
       // Agregar marcadores numerados para cada parada
       const stops = optimizedRoute.optimized_route.stops;
       
@@ -397,13 +387,6 @@ export function OptimizedRouteMap({
       </div>
     );
   }
-
-  // Debug: Mostrar información sobre el estado
-  console.log('OptimizedRouteMap render:', {
-    showOptimizedRoute,
-    hasOptimizedRoute: !!optimizedRoute,
-    optimizedRoute: optimizedRoute
-  });
 
   // Solo retornar null si no hay datos de ruta optimizada
   if (!optimizedRoute) {
