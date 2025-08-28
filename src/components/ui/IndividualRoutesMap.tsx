@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Navigation, Route, Clock, Car, AlertCircle, X, Package } from 'lucide-react';
+import { MapPin, Navigation, Route, Clock, Car, AlertCircle, X, Package, Zap } from 'lucide-react';
 import { Button } from './Button';
 import { Checkbox } from './Checkbox';
 import { getMapboxToken, isMapboxConfigured } from '@/lib/mapbox';
@@ -47,6 +47,9 @@ export function IndividualRoutesMap({
   const [isMapReady, setIsMapReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
+  const [showOptimizedRoute, setShowOptimizedRoute] = useState(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
@@ -101,10 +104,10 @@ export function IndividualRoutesMap({
 
   // 2. Una vez el mapa cargado, cargar todas las rutas
   useEffect(() => {
-    if (isMapReady && map && selectedOrders.length > 0) {
+    if (isMapReady && map && selectedOrders.length > 0 && !showOptimizedRoute) {
       loadAllRoutes();
     }
-  }, [isMapReady, map, selectedOrders]);
+  }, [isMapReady, map, selectedOrders, showOptimizedRoute]);
 
   const initializeMap = () => {
     if (!mapContainerRef.current) return;
@@ -300,6 +303,190 @@ export function IndividualRoutesMap({
     }
   };
 
+  const optimizeRoute = async () => {
+    if (selectedOrders.length < 2) {
+      setError('Selecciona al menos 2 pedidos para optimizar la ruta');
+      return;
+    }
+
+    setIsOptimizing(true);
+    setError(null);
+
+    try {
+      const token = getMapboxToken();
+      if (!token) {
+        throw new Error('Mapbox token no configurado');
+      }
+
+      // Construir coordenadas para la ruta optimizada
+      // Formato: sucursal;pedido1;pedido2;pedido3;sucursal
+      let coordinates = `${pickupLocation.lng},${pickupLocation.lat}`;
+      
+      // Agregar coordenadas de los pedidos seleccionados
+      selectedOrders.forEach(orderId => {
+        const order = orders.find(o => o.id === orderId);
+        if (order && order.deliveryLocation.lat && order.deliveryLocation.lng) {
+          coordinates += `;${order.deliveryLocation.lng},${order.deliveryLocation.lat}`;
+        }
+      });
+      
+      // Agregar regreso a sucursal
+      coordinates += `;${pickupLocation.lng},${pickupLocation.lat}`;
+
+      const baseUrl = 'https://api.mapbox.com/directions/v5/mapbox';
+      const profile = 'driving';
+      
+      const params = new URLSearchParams({
+        access_token: token,
+        geometries: 'geojson',
+        overview: 'full',
+        steps: 'true'
+      });
+
+      const url = `${baseUrl}/${profile}/${coordinates}?${params}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Error en la API Mapbox: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        setOptimizedRoute(route);
+        setShowOptimizedRoute(true);
+        
+        // Mostrar la ruta optimizada en el mapa
+        displayOptimizedRoute(route);
+        
+        // Ajustar vista para mostrar toda la ruta
+        fitMapToOptimizedRoute(route);
+      } else {
+        throw new Error('No se pudo generar la ruta optimizada');
+      }
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const displayOptimizedRoute = (route: any) => {
+    if (!map) return;
+
+    // Limpiar rutas individuales
+    clearAllRoutes();
+
+    // Agregar la ruta optimizada
+    const routeGeoJSON = {
+      type: 'Feature',
+      properties: {},
+      geometry: route.geometry
+    };
+
+    map.addSource('optimized-route', {
+      type: 'geojson',
+      data: routeGeoJSON
+    });
+
+    map.addLayer({
+      id: 'optimized-route-layer',
+      type: 'line',
+      source: 'optimized-route',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#10B981',
+        'line-width': 6,
+        'line-opacity': 0.9
+      }
+    });
+
+    // Agregar marcadores numerados para cada parada
+    if (route.legs && route.legs.length > 0) {
+      route.legs.forEach((leg: any, index: number) => {
+        if (index === 0) return; // Saltar la primera parada (sucursal)
+        
+        const coordinates = leg.steps[0].maneuver.location;
+        const orderId = selectedOrders[index - 1];
+        const order = orders.find(o => o.id === orderId);
+        
+        if (order) {
+          const marker = new window.mapboxgl.Marker({ 
+            element: createCustomMarker(`${index}`, '#10B981')
+          })
+            .setLngLat(coordinates)
+            .addTo(map);
+
+          const popup = new window.mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+              <div class="text-center">
+                <div class="font-semibold text-green-600">Parada #${index}</div>
+                <div class="text-sm text-gray-600">Pedido #${order.orderNumber}</div>
+                <div class="text-xs text-gray-500 mt-1">
+                  ${order.deliveryLocation.address}
+                </div>
+              </div>
+            `);
+          marker.setPopup(popup);
+        }
+      });
+    }
+  };
+
+  const fitMapToOptimizedRoute = (route: any) => {
+    if (!map || !route.geometry || !route.geometry.coordinates) return;
+
+    try {
+      const bounds = new window.mapboxgl.LngLatBounds();
+      
+      route.geometry.coordinates.forEach((coord: number[]) => {
+        bounds.extend(coord);
+      });
+      
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds, { padding: 50 });
+      }
+    } catch (error) {
+      map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+      map.setZoom(12);
+    }
+  };
+
+  const clearOptimizedRoute = () => {
+    if (!map) return;
+
+    // Remover capa de ruta optimizada
+    if (map.getLayer('optimized-route-layer')) {
+      map.removeLayer('optimized-route-layer');
+    }
+    if (map.getSource('optimized-route')) {
+      map.removeSource('optimized-route');
+    }
+
+    // Limpiar marcadores numerados
+    const markersToRemove: any[] = [];
+    map._markers?.forEach((marker: any) => {
+      if (marker._lngLat) {
+        const isPickup = marker._lngLat.lng === pickupLocation.lng && 
+                        marker._lngLat.lat === pickupLocation.lat;
+        if (!isPickup) {
+          markersToRemove.push(marker);
+        }
+      }
+    });
+
+    markersToRemove.forEach(marker => marker.remove());
+
+    setShowOptimizedRoute(false);
+    setOptimizedRoute(null);
+  };
+
   const fitMapToAllRoutes = () => {
     if (!map || selectedOrders.length === 0) return;
 
@@ -369,6 +556,23 @@ export function IndividualRoutesMap({
     }).format(amount);
   };
 
+  const formatDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    }
+    return `${minutes}m`;
+  };
+
+  const formatDistance = (meters: number) => {
+    if (meters >= 1000) {
+      return `${(meters / 1000).toFixed(1)} km`;
+    }
+    return `${Math.round(meters)} m`;
+  };
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch = searchTerm === '' || 
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -394,30 +598,91 @@ export function IndividualRoutesMap({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            Mapa de Rutas Individuales
+            {showOptimizedRoute ? 'Ruta Optimizada' : 'Mapa de Rutas Individuales'}
           </h3>
           <p className="text-sm text-gray-600">
-            {selectedOrders.length > 0 
-              ? `${selectedOrders.length} pedido(s) seleccionado(s)`
-              : 'Selecciona pedidos para ver sus rutas'
+            {showOptimizedRoute 
+              ? `Ruta optimizada con ${selectedOrders.length} paradas`
+              : selectedOrders.length > 0 
+                ? `${selectedOrders.length} pedido(s) seleccionado(s)`
+                : 'Selecciona pedidos para ver sus rutas'
             }
           </p>
         </div>
         
-        {selectedOrders.length > 0 && (
-          <Button
-            onClick={() => {
-              clearAllRoutes();
-              onClearAll();
-            }}
-            variant="outline"
-            size="sm"
-          >
-            <X className="w-4 h-4 mr-2" />
-            Limpiar Rutas
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {selectedOrders.length >= 2 && !showOptimizedRoute && (
+            <Button
+              onClick={optimizeRoute}
+              disabled={isOptimizing}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isOptimizing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Optimizando...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Optimizar Ruta
+                </>
+              )}
+            </Button>
+          )}
+          
+          {showOptimizedRoute && (
+            <Button
+              onClick={clearOptimizedRoute}
+              variant="outline"
+              size="sm"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Volver a Rutas Individuales
+            </Button>
+          )}
+          
+          {selectedOrders.length > 0 && !showOptimizedRoute && (
+            <Button
+              onClick={() => {
+                clearAllRoutes();
+                onClearAll();
+              }}
+              variant="outline"
+              size="sm"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Limpiar Rutas
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Información de la ruta optimizada */}
+      {showOptimizedRoute && optimizedRoute && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {formatDistance(optimizedRoute.distance)}
+              </div>
+              <div className="text-sm text-green-700">Distancia Total</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {formatDuration(optimizedRoute.duration)}
+              </div>
+              <div className="text-sm text-green-700">Tiempo Total</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {selectedOrders.length}
+              </div>
+              <div className="text-sm text-green-700">Paradas</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Layout de dos columnas: Mapa + Lista de pedidos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -451,6 +716,16 @@ export function IndividualRoutesMap({
               </div>
             )}
 
+            {/* Loading overlay para optimización */}
+            {isOptimizing && (
+              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-20">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Optimizando ruta...</p>
+                </div>
+              </div>
+            )}
+
             {/* Error overlay */}
             {error && (
               <div className="absolute inset-0 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center z-20">
@@ -471,7 +746,9 @@ export function IndividualRoutesMap({
           <div className="bg-white rounded-lg border border-gray-200 p-4 h-[600px] overflow-hidden flex flex-col">
             {/* Header de la lista */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
-              <h4 className="text-sm font-medium text-gray-900">Pedidos</h4>
+              <h4 className="text-sm font-medium text-gray-900">
+                {showOptimizedRoute ? 'Paradas de la Ruta' : 'Pedidos'}
+              </h4>
               <div className="text-right">
                 <div className="text-xs text-gray-500">
                   {selectedOrders.length} de {orders.length}
@@ -480,45 +757,53 @@ export function IndividualRoutesMap({
             </div>
 
             {/* Búsqueda */}
-            <div className="mb-3">
-              <input
-                type="text"
-                placeholder="Buscar pedidos..."
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            {!showOptimizedRoute && (
+              <div className="mb-3">
+                <input
+                  type="text"
+                  placeholder="Buscar pedidos..."
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            )}
 
             {/* Botón seleccionar todo */}
-            <div className="mb-3">
-              <Button
-                onClick={onSelectAll}
-                variant="outline"
-                size="sm"
-                className="w-full text-xs"
-              >
-                {selectedOrders.length === orders.length 
-                  ? 'Deseleccionar Todo' 
-                  : 'Seleccionar Todo'
-                }
-              </Button>
-            </div>
+            {!showOptimizedRoute && (
+              <div className="mb-3">
+                <Button
+                  onClick={onSelectAll}
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                >
+                  {selectedOrders.length === orders.length 
+                    ? 'Deseleccionar Todo' 
+                    : 'Seleccionar Todo'
+                  }
+                </Button>
+              </div>
+            )}
 
             {/* Lista de pedidos */}
             <div className="flex-1 overflow-y-auto space-y-2">
-              {filteredOrders.map((order) => {
+              {filteredOrders.map((order, index) => {
                 const isSelected = selectedOrders.includes(order.id);
+                const stopNumber = showOptimizedRoute ? index + 1 : null;
                 
                 return (
                   <div
                     key={order.id}
                     className={`p-3 rounded-lg border transition-colors cursor-pointer ${
-                      isSelected
+                      showOptimizedRoute
+                        ? 'border-green-500 bg-green-50'
+                        : isSelected
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                     onClick={(e) => {
+                      if (showOptimizedRoute) return; // No permitir selección en modo optimizado
                       if ((e.target as HTMLElement).closest('.checkbox-container')) {
                         return;
                       }
@@ -526,13 +811,21 @@ export function IndividualRoutesMap({
                     }}
                   >
                     <div className="flex items-start gap-2">
-                      <div className="checkbox-container">
-                        <Checkbox
-                          checked={isSelected}
-                          onChange={() => onOrderSelection(order.id)}
-                          className="mt-0.5"
-                        />
-                      </div>
+                      {!showOptimizedRoute && (
+                        <div className="checkbox-container">
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={() => onOrderSelection(order.id)}
+                            className="mt-0.5"
+                          />
+                        </div>
+                      )}
+                      
+                      {showOptimizedRoute && stopNumber && (
+                        <div className="w-6 h-6 bg-green-600 text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">
+                          {stopNumber}
+                        </div>
+                      )}
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -566,7 +859,7 @@ export function IndividualRoutesMap({
       </div>
 
       {/* Leyenda de colores */}
-      {selectedOrders.length > 0 && (
+      {selectedOrders.length > 0 && !showOptimizedRoute && (
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-gray-900 mb-3">Leyenda de Rutas:</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -581,6 +874,19 @@ export function IndividualRoutesMap({
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Información adicional de la ruta optimizada */}
+      {showOptimizedRoute && optimizedRoute && (
+        <div className="bg-green-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-green-900 mb-3">Detalles de la Ruta Optimizada:</h4>
+          <div className="text-xs text-green-700 space-y-1">
+            <p>• La ruta comienza y termina en la sucursal</p>
+            <p>• Los pedidos se visitan en el orden más eficiente</p>
+            <p>• El tiempo incluye el tiempo de conducción entre paradas</p>
+            <p>• La distancia total considera el regreso a la sucursal</p>
           </div>
         </div>
       )}
