@@ -47,6 +47,7 @@ export function IndividualRoutesMap({
   const [isMapReady, setIsMapReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [routesLoaded, setRoutesLoaded] = useState(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
@@ -204,6 +205,9 @@ export function IndividualRoutesMap({
       // Ajustar vista para mostrar todas las rutas
       fitMapToAllRoutes();
 
+      // Marcar que las rutas se han cargado exitosamente
+      setRoutesLoaded(true);
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);
@@ -336,6 +340,9 @@ export function IndividualRoutesMap({
   const clearAllRoutes = () => {
     if (!map) return;
 
+    // Resetear el estado de rutas cargadas
+    setRoutesLoaded(false);
+
     // Limpiar todas las capas de rutas
     const layersToRemove: string[] = [];
     map.getStyle().layers?.forEach((layer: any) => {
@@ -422,7 +429,8 @@ export function IndividualRoutesMap({
                 {!isMapReady && <span className="text-blue-600">🗺️ Cargando mapa...</span>}
                 {isMapReady && orders.length === 0 && <span className="text-yellow-600">📦 Esperando pedidos del backend...</span>}
                 {isMapReady && orders.length > 0 && selectedOrders.length === 0 && <span className="text-yellow-600">✅ Mapa listo, selecciona pedidos</span>}
-                {isMapReady && orders.length > 0 && selectedOrders.length > 0 && <span className="text-green-600">🚀 Cargando rutas...</span>}
+                {isMapReady && orders.length > 0 && selectedOrders.length > 0 && !routesLoaded && <span className="text-green-600">🚀 Cargando rutas...</span>}
+                {routesLoaded && <span className="text-green-600">✅ Últimas rutas cargadas</span>}
               </div>
             </div>
 
