@@ -1274,8 +1274,26 @@ export function IndividualRoutesMap({
               </div>
             </div>
           </div>
+
+          {/* MAPA PRIMERO - Ruta Optimizada */}
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              🗺️ Mapa de la Ruta Optimizada
+            </h4>
+            <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
+              <div 
+                ref={optimizedMapContainerRef}
+                className="w-full h-96 rounded-lg overflow-hidden"
+                style={{ minHeight: '400px' }}
+              />
+              <div className="mt-3 text-center text-sm text-gray-600">
+                Mapa dedicado mostrando la ruta optimizada con {externalOptimizedRoute.optimized_route.stops.length} paradas
+              </div>
+            </div>
+          </div>
           
-          {/* Métricas principales en tarjetas elegantes */}
+          {/* DETALLES DESPUÉS - Métricas principales en tarjetas elegantes */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
               <div className="text-center">
@@ -1294,12 +1312,10 @@ export function IndividualRoutesMap({
               </div>
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-700">
-                  {externalOptimizedRoute.optimized_route.total_time.toFixed(0)}
-                </div>
-                <div className="text-sm font-medium text-purple-800">min Total</div>
+              <div className="text-3xl font-bold text-purple-700">
+                {externalOptimizedRoute.optimized_route.total_time.toFixed(0)}
               </div>
+              <div className="text-sm font-medium text-purple-800">min Total</div>
             </div>
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
               <div className="text-center">
@@ -1371,24 +1387,6 @@ export function IndividualRoutesMap({
               </div>
               <div>
                 <span className="font-medium">Tiempo de procesamiento:</span> {externalOptimizedRoute.processing_time.toFixed(3)}s
-              </div>
-            </div>
-          </div>
-
-          {/* NUEVO MAPA PARA LA RUTA OPTIMIZADA */}
-          <div className="mt-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              🗺️ Mapa de la Ruta Optimizada
-            </h4>
-            <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
-              <div 
-                ref={optimizedMapContainerRef}
-                className="w-full h-96 rounded-lg overflow-hidden"
-                style={{ minHeight: '400px' }}
-              />
-              <div className="mt-3 text-center text-sm text-gray-600">
-                Mapa dedicado mostrando la ruta optimizada con {externalOptimizedRoute.optimized_route.stops.length} paradas
               </div>
             </div>
           </div>
