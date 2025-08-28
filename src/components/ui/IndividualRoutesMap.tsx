@@ -79,16 +79,19 @@ export function IndividualRoutesMap({
 
   // Generar color verde que va de claro a oscuro según el número de parada
   const generateStopColor = (stopNumber: number, totalStops: number) => {
-    // Base verde claro
-    const baseGreen = [34, 197, 94]; // #22C55E
+    // Verde claro al inicio (no tan extremo)
+    const startGreen = [187, 247, 208]; // #BBF7D0 - verde claro suave
     
-    // Calcular qué tan oscuro debe ser (0 = muy claro, 1 = muy oscuro)
+    // Verde medio-oscuro al final (no tan extremo)
+    const endGreen = [34, 197, 94]; // #22C55E - verde medio
+    
+    // Calcular qué tan oscuro debe ser (0 = claro, 1 = oscuro)
     const darknessFactor = (stopNumber - 1) / Math.max(totalStops - 1, 1);
     
-    // Aplicar factor de oscuridad
-    const red = Math.round(baseGreen[0] * (1 - darknessFactor * 0.6));
-    const green = Math.round(baseGreen[1] * (1 - darknessFactor * 0.4));
-    const blue = Math.round(baseGreen[2] * (1 - darknessFactor * 0.6));
+    // Interpolación lineal entre el color claro y oscuro
+    const red = Math.round(startGreen[0] + (endGreen[0] - startGreen[0]) * darknessFactor);
+    const green = Math.round(startGreen[1] + (endGreen[1] - startGreen[1]) * darknessFactor);
+    const blue = Math.round(startGreen[2] + (endGreen[2] - startGreen[2]) * darknessFactor);
     
     return `rgb(${red}, ${green}, ${blue})`;
   };
