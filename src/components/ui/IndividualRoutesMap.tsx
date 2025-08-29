@@ -148,10 +148,10 @@ export function IndividualRoutesMap({
       `;
     } else {
       el.innerHTML = `
-        <div class="w-20 h-12 flex items-center justify-center text-white font-bold shadow-xl rounded-lg" 
-             style="background-color: ${color}; border: 3px solid white;">
-          <div class="text-center text-sm">
-            ${label}
+        <div class="w-12 h-12 flex items-center justify-center text-white font-bold shadow-lg rounded-full" 
+             style="background-color: ${color}; border: 2px solid white;">
+          <div class="text-center text-sm font-bold">
+            P
           </div>
         </div>
       `;
