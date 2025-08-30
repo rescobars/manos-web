@@ -1,5 +1,8 @@
 // Tipos para la aplicación web basados en el response del backend
 
+// Importar tipos de Mapbox
+import './mapbox';
+
 export interface User {
   uuid: string;
   email: string;

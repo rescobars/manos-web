@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, AlertCircle } from 'lucide-react';
 import { Button } from './Button';
 import { Checkbox } from './Checkbox';
-import { getMapboxToken, isMapboxConfigured } from '@/lib/mapbox';
+import { BaseMap, useMap } from './BaseMap';
+import { MapMarkers } from './MapMarkers';
+import { isMapboxConfigured } from '@/lib/mapbox';
 
 interface Location {
   lat: number;
@@ -43,13 +45,11 @@ export function IndividualRoutesMap({
   searchTerm,
   onSearchChange
 }: IndividualRoutesMapProps) {
-  const [map, setMap] = useState<any>(null);
-  const [isMapReady, setIsMapReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [routesLoaded, setRoutesLoaded] = useState(false);
   
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const { map, isMapReady, handleMapReady } = useMap();
 
   // Generar colores únicos para cada pedido
   const generateRouteColor = (orderId: string) => {
@@ -69,312 +69,17 @@ export function IndividualRoutesMap({
     return colors[index];
   };
 
-  // Inicializar el mapa
+  const handleRouteLoaded = () => {
+    setRoutesLoaded(true);
+    setIsLoading(false);
+  };
+
+  // Mostrar loading cuando se seleccionen pedidos y el mapa esté listo
   useEffect(() => {
-    if (!mapContainerRef.current || !isMapboxConfigured()) return;
-
-    const loadMapbox = async () => {
-      try {
-        if (window.mapboxgl) {
-          initializeMap();
-          return;
-        }
-
-        const link = document.createElement('link');
-        link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
-        link.rel = 'stylesheet';
-        document.head.appendChild(link);
-
-        const script = document.createElement('script');
-        script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
-        script.onload = () => {
-          window.mapboxgl.accessToken = getMapboxToken();
-          initializeMap();
-        };
-        document.head.appendChild(script);
-      } catch (error) {
-        console.error('Error loading Mapbox:', error);
-      }
-    };
-
-    loadMapbox();
-  }, []);
-
-  // Cargar rutas cuando el mapa esté listo y haya pedidos seleccionados
-  useEffect(() => {
-    // Flujo secuencial:
-    // 1. Mapa debe estar completamente cargado
-    // 2. Pedidos del backend deben estar disponibles
-    // 3. Debe haber pedidos seleccionados
-    if (isMapReady && map && orders.length > 0 && selectedOrders.length > 0) {
-      console.log('🗺️ Mapa listo + Pedidos disponibles + Pedidos seleccionados = Cargando rutas');
-      loadAllRoutes();
-    } else if (isMapReady && map) {
-      console.log('🗺️ Mapa listo, esperando pedidos del backend...');
-    } else if (orders.length > 0 && selectedOrders.length > 0) {
-      console.log('📦 Pedidos disponibles, esperando que el mapa esté listo...');
+    if (isMapReady && selectedOrders.length > 0 && !routesLoaded) {
+      setIsLoading(true);
     }
-  }, [isMapReady, map, orders, selectedOrders]);
-
-  const initializeMap = () => {
-    if (!mapContainerRef.current) return;
-
-    const mapInstance = new window.mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [pickupLocation.lng, pickupLocation.lat],
-      zoom: 12
-    });
-
-    mapInstance.on('load', () => {
-      setMap(mapInstance);
-      setIsMapReady(true);
-      addPickupMarker(mapInstance);
-    });
-  };
-
-  const createCustomMarker = (label: string, color: string) => {
-    const el = document.createElement('div');
-    el.className = 'custom-marker';
-    
-    const isOrderNumber = label.length > 1 && !isNaN(Number(label));
-    
-    if (isOrderNumber) {
-      el.innerHTML = `
-        <div class="w-16 h-16 rounded-full border-3 border-white shadow-xl flex items-center justify-center text-white font-bold" 
-             style="background-color: ${color}; font-size: 16px;">
-          ${label}
-        </div>
-      `;
-    } else {
-      el.innerHTML = `
-        <div class="w-12 h-12 flex items-center justify-center text-white font-bold shadow-lg rounded-full" 
-             style="background-color: ${color}; border: 2px solid white;">
-          <div class="text-center text-sm font-bold">
-            P
-          </div>
-        </div>
-      `;
-    }
-    
-    return el;
-  };
-
-  const addPickupMarker = (mapInstance: any) => {
-    const pickupMarker = new window.mapboxgl.Marker({ 
-      element: createCustomMarker('Sucursal', '#2563EB')
-    })
-      .setLngLat([pickupLocation.lng, pickupLocation.lat])
-      .addTo(mapInstance);
-
-    const popup = new window.mapboxgl.Popup({ offset: 25 })
-      .setHTML(`
-        <div class="text-center">
-          <div class="font-semibold text-blue-600">🏪 Sucursal</div>
-          <div class="text-sm text-gray-600">${pickupLocation.address}</div>
-        </div>
-      `);
-    pickupMarker.setPopup(popup);
-  };
-
-  const loadAllRoutes = async () => {
-    if (!map || !isMapReady) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Limpiar todas las rutas existentes
-      clearAllRoutes();
-
-      const token = getMapboxToken();
-      if (!token) {
-        throw new Error('Mapbox token no configurado');
-      }
-
-      // Cargar ruta para cada pedido seleccionado
-      for (let i = 0; i < selectedOrders.length; i++) {
-        const orderId = selectedOrders[i];
-        const order = orders.find(o => o.id === orderId);
-        if (order) {
-          const color = generateRouteColor(order.id);
-          await loadRouteForOrder(order, color);
-        }
-      }
-
-      // Ajustar vista para mostrar todas las rutas
-      fitMapToAllRoutes();
-
-      // Marcar que las rutas se han cargado exitosamente
-      setRoutesLoaded(true);
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadRouteForOrder = async (order: Order, color: string) => {
-    try {
-      if (!order.deliveryLocation.lat || !order.deliveryLocation.lng) {
-        return;
-      }
-
-      const lat = Number(order.deliveryLocation.lat);
-      const lng = Number(order.deliveryLocation.lng);
-      
-      if (isNaN(lat) || isNaN(lng)) {
-        return;
-      }
-
-      const token = getMapboxToken();
-      const baseUrl = 'https://api.mapbox.com/directions/v5/mapbox';
-      const profile = 'driving';
-      
-      const coordinates = `${pickupLocation.lng},${pickupLocation.lat};${lng},${lat}`;
-      
-      const params = new URLSearchParams({
-        access_token: token,
-        geometries: 'geojson',
-        overview: 'full',
-        steps: 'true'
-      });
-
-      const url = `${baseUrl}/${profile}/${coordinates}?${params}`;
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Error en la API Mapbox: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.routes && data.routes.length > 0) {
-        const route = data.routes[0];
-        
-        if (!route.geometry || !route.geometry.coordinates) {
-          return;
-        }
-        
-        const routeGeoJSON = {
-          type: 'Feature',
-          properties: {},
-          geometry: route.geometry
-        };
-        
-        const routeId = `route-${order.id}`;
-        const sourceId = `source-${order.id}`;
-        
-        map.addSource(sourceId, {
-          type: 'geojson',
-          data: routeGeoJSON
-        });
-
-        map.addLayer({
-          id: routeId,
-          type: 'line',
-          source: sourceId,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round'
-          },
-          paint: {
-            'line-color': color,
-            'line-width': 4,
-            'line-opacity': 0.8
-          }
-        });
-
-        // Agregar marcador de entrega
-        const marker = new window.mapboxgl.Marker({ 
-          element: createCustomMarker(order.orderNumber, color)
-        })
-          .setLngLat([lng, lat])
-          .addTo(map);
-
-        const popup = new window.mapboxgl.Popup({ offset: 25 })
-          .setHTML(`
-            <div class="text-center">
-              <div class="font-semibold" style="color: ${color}">Pedido #${order.orderNumber}</div>
-              <div class="text-sm text-gray-600">${order.deliveryLocation.address}</div>
-              <div class="text-xs text-gray-500 mt-1">
-                Distancia: ${(route.distance / 1000).toFixed(1)} km<br>
-                Tiempo: ${Math.floor(route.duration / 60)} min
-              </div>
-            </div>
-          `);
-        marker.setPopup(popup);
-      }
-
-    } catch (error) {
-      console.error(`Error cargando ruta para pedido ${order.orderNumber}:`, error);
-    }
-  };
-
-  const fitMapToAllRoutes = () => {
-    if (!map || selectedOrders.length === 0) return;
-
-    try {
-      const bounds = new window.mapboxgl.LngLatBounds();
-      
-      bounds.extend([pickupLocation.lng, pickupLocation.lat]);
-      
-      selectedOrders.forEach(orderId => {
-        const order = orders.find(o => o.id === orderId);
-        if (order && order.deliveryLocation.lat && order.deliveryLocation.lng) {
-          bounds.extend([order.deliveryLocation.lng, order.deliveryLocation.lat]);
-        }
-      });
-      
-      if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, { padding: 50 });
-      }
-    } catch (error) {
-      map.setCenter([pickupLocation.lng, pickupLocation.lat]);
-      map.setZoom(12);
-    }
-  };
-
-  const clearAllRoutes = () => {
-    if (!map) return;
-
-    // Resetear el estado de rutas cargadas
-    setRoutesLoaded(false);
-
-    // Limpiar todas las capas de rutas
-    const layersToRemove: string[] = [];
-    map.getStyle().layers?.forEach((layer: any) => {
-      if (layer.id.startsWith('route-')) {
-        layersToRemove.push(layer.id);
-      }
-    });
-
-    layersToRemove.forEach(layerId => {
-      if (map.getLayer(layerId)) {
-        map.removeLayer(layerId);
-      }
-      const sourceId = layerId.replace('route-', 'source-');
-      if (map.getSource(sourceId)) {
-        map.removeSource(sourceId);
-      }
-    });
-
-    // Limpiar todos los marcadores excepto el de pickup
-    const markersToRemove: any[] = [];
-    map._markers?.forEach((marker: any) => {
-      if (marker._lngLat) {
-        const isPickup = marker._lngLat.lng === pickupLocation.lng && 
-                        marker._lngLat.lat === pickupLocation.lat;
-        if (!isPickup) {
-          markersToRemove.push(marker);
-        }
-      }
-    });
-
-    markersToRemove.forEach(marker => marker.remove());
-  };
+  }, [isMapReady, selectedOrders, routesLoaded]);
 
   const clearError = () => setError(null);
 
@@ -423,25 +128,32 @@ export function IndividualRoutesMap({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Mapa - ocupa 2/3 del espacio */}
         <div className="lg:col-span-2">
-            {/* Status indicator */}
-            <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="text-sm text-gray-600">
-                {!isMapReady && <span className="text-blue-600">🗺️ Cargando mapa...</span>}
-                {isMapReady && orders.length === 0 && <span className="text-yellow-600">📦 Esperando pedidos del backend...</span>}
-                {isMapReady && orders.length > 0 && selectedOrders.length === 0 && <span className="text-yellow-600">✅ Mapa listo, selecciona pedidos</span>}
-                {isMapReady && orders.length > 0 && selectedOrders.length > 0 && !routesLoaded && <span className="text-green-600">🚀 Cargando rutas...</span>}
-                {routesLoaded && <span className="text-green-600">✅ Últimas rutas cargadas</span>}
-              </div>
+          {/* Status indicator */}
+          <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="text-sm text-gray-600">
+              {!isMapReady && <span className="text-blue-600">🗺️ Cargando mapa...</span>}
+              {isMapReady && orders.length === 0 && <span className="text-yellow-600">📦 Esperando pedidos del backend...</span>}
+              {isMapReady && orders.length > 0 && selectedOrders.length === 0 && <span className="text-yellow-600">✅ Mapa listo, selecciona pedidos</span>}
+              {isMapReady && orders.length > 0 && selectedOrders.length > 0 && !routesLoaded && <span className="text-green-600">🚀 Cargando rutas...</span>}
+              {routesLoaded && <span className="text-green-600">✅ Últimas rutas cargadas</span>}
             </div>
+          </div>
 
-            <div className="relative">
-            
-            <div 
-              ref={mapContainerRef} 
-              className={`w-full h-[600px] rounded-lg border border-gray-200 ${
-                !isMapReady ? 'opacity-50' : 'opacity-100'
-              } transition-opacity duration-300`}
-            />
+          <div className="relative">
+            <BaseMap
+              center={[pickupLocation.lng, pickupLocation.lat]}
+              zoom={12}
+              className="w-full h-[600px] rounded-lg border border-gray-200"
+              onMapReady={handleMapReady}
+            >
+              <MapMarkers
+                map={map}
+                pickupLocation={pickupLocation}
+                orders={orders}
+                selectedOrders={selectedOrders}
+                onRouteLoaded={handleRouteLoaded}
+              />
+            </BaseMap>
             
             {/* Loading overlay para rutas */}
             {isLoading && (
