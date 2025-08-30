@@ -85,3 +85,28 @@
 .leaflet-control-attribution {
   font-size: 10px;
 }
+
+/* Estilos para Mapbox */
+.mapboxgl-map {
+  font-family: inherit;
+  overflow: hidden !important;
+}
+
+.mapboxgl-marker {
+  z-index: 1;
+}
+
+.mapboxgl-popup {
+  z-index: 2;
+}
+
+.mapboxgl-canvas {
+  border-radius: inherit;
+}
+
+/* Contenedor del mapa */
+.map-container {
+  overflow: hidden;
+  position: relative;
+  border-radius: inherit;
+}

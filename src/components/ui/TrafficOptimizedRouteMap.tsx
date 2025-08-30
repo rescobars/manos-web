@@ -93,6 +93,15 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [-90.606249, 14.631631], // Guatemala City
       zoom: 10,
+      maxZoom: 18,
+      minZoom: 8,
+      maxBounds: [
+        [-90.8, 14.4], // Southwest coordinates
+        [-90.4, 14.8]  // Northeast coordinates
+      ],
+      fitBoundsOptions: {
+        padding: { top: 20, bottom: 20, left: 20, right: 20 }
+      }
     });
 
     map.current.addControl(new mapboxgl.NavigationControl());
@@ -334,8 +343,10 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     });
 
     map.current!.fitBounds(bounds, {
-      padding: 50,
+      padding: { top: 20, bottom: 20, left: 20, right: 20 },
       maxZoom: 15,
+      duration: 1000,
+      essential: true
     });
   };
 
@@ -363,7 +374,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     });
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {visit_order.map((visitItem, index) => {
           const waypoint = optimized_waypoints.find(wp => wp.name === visitItem.name);
           if (!waypoint) return null;
@@ -372,17 +383,17 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
           const color = index === 0 ? primaryColor : alternativeColors[index % alternativeColors.length];
 
           return (
-            <div key={index} className="flex items-center p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all duration-200 hover:shadow-sm">
+            <div key={index} className="flex items-center p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all duration-200 hover:shadow-sm">
               {/* Número de orden */}
-              <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg mr-4"
+              <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg shadow-lg mr-2 sm:mr-3 md:mr-4"
                    style={{ backgroundColor: color }}>
                 {visitNumber}
               </div>
               
               {/* Información de la parada */}
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-gray-900 text-lg mb-1">{waypoint.name}</div>
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <div className="font-semibold text-gray-900 text-sm sm:text-base md:text-lg mb-1">{waypoint.name}</div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-xs sm:text-sm text-gray-600">
                   <span className="flex items-center">
                     <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
                     {waypoint.lat.toFixed(4)}
@@ -396,7 +407,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
               
               {/* Indicador de estado */}
               <div className="flex-shrink-0">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-pulse"></div>
               </div>
             </div>
           );
@@ -414,42 +425,42 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Mapa */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-50 to-gray-100 p-6 border-b">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 space-y-4 lg:space-y-0">
+        <div className="bg-gradient-to-r from-slate-50 to-gray-100 p-3 sm:p-4 md:p-6 border-b">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-4 lg:space-y-0">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Mapa de Ruta Optimizada</h2>
-              <p className="text-gray-600">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">Mapa de Ruta Optimizada</h2>
+              <p className="text-sm sm:text-base text-gray-600">
                 Ruta {selectedRouteIndex === 0 ? 'Principal' : `Alternativa ${selectedRouteIndex}`}
               </p>
             </div>
             
             {/* Stats de la ruta seleccionada */}
             {selectedRoute && (
-              <div className="flex items-center space-x-4 lg:space-x-6">
+              <div className="flex items-center justify-center sm:justify-start lg:justify-end space-x-2 sm:space-x-3 lg:space-x-4 xl:space-x-6">
                 <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold text-gray-900">
+                  <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
                     {Math.round(selectedRoute.summary.total_time / 60)}
                   </div>
-                  <div className="text-xs lg:text-sm text-gray-600 font-medium">Minutos</div>
+                  <div className="text-xs sm:text-sm text-gray-600 font-medium">Min</div>
                 </div>
-                <div className="w-px h-10 lg:h-12 bg-gray-300"></div>
+                <div className="w-px h-8 sm:h-10 lg:h-12 bg-gray-300"></div>
                 <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold text-gray-900">
+                  <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
                     {(selectedRoute.summary.total_distance / 1000).toFixed(1)}
                   </div>
-                  <div className="text-xs lg:text-sm text-gray-600 font-medium">Kilómetros</div>
+                  <div className="text-xs sm:text-sm text-gray-600 font-medium">Km</div>
                 </div>
                 {selectedRoute.summary.traffic_delay > 0 && (
                   <>
-                    <div className="w-px h-10 lg:h-12 bg-gray-300"></div>
+                    <div className="w-px h-8 sm:h-10 lg:h-12 bg-gray-300"></div>
                     <div className="text-center">
-                      <div className="text-xl lg:text-2xl font-bold text-red-600">
+                      <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-red-600">
                         +{Math.round(selectedRoute.summary.traffic_delay / 60)}
                       </div>
-                      <div className="text-xs lg:text-sm text-red-600 font-medium">Min tráfico</div>
+                      <div className="text-xs sm:text-sm text-red-600 font-medium">Min tráfico</div>
                     </div>
                   </>
                 )}
@@ -458,12 +469,12 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
           </div>
           
           {/* Selector de Rutas con Diseño Card */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+          <div className="mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
+              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 sm:mr-3"></span>
               Seleccionar Ruta
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
               {getAvailableRoutes().map((route, index) => {
                 const isSelected = index === selectedRouteIndex;
                 const isPrimary = index === 0;
@@ -492,7 +503,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                       {/* Header del card */}
                       <div className="flex items-center justify-between mb-1">
                         <div 
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm ${
                             isSelected ? 'bg-white bg-opacity-20' : 'bg-gray-100'
                           }`}
                           style={{
@@ -503,21 +514,21 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                           {isPrimary ? 'P' : index}
                         </div>
                         {isSelected && (
-                          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full"></div>
                         )}
                       </div>
                       
                       {/* Título del card */}
                       <div className="text-center mb-1">
-                        <div className={`font-semibold text-sm mb-0.5 ${
+                        <div className={`font-semibold text-xs sm:text-sm mb-0.5 ${
                           isSelected ? 'text-white' : 'text-gray-800'
                         }`}>
-                          {isPrimary ? 'Ruta Principal' : `Ruta ${index}`}
+                          {isPrimary ? 'Principal' : `Ruta ${index}`}
                         </div>
                         <div className={`text-xs ${
                           isSelected ? 'text-white text-opacity-90' : 'text-gray-500'
                         }`}>
-                          {isPrimary ? 'Ruta recomendada' : 'Alternativa disponible'}
+                          {isPrimary ? 'Recomendada' : 'Alternativa'}
                         </div>
                       </div>
                       
@@ -527,14 +538,14 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                       }`}>
                         <div className="flex items-center justify-center space-x-1">
                           <span className="text-xs">⏱️</span>
-                          <span className="text-sm font-medium">
-                            {Math.round(route.summary.total_time / 60)} min
+                          <span className="text-xs sm:text-sm font-medium">
+                            {Math.round(route.summary.total_time / 60)}m
                           </span>
                         </div>
                         <div className="flex items-center justify-center space-x-1">
                           <span className="text-xs">📏</span>
-                          <span className="text-sm font-medium">
-                            {(route.summary.total_distance / 1000).toFixed(1)} km
+                          <span className="text-xs sm:text-sm font-medium">
+                            {(route.summary.total_distance / 1000).toFixed(1)}k
                           </span>
                         </div>
                       </div>
@@ -545,36 +556,40 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             </div>
           </div>
         </div>
-        <div className="relative w-full h-96">
-          <div ref={mapContainer} className="w-full h-96" />
+        <div className="relative w-full h-64 sm:h-80 md:h-96 overflow-hidden rounded-lg map-container">
+          <div 
+            ref={mapContainer} 
+            className="w-full h-64 sm:h-80 md:h-96" 
+            style={{ position: 'relative', overflow: 'hidden' }}
+          />
           {!isMapReady && (
-            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                <p className="text-sm text-gray-600">Cargando mapa...</p>
+                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-xs sm:text-sm text-gray-600">Cargando mapa...</p>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      
-
       {/* Orden de visita con diseño moderno */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-            Orden de Visita de la Ruta {selectedRouteIndex === 0 ? 'Principal' : `Alternativa ${selectedRouteIndex}`}
-            <span className="ml-auto bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+            <div className="flex items-center">
+              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 sm:mr-3"></span>
+              Orden de Visita de la Ruta {selectedRouteIndex === 0 ? 'Principal' : `Alternativa ${selectedRouteIndex}`}
+            </div>
+            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full self-start sm:self-auto sm:ml-auto">
               {selectedRoute?.visit_order.length || 0} paradas
             </span>
           </h3>
-          <p className="text-sm text-blue-700 mt-2">
+          <p className="text-xs sm:text-sm text-blue-700 mt-2">
             🎯 Mostrando el orden específico de la ruta seleccionada
           </p>
         </div>
-        <div className="p-6">
+        <div className="p-3 sm:p-4 md:p-6">
           {getVisitOrderDisplay()}
         </div>
       </div>
