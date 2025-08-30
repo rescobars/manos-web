@@ -92,6 +92,19 @@
   overflow: hidden !important;
 }
 
+/* Asegurar que el zoom del mouse funcione correctamente */
+.mapboxgl-canvas-container {
+  cursor: grab;
+}
+
+.mapboxgl-canvas-container:active {
+  cursor: grabbing;
+}
+
+.mapboxgl-canvas {
+  cursor: inherit;
+}
+
 .mapboxgl-marker {
   z-index: 1;
 }

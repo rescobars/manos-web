@@ -96,17 +96,19 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
       center: [-90.606249, 14.631631], // Guatemala City
       zoom: 10,
       maxZoom: 18,
-      minZoom: 8,
-      maxBounds: [
-        [-90.8, 14.4], // Southwest coordinates
-        [-90.4, 14.8]  // Northeast coordinates
-      ],
+      minZoom: 3,
       fitBoundsOptions: {
         padding: { top: 20, bottom: 20, left: 20, right: 20 }
       }
     });
 
     map.current.addControl(new mapboxgl.NavigationControl());
+
+    // Habilitar zoom con mouse wheel
+    map.current.scrollZoom.enable();
+    
+    // Habilitar zoom con doble clic
+    map.current.doubleClickZoom.enable();
 
     // Esperar a que el estilo del mapa esté completamente cargado
     map.current.on('style.load', () => {
@@ -118,6 +120,27 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     map.current.on('load', () => {
       console.log('🚀 Evento load disparado - Mapa inicializado');
     });
+    
+    // Escuchar eventos de zoom para debugging
+    map.current.on('zoom', () => {
+      console.log('🔍 Zoom actual:', map.current?.getZoom());
+    });
+    
+    map.current.on('zoomstart', () => {
+      console.log('🚀 Iniciando zoom');
+    });
+    
+    map.current.on('zoomend', () => {
+      console.log('✅ Zoom completado');
+    });
+    
+    map.current.on('wheel', () => {
+      console.log('🖱️ Evento wheel detectado - Zoom con mouse');
+    });
+    
+    // Asegurar que las interacciones estén habilitadas
+    map.current.dragPan.enable();
+    map.current.dragRotate.enable();
 
     return () => {
       if (map.current) {
@@ -351,7 +374,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
 
     map.current!.fitBounds(bounds, {
       padding: { top: 20, bottom: 20, left: 20, right: 20 },
-      maxZoom: 15,
+      maxZoom: 16,
       duration: 1000,
       essential: true
     });
@@ -615,11 +638,16 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             </div>
           </div>
         </div>
-        <div className="relative w-full h-64 sm:h-80 md:h-96 overflow-hidden rounded-lg map-container">
+        <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] xl:h-[550px] overflow-hidden rounded-lg map-container">
           <div 
             ref={mapContainer} 
-            className="w-full h-64 sm:h-80 md:h-96" 
-            style={{ position: 'relative', overflow: 'hidden' }}
+            className="w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] xl:h-[550px]" 
+            style={{ 
+              position: 'relative', 
+              overflow: 'hidden',
+              cursor: 'grab',
+              touchAction: 'none'
+            }}
           />
           {!isMapReady && (
             <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">

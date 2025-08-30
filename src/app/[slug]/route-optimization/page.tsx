@@ -295,17 +295,7 @@ export default function RouteOptimizationPage() {
                           <div className="flex flex-col gap-2 mr-4">
                             <div className="text-xs text-blue-600 font-medium">Modo de optimización:</div>
                             <div className="flex items-center gap-4">
-                              <label className="flex items-center gap-2 text-sm text-blue-700" title="Respetar el orden en que llegaron los pedidos">
-                                <input
-                                  type="radio"
-                                  name="queueMode"
-                                  checked={!queueMode}
-                                  onChange={() => setQueueMode(false)}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                />
-                                <span>Orden de llegada</span>
-                              </label>
-                              <label className="flex items-center gap-2 text-sm text-blue-700" title="Permitir que el algoritmo optimice el orden de visita sin restricciones">
+                              <label className="flex items-center gap-2 text-sm text-blue-700" title="Mantener el orden cronológico de los pedidos tal como fueron recibidos">
                                 <input
                                   type="radio"
                                   name="queueMode"
@@ -313,11 +303,21 @@ export default function RouteOptimizationPage() {
                                   onChange={() => setQueueMode(true)}
                                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                                 />
-                                <span>Sin orden específico</span>
+                                <span>Mantener orden cronológico</span>
+                              </label>
+                              <label className="flex items-center gap-2 text-sm text-blue-700" title="Permitir que el algoritmo reordene las paradas para máxima eficiencia">
+                                <input
+                                  type="radio"
+                                  name="queueMode"
+                                  checked={!queueMode}
+                                  onChange={() => setQueueMode(false)}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span>Optimizar para máxima eficiencia</span>
                               </label>
                             </div>
                             <div className="text-xs text-blue-500">
-                              {!queueMode ? "Respetará el orden de llegada de los pedidos" : "Optimizará el orden para mejor eficiencia"}
+                              {queueMode ? "Los pedidos se visitarán en el mismo orden en que fueron recibidos" : "El algoritmo reordenará las paradas para minimizar tiempo y distancia"}
                             </div>
                           </div>
                           
