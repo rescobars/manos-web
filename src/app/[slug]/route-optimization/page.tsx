@@ -314,23 +314,6 @@ export default function RouteOptimizationPage() {
           {/* Mapa de ruta optimizada con tráfico - ACTUALIZADO */}
           {trafficOptimizedRoute && (
             <TrafficOptimizedRouteMap
-              origin={{
-                lat: pickupLocation.lat,
-                lon: pickupLocation.lng,
-                name: pickupLocation.address
-              }}
-              destination={{
-                lat: pickupLocation.lat,
-                lon: pickupLocation.lng,
-                name: pickupLocation.address
-              }}
-              waypoints={getOrdersForMap()
-                .filter(order => selectedOrders.includes(order.id))
-                .map(order => ({
-                  lat: order.deliveryLocation.lat,
-                  lon: order.deliveryLocation.lng,
-                  name: order.deliveryLocation.address
-                }))}
               trafficOptimizedRoute={trafficOptimizedRoute}
               showAlternatives={true}
             />

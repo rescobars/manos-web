@@ -17,10 +17,12 @@ mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
 interface TrafficOptimizedRouteMapProps {
   trafficOptimizedRoute: TrafficOptimizationData | null;
+  showAlternatives?: boolean;
 }
 
 const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   trafficOptimizedRoute,
+  showAlternatives = true,
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -157,6 +159,8 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     fitMapToRoute(trafficOptimizedRoute.primary_route.points);
   }, [trafficOptimizedRoute, isMapReady]);
 
+
+
   const clearMap = () => {
     console.log('🧹 clearMap llamado:', { mapExists: !!map.current, isMapReady });
     if (!map.current || !isMapReady) return;
@@ -247,6 +251,9 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
 
     // Agregar marcadores para los waypoints según el visit_order
     addWaypointMarkers(route, routeIndex, color);
+    
+    // Agregar marcador del origen (sucursal)
+    addOriginMarker();
   };
 
   const addWaypointMarkers = (route: RouteType, routeIndex: number, routeColor: string) => {
@@ -350,6 +357,65 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     });
   };
 
+  // Función para agregar marcador del origen (sucursal)
+  const addOriginMarker = () => {
+    if (!map.current || !isMapReady || !trafficOptimizedRoute) return;
+
+    const { origin } = trafficOptimizedRoute.route_info;
+    
+    // Crear marcador del origen con ícono de casita
+    const originMarkerId = 'origin-marker';
+    const originMarkerElement = document.createElement('div');
+    originMarkerElement.className = 'origin-marker';
+    originMarkerElement.innerHTML = `
+      <div class="w-8 h-8 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center cursor-pointer">
+        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+        </svg>
+      </div>
+    `;
+
+    // Crear popup con información de la sucursal
+    const popup = new mapboxgl.Popup({ 
+      offset: { 
+        'top': [0, 0], 
+        'top-left': [0, 0], 
+        'top-right': [0, 0], 
+        'bottom': [0, -10], 
+        'bottom-left': [0, -10], 
+        'bottom-right': [0, -10], 
+        'left': [10, 0], 
+        'right': [-10, 0] 
+      },
+      closeButton: true,
+      closeOnClick: false
+    }).setHTML(`
+      <div style="padding: 12px; min-width: 200px;">
+        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+          <div style="width: 16px; height: 16px; background: #2563eb; border-radius: 50%; margin-right: 8px;"></div>
+          <h4 style="margin: 0; color: #1f2937; font-weight: 600;">🏢 Sucursal</h4>
+        </div>
+        <p style="margin: 0 0 8px 0; color: #374151; font-weight: 500;">${origin.name}</p>
+        <div style="font-size: 12px; color: #6b7280;">
+          <p style="margin: 2px 0;">📍 Coordenadas: ${origin.lat.toFixed(4)}, ${origin.lon.toFixed(4)}</p>
+          <p style="margin: 2px 0;">🚚 Punto de partida y llegada</p>
+        </div>
+      </div>
+    `);
+
+    const originMarker = new mapboxgl.Marker(originMarkerElement)
+      .setLngLat([origin.lon, origin.lat])
+      .setPopup(popup)
+      .addTo(map.current);
+    
+    (originMarker as any).id = originMarkerId;
+    setAddedSources(prev => [...prev, originMarkerId]);
+
+    console.log('📍 Marcador de origen (sucursal) agregado:', {
+      origin: { lat: origin.lat, lon: origin.lon, name: origin.name }
+    });
+  };
+
   const getVisitOrderDisplay = () => {
     if (!trafficOptimizedRoute || !selectedRoute) return null;
 
@@ -363,15 +429,6 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
       console.warn('⚠️ No hay optimized_waypoints disponibles para mostrar el orden de visita');
       return null;
     }
-    
-    console.log('🎯 getVisitOrderDisplay - Ruta seleccionada:', {
-      routeId: selectedRoute.route_id,
-      routeIndex: selectedRouteIndex,
-      visitOrderLength: visit_order?.length,
-      visitOrder: visit_order,
-      hasOptimizedWaypoints: !!selectedRoute.optimized_waypoints,
-      fallbackWaypoints: !!trafficOptimizedRoute.route_info.optimized_waypoints
-    });
 
     return (
       <div className="space-y-2 sm:space-y-3">
@@ -423,6 +480,8 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
       </div>
     );
   }
+
+
 
   return (
     <div className="space-y-3 sm:space-y-4">
