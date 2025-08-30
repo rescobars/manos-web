@@ -62,24 +62,60 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<PrimaryRoute | null>(null);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [addedSources, setAddedSources] = useState<string[]>([]);
   const [addedLayers, setAddedLayers] = useState<string[]>([]);
 
-  // Colores para las rutas
-  const primaryColor = '#00d4aa'; // Verde moderno para ruta principal
+  // Colores modernos y elegantes para las rutas
+  const primaryColor = '#10b981'; // Verde esmeralda moderno
   const alternativeColors = [
-    '#ff6b6b', // Rojo
-    '#4ecdc4', // Turquesa
-    '#45b7d1', // Azul
-    '#96ceb4', // Verde claro
-    '#feca57', // Amarillo
-    '#ff9ff3', // Rosa
-    '#54a0ff', // Azul claro
-    '#5f27cd', // Púrpura
-    '#00d2d3', // Cian
-    '#ff9f43', // Naranja
+    '#3b82f6', // Azul moderno
+    '#8b5cf6', // Violeta moderno
+    '#f59e0b', // Ámbar moderno
+    '#ef4444', // Rojo moderno
+    '#06b6d4', // Cian moderno
+    '#84cc16', // Verde lima moderno
+    '#f97316', // Naranja moderno
+    '#ec4899', // Rosa moderno
+    '#6366f1', // Índigo moderno
+    '#14b8a6', // Teal moderno
   ];
+
+  // Obtener todas las rutas disponibles
+  const getAvailableRoutes = () => {
+    if (!trafficOptimizedRoute) return [];
+    
+    const routes = [trafficOptimizedRoute.primary_route];
+    if (trafficOptimizedRoute.alternative_routes) {
+      routes.push(...trafficOptimizedRoute.alternative_routes);
+    }
+    return routes;
+  };
+
+  // Función para cambiar de ruta
+  const changeRoute = (routeIndex: number) => {
+    if (!map.current || !isMapReady) return;
+    
+    const routes = getAvailableRoutes();
+    if (routeIndex < 0 || routeIndex >= routes.length) return;
+    
+    const newRoute = routes[routeIndex];
+    console.log('🔄 Cambiando a ruta:', { routeIndex, routeId: newRoute.route_id });
+    
+    // Limpiar mapa actual
+    clearMap();
+    
+    // Actualizar estado
+    setSelectedRouteIndex(routeIndex);
+    setSelectedRoute(newRoute);
+    
+    // Dibujar nueva ruta
+    displayRoute(newRoute, routeIndex);
+    
+    // Ajustar mapa a la nueva ruta
+    fitMapToRoute(newRoute.points);
+  };
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -134,6 +170,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     clearMap();
 
     // Seleccionar la ruta principal por defecto
+    setSelectedRouteIndex(0);
     setSelectedRoute(trafficOptimizedRoute.primary_route);
 
     // Dibujar la ruta principal
@@ -253,20 +290,31 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
       markerElement.className = 'waypoint-marker';
       markerElement.innerHTML = `
         <div style="
-          background: ${routeColor};
-          color: white;
+          background: white;
+          color: ${routeColor};
           border-radius: 50%;
-          width: 30px;
-          height: 30px;
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: bold;
+          font-weight: 700;
           font-size: 14px;
-          border: 3px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          border: 3px solid ${routeColor};
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          position: relative;
         ">
           ${visitNumber}
+          <div style="
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: ${routeColor};
+            border-radius: 50%;
+            border: 2px solid white;
+          "></div>
         </div>
       `;
 
@@ -312,42 +360,44 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     const { visit_order, optimized_waypoints } = trafficOptimizedRoute!.route_info;
 
     return (
-      <div className="bg-white p-4 rounded-lg shadow-md mb-4">
-        <h3 className="text-lg font-semibold mb-3 text-gray-800">
-          📍 Orden de Visita Optimizado - {visit_order.length} paradas
-        </h3>
-        <p className="text-sm text-gray-600 mb-3">
-          El orden en que se deben visitar las paradas según la optimización del backend:
-        </p>
-        <div className="space-y-2">
-          {visit_order.map((visitItem, index) => {
-            const waypoint = optimized_waypoints.find(wp => wp.name === visitItem.name);
-            if (!waypoint) return null;
+      <div className="space-y-3">
+        {visit_order.map((visitItem, index) => {
+          const waypoint = optimized_waypoints.find(wp => wp.name === visitItem.name);
+          if (!waypoint) return null;
 
-            const visitNumber = index + 1;
-            const color = index === 0 ? primaryColor : alternativeColors[index % alternativeColors.length];
+          const visitNumber = index + 1;
+          const color = index === 0 ? primaryColor : alternativeColors[index % alternativeColors.length];
 
-            return (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div
-                  className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                  style={{ backgroundColor: color }}
-                >
-                  {visitNumber}
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-gray-800">{waypoint.name}</div>
-                  <div className="text-sm text-gray-500">
-                    Coordenadas: {waypoint.lat.toFixed(4)}, {waypoint.lon.toFixed(4)}
-                  </div>
-                </div>
-                <div className="text-xs text-gray-400">
-                  Orden #{visitNumber}
+          return (
+            <div key={index} className="flex items-center p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all duration-200 hover:shadow-sm">
+              {/* Número de orden */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg mr-4"
+                   style={{ backgroundColor: color }}>
+                {visitNumber}
+              </div>
+              
+              {/* Información de la parada */}
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-900 text-lg mb-1">{waypoint.name}</div>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <span className="flex items-center">
+                    <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                    {waypoint.lat.toFixed(4)}
+                  </span>
+                  <span className="flex items-center">
+                    <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                    {waypoint.lon.toFixed(4)}
+                  </span>
                 </div>
               </div>
-            );
-          })}
-        </div>
+              
+              {/* Indicador de estado */}
+              <div className="flex-shrink-0">
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -364,11 +414,108 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     <div className="space-y-4">
       {/* Mapa */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-4 border-b bg-gray-50">
-          <h2 className="text-xl font-semibold text-gray-800">Mapa de Ruta Optimizada</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Visualización del orden de visita optimizado según el backend
-          </p>
+        <div className="bg-gradient-to-r from-slate-50 to-gray-100 p-6 border-b">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 space-y-4 lg:space-y-0">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">Mapa de Ruta Optimizada</h2>
+              <p className="text-gray-600">
+                Ruta {selectedRouteIndex === 0 ? 'Principal' : `Alternativa ${selectedRouteIndex}`}
+              </p>
+            </div>
+            
+            {/* Stats de la ruta seleccionada */}
+            {selectedRoute && (
+              <div className="flex items-center space-x-4 lg:space-x-6">
+                <div className="text-center">
+                  <div className="text-2xl lg:text-3xl font-bold text-gray-900">
+                    {Math.round(selectedRoute.summary.total_time / 60)}
+                  </div>
+                  <div className="text-xs lg:text-sm text-gray-600 font-medium">Minutos</div>
+                </div>
+                <div className="w-px h-10 lg:h-12 bg-gray-300"></div>
+                <div className="text-center">
+                  <div className="text-2xl lg:text-3xl font-bold text-gray-900">
+                    {(selectedRoute.summary.total_distance / 1000).toFixed(1)}
+                  </div>
+                  <div className="text-xs lg:text-sm text-gray-600 font-medium">Kilómetros</div>
+                </div>
+                {selectedRoute.summary.traffic_delay > 0 && (
+                  <>
+                    <div className="w-px h-10 lg:h-12 bg-gray-300"></div>
+                    <div className="text-center">
+                      <div className="text-xl lg:text-2xl font-bold text-red-600">
+                        +{Math.round(selectedRoute.summary.traffic_delay / 60)}
+                      </div>
+                      <div className="text-xs lg:text-sm text-red-600 font-medium">Min tráfico</div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Selector de Rutas Compacto */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+              Seleccionar Ruta
+            </h3>
+            <div className="flex items-center space-x-3">
+              {getAvailableRoutes().map((route, index) => {
+                const isSelected = index === selectedRouteIndex;
+                const isPrimary = index === 0;
+                const routeColor = isPrimary ? primaryColor : alternativeColors[index % alternativeColors.length];
+                
+
+                
+                return (
+                  <button
+                    key={index}
+                    onClick={() => changeRoute(index)}
+                    className={`group relative transition-all duration-200 ${
+                      isSelected ? 'transform scale-105' : 'hover:scale-102'
+                    }`}
+                  >
+                    {/* Botón compacto */}
+                    <div 
+                      className={`w-16 h-16 rounded-xl flex flex-col items-center justify-center transition-all duration-200 ${
+                        isSelected 
+                          ? 'ring-2 ring-offset-2 shadow-lg' 
+                          : 'shadow-md hover:shadow-lg'
+                      }`}
+                      style={{
+                        backgroundColor: routeColor,
+                        color: 'white',
+                      }}
+                    >
+                      <span className="text-sm font-bold mb-1">
+                        {isPrimary ? 'P' : index}
+                      </span>
+                      <span className="text-xs opacity-90">
+                        {isPrimary ? 'Principal' : 'Alt'}
+                      </span>
+                    </div>
+                    
+                    {/* Información compacta debajo */}
+                    <div className="mt-2 text-center">
+                      <div className="text-xs font-semibold text-gray-800">
+                        {Math.round(route.summary.total_time / 60)} min
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {(route.summary.total_distance / 1000).toFixed(1)} km
+                      </div>
+                    </div>
+                    
+                    {/* Indicador de selección */}
+                    {isSelected && (
+                      <div className="mt-1 text-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mx-auto"></div>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
         <div className="relative w-full h-96">
           <div ref={mapContainer} className="w-full h-96" />
@@ -383,59 +530,25 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
         </div>
       </div>
 
-      {/* Información del orden de visita */}
-      {getVisitOrderDisplay()}
+      
 
-      {/* Leyenda del mapa */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <h3 className="text-lg font-semibold mb-3 text-gray-800">Leyenda del Mapa</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h4 className="font-medium text-gray-700 mb-2">Ruta Principal</h4>
-            <div className="flex items-center space-x-2">
-              <div
-                className="w-6 h-6 rounded"
-                style={{ backgroundColor: primaryColor }}
-              ></div>
-              <span className="text-sm text-gray-600">Ruta optimizada (verde moderno)</span>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-medium text-gray-700 mb-2">Marcadores de Paradas</h4>
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">
-                1
-              </div>
-              <span className="text-sm text-gray-600">Número indica orden de visita</span>
-            </div>
-          </div>
+      {/* Orden de visita con diseño moderno */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+            Orden de Visita Optimizado
+            <span className="ml-auto bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+              {trafficOptimizedRoute?.route_info.visit_order.length || 0} paradas
+            </span>
+          </h3>
+        </div>
+        <div className="p-6">
+          {getVisitOrderDisplay()}
         </div>
       </div>
 
-      {/* Información de la ruta */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <h3 className="text-lg font-semibold mb-3 text-gray-800">Información de la Ruta</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
-              {Math.round(trafficOptimizedRoute.primary_route.summary.total_time / 60)}
-            </div>
-            <div className="text-sm text-blue-600">Minutos</div>
-          </div>
-          <div className="text-center p-3 bg-green-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
-              {Math.round(trafficOptimizedRoute.primary_route.summary.total_distance / 1000)}
-            </div>
-            <div className="text-sm text-green-600">Kilómetros</div>
-          </div>
-          <div className="text-center p-3 bg-purple-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">
-              {trafficOptimizedRoute.primary_route.summary.traffic_delay}
-            </div>
-            <div className="text-sm text-purple-600">Segundos de retraso</div>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 };
