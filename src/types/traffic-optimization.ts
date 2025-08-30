@@ -63,6 +63,7 @@ export interface TrafficOptimizationRequest {
   destination: Point;
   waypoints: Point[];
   alternatives?: boolean;
+  queue_mode?: boolean;
 }
 
 export interface TrafficOptimizationResponse {

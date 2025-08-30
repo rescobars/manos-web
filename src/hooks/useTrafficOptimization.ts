@@ -10,7 +10,7 @@ import {
 } from '@/types/traffic-optimization';
 
 interface UseTrafficOptimizationReturn {
-  optimizeRoute: (origin: Point, destination: Point, waypoints: Point[], alternatives?: boolean) => Promise<TrafficOptimizationResponse>;
+  optimizeRoute: (origin: Point, destination: Point, waypoints: Point[], alternatives?: boolean, queueMode?: boolean) => Promise<TrafficOptimizationResponse>;
   isLoading: boolean;
   error: string | null;
   data: TrafficOptimizationData | null;
@@ -26,7 +26,8 @@ export function useTrafficOptimization(): UseTrafficOptimizationReturn {
     origin: Point,
     destination: Point,
     waypoints: Point[], 
-    alternatives: boolean = true
+    alternatives: boolean = true,
+    queueMode: boolean = false
   ): Promise<TrafficOptimizationResponse> => {
     if (!origin || !destination || !waypoints || waypoints.length === 0) {
       const errorResponse: TrafficOptimizationResponse = {
@@ -50,7 +51,8 @@ export function useTrafficOptimization(): UseTrafficOptimizationReturn {
           origin,
           destination,
           waypoints,
-          alternatives
+          alternatives,
+          queue_mode: queueMode
         }),
       });
 

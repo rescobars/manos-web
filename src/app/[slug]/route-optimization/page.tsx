@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ordersApiService } from '@/lib/api/orders';
 import { Order } from '@/types';
@@ -29,9 +29,10 @@ export default function RouteOptimizationPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('individual');
+  const [queueMode, setQueueMode] = useState<boolean>(false);
   
   // Función para obtener pedidos formateados para el mapa
-  const getOrdersForMap = () => {
+  const getOrdersForMap = useCallback(() => {
     return orders.map(order => ({
       id: order.uuid,
       orderNumber: order.order_number,
@@ -45,7 +46,7 @@ export default function RouteOptimizationPage() {
       totalAmount: order.total_amount,
       createdAt: order.created_at
     }));
-  };
+  }, [orders]);
 
   // Hook para optimización con tráfico
   const {
@@ -105,7 +106,7 @@ export default function RouteOptimizationPage() {
     }
   };
 
-  const handleOrderSelection = (orderId: string) => {
+  const handleOrderSelection = useCallback((orderId: string) => {
     setSelectedOrders(prev => {
       if (prev.includes(orderId)) {
         return prev.filter(id => id !== orderId);
@@ -113,22 +114,29 @@ export default function RouteOptimizationPage() {
         return [...prev, orderId];
       }
     });
-  };
+  }, []);
 
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     const allOrderIds = orders.map(order => order.uuid);
     setSelectedOrders(allOrderIds);
-  };
+  }, [orders]);
 
-  const handleClearAll = () => {
+  const handleClearAll = useCallback(() => {
     setSelectedOrders([]);
-  };
+  }, []);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value);
+  }, []);
+
+  // Memoizar los datos del mapa para evitar re-renderizados innecesarios
+  const ordersForMap = useMemo(() => getOrdersForMap(), [getOrdersForMap]);
 
   const handleOptimizeRouteWithTraffic = async () => {
     if (selectedOrders.length < 1 || !pickupLocation) return;
     
     // Convertir pedidos seleccionados a waypoints para el nuevo endpoint
-    const selectedOrdersData = getOrdersForMap().filter(order => 
+    const selectedOrdersData = ordersForMap.filter(order => 
       selectedOrders.includes(order.id)
     );
 
@@ -152,7 +160,7 @@ export default function RouteOptimizationPage() {
     }));
 
     // Llamar al nuevo endpoint con origin, destination y waypoints
-    const result = await optimizeRouteWithTraffic(origin, destination, waypoints);
+    const result = await optimizeRouteWithTraffic(origin, destination, waypoints, true, queueMode);
     
     if (result.success) {
       // Cambiar a la vista optimizada automáticamente
@@ -282,23 +290,55 @@ export default function RouteOptimizationPage() {
                     
                     <div className="flex gap-2">
                       {selectedOrders.length >= 1 && (
-                        <button
-                          onClick={handleOptimizeRouteWithTraffic}
-                          disabled={isTrafficOptimizing}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-                        >
-                          {isTrafficOptimizing ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Optimizando...
-                            </>
-                          ) : (
-                            <>
-                              <Route className="w-4 h-4" />
-                              Optimizar con Tráfico
-                            </>
-                          )}
-                        </button>
+                        <>
+                          {/* Opciones de optimización */}
+                          <div className="flex flex-col gap-2 mr-4">
+                            <div className="text-xs text-blue-600 font-medium">Modo de optimización:</div>
+                            <div className="flex items-center gap-4">
+                              <label className="flex items-center gap-2 text-sm text-blue-700" title="Respetar el orden en que llegaron los pedidos">
+                                <input
+                                  type="radio"
+                                  name="queueMode"
+                                  checked={!queueMode}
+                                  onChange={() => setQueueMode(false)}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span>Orden de llegada</span>
+                              </label>
+                              <label className="flex items-center gap-2 text-sm text-blue-700" title="Permitir que el algoritmo optimice el orden de visita sin restricciones">
+                                <input
+                                  type="radio"
+                                  name="queueMode"
+                                  checked={queueMode}
+                                  onChange={() => setQueueMode(true)}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span>Sin orden específico</span>
+                              </label>
+                            </div>
+                            <div className="text-xs text-blue-500">
+                              {!queueMode ? "Respetará el orden de llegada de los pedidos" : "Optimizará el orden para mejor eficiencia"}
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={handleOptimizeRouteWithTraffic}
+                            disabled={isTrafficOptimizing}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                          >
+                            {isTrafficOptimizing ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Optimizando...
+                              </>
+                            ) : (
+                              <>
+                                <Route className="w-4 h-4" />
+                                Optimizar con Tráfico
+                              </>
+                            )}
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -307,13 +347,13 @@ export default function RouteOptimizationPage() {
               
               <IndividualRoutesMap
                 pickupLocation={pickupLocation}
-                orders={getOrdersForMap()}
+                orders={ordersForMap}
                 selectedOrders={selectedOrders}
                 onOrderSelection={handleOrderSelection}
                 onSelectAll={handleSelectAll}
                 onClearAll={handleClearAll}
                 searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
+                onSearchChange={handleSearchChange}
               />
             </>
           )}

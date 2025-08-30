@@ -126,6 +126,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TrafficOp
     }
 
     console.log(`✅ ${validatedWaypoints.length} waypoints con coordenadas válidas`);
+    console.log("**Queu mode", body.queue_mode)
 
     // Preparar el cuerpo de la solicitud para FastAPI
     const requestBody = {
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TrafficOp
         lon: destinationValidation.cleanedCoordinate?.lng || body.destination.lon,
         name: body.destination.name
       },
-      queue_mode: false,
+      queue_mode: body.queue_mode !== undefined ? body.queue_mode : false,
       waypoints: validatedWaypoints,
       alternatives: body.alternatives !== undefined ? body.alternatives : true
     };
