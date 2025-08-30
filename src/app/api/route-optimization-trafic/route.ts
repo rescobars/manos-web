@@ -139,6 +139,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TrafficOp
         lon: destinationValidation.cleanedCoordinate?.lng || body.destination.lon,
         name: body.destination.name
       },
+      queue_mode: false,
       waypoints: validatedWaypoints,
       alternatives: body.alternatives !== undefined ? body.alternatives : true
     };

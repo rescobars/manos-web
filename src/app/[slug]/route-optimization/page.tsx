@@ -11,6 +11,7 @@ import { BRANCH_LOCATION } from '@/lib/constants';
 import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
+import { useRouteCreation } from '@/hooks/useRouteCreation';
 
 interface PickupLocation {
   lat: number;
@@ -54,6 +55,14 @@ export default function RouteOptimizationPage() {
     data: trafficOptimizedRoute,
     reset: clearTrafficResult
   } = useTrafficOptimization();
+
+  // Hook para crear rutas en el backend
+  const {
+    createRoute,
+    isLoading: isCreatingRoute,
+    error: routeCreationError,
+    reset: clearRouteCreationError
+  } = useRouteCreation();
 
   // Cargar pedidos y ubicación de pickup
   useEffect(() => {
@@ -155,7 +164,32 @@ export default function RouteOptimizationPage() {
 
   const handleClearOptimization = () => {
     clearTrafficResult();
+    clearRouteCreationError();
     setViewMode('individual');
+  };
+
+  const handleSaveRoute = async () => {
+    if (!trafficOptimizedRoute || !currentOrganization) return;
+    
+    try {
+      const result = await createRoute({
+        routeData: trafficOptimizedRoute,
+        selectedOrders: selectedOrders,
+        organizationId: currentOrganization.uuid,
+        routeName: `Ruta ${currentOrganization.name} - ${new Date().toLocaleDateString()}`,
+        description: `Ruta optimizada con ${selectedOrders.length} pedidos`
+      });
+      
+      if (result.success) {
+        console.log('✅ Ruta creada exitosamente:', result.data);
+        // Aquí podrías mostrar un toast de éxito
+      } else {
+        console.error('❌ Error al crear la ruta:', result.error);
+        // Aquí podrías mostrar un toast de error
+      }
+    } catch (error) {
+      console.error('❌ Error inesperado al crear la ruta:', error);
+    }
   };
 
   if (!currentOrganization) {
@@ -293,12 +327,31 @@ export default function RouteOptimizationPage() {
                     <span>Ruta optimizada con tráfico en tiempo real</span>
                   </div>
                   
-                  <button
-                    onClick={handleClearOptimization}
-                    className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
-                  >
-                    Limpiar
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveRoute}
+                      disabled={isCreatingRoute}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2"
+                    >
+                      {isCreatingRoute ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          Guardando...
+                        </>
+                      ) : (
+                        <>
+                          💾 Guardar Ruta
+                        </>
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={handleClearOptimization}
+                      className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
                 </div>
               </div>
               
@@ -316,6 +369,17 @@ export default function RouteOptimizationPage() {
                 <AlertCircle className="w-5 h-5" />
                 <span className="font-medium">Error en optimización con tráfico:</span>
                 <span>{trafficError}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Mostrar error de creación de ruta */}
+          {routeCreationError && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">Error al crear la ruta:</span>
+                <span>{routeCreationError}</span>
               </div>
             </div>
           )}
