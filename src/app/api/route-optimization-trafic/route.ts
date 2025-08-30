@@ -1,32 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { filterOrdersWithValidCoordinates, validateAndCleanCoordinate } from '@/lib/coordinate-utils';
+import { validateAndCleanCoordinate } from '@/lib/coordinate-utils';
 
-interface PickupLocation {
+interface Point {
   lat: number;
-  lng: number;
-  address: string;
+  lon: number;
+  name: string;
 }
 
-interface Order {
-  id: string;
-  order_number: string;
-  delivery_location: {
-    lat: number;
-    lng: number;
-    address: string;
-  };
-  description?: string;
-  total_amount: number;
+interface TrafficOptimizationRequest {
+  origin: Point;
+  destination: Point;
+  waypoints: Point[];
+  alternatives?: boolean;
 }
 
-interface TomTomOptimizationRequest {
-  pickup_location: PickupLocation;
-  orders: Order[];
+interface RouteSummary {
+  total_time: number;
+  total_distance: number;
+  traffic_delay: number;
+  base_time?: number;
+  traffic_time?: number;
 }
 
-interface TomTomOptimizationResponse {
+interface RoutePoint {
+  lat: number;
+  lon: number;
+  traffic_delay: number;
+  speed: number | null;
+  congestion_level: string;
+}
+
+interface Route {
+  summary: RouteSummary;
+  points: RoutePoint[];
+  route_id: string;
+}
+
+interface TrafficOptimizationResponse {
   success: boolean;
-  data?: any;
+  data?: {
+    primary_route: Route;
+    alternative_routes: Route[] | null;
+    request_info: any;
+    traffic_conditions: any;
+  };
   error?: string;
   message?: string;
 }
@@ -35,112 +52,133 @@ const FASTAPI_BASE_URL = process.env.FASTAPI_BASE_URL || 'http://localhost:8000'
 
 /**
  * POST /api/route-optimization-trafic
- * Envía una solicitud de optimización de rutas a tu FastAPI con TomTom
+ * Envía una solicitud de optimización de rutas con tráfico a tu FastAPI
  */
-export async function POST(request: NextRequest): Promise<NextResponse<TomTomOptimizationResponse>> {
+export async function POST(request: NextRequest): Promise<NextResponse<TrafficOptimizationResponse>> {
   try {
-    const body: TomTomOptimizationRequest = await request.json();
+    const body: TrafficOptimizationRequest = await request.json();
 
     // Validar el cuerpo de la solicitud
-    if (!body.pickup_location || !body.orders || body.orders.length === 0) {
+    if (!body.origin || !body.destination || !body.waypoints || !Array.isArray(body.waypoints)) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Datos de optimización incompletos. Se requieren pickup_location y orders',
+          error: 'Se requieren origin, destination y waypoints para optimizar la ruta',
         },
         { status: 400 }
       );
     }
 
-    // Validar que haya al menos 2 pedidos para optimización
-    if (body.orders.length < 2) {
+    // Validar que haya al menos 1 waypoint para optimización
+    if (body.waypoints.length < 1) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Se requieren al menos 2 pedidos para optimizar la ruta',
+          error: 'Se requiere al menos 1 waypoint para optimizar la ruta',
         },
         { status: 400 }
       );
     }
 
-    // Validar coordenadas de pickup_location
-    const pickupValidation = validateAndCleanCoordinate(
-      body.pickup_location.lat,
-      body.pickup_location.lng
-    );
-    
-    if (!pickupValidation.isValid) {
+    // Validar coordenadas de origin
+    const originValidation = validateAndCleanCoordinate(body.origin.lat, body.origin.lon);
+    if (!originValidation.isValid) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Coordenadas de pickup_location inválidas',
+          error: 'Coordenadas de origin inválidas',
           details: {
-            error: pickupValidation.error,
+            error: originValidation.error,
             coordinates: {
-              lat: body.pickup_location.lat,
-              lng: body.pickup_location.lng
+              lat: body.origin.lat,
+              lon: body.origin.lon
             }
           }
         },
         { status: 400 }
       );
     }
-    
-    // Actualizar con coordenadas limpias
-    if (pickupValidation.cleanedCoordinate) {
-      body.pickup_location.lat = pickupValidation.cleanedCoordinate.lat;
-      body.pickup_location.lng = pickupValidation.cleanedCoordinate.lng;
-    }
 
-    // Validar y limpiar coordenadas de todos los pedidos
-    console.log('Validando coordenadas de pedidos:', body.orders.length);
-    
-    const { validOrders, invalidOrders } = filterOrdersWithValidCoordinates(body.orders);
-    
-    if (invalidOrders.length > 0) {
-      console.error('Pedidos con coordenadas inválidas:', invalidOrders);
-      
-      const errorDetails = invalidOrders.map(({ order, error }) => ({
-        order_id: order.id,
-        order_number: order.order_number,
-        error,
-        coordinates: {
-          lat: order.delivery_location.lat,
-          lng: order.delivery_location.lng
-        }
-      }));
-      
+    // Validar coordenadas de destination
+    const destinationValidation = validateAndCleanCoordinate(body.destination.lat, body.destination.lon);
+    if (!destinationValidation.isValid) {
       return NextResponse.json(
         {
           success: false,
-          error: `${invalidOrders.length} pedido(s) tienen coordenadas inválidas`,
-          details: errorDetails
-        },
-        { status: 400 }
-      );
-    }
-    
-    if (validOrders.length < 2) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Se requieren al menos 2 pedidos con coordenadas válidas para optimizar la ruta',
+          error: 'Coordenadas de destination inválidas',
           details: {
-            total_orders: body.orders.length,
-            valid_orders: validOrders.length,
-            invalid_orders: invalidOrders.length
+            error: destinationValidation.error,
+            coordinates: {
+              lat: body.destination.lat,
+              lon: body.destination.lon
+            }
           }
         },
         { status: 400 }
       );
     }
-    
-    console.log(`✅ ${validOrders.length} pedidos con coordenadas válidas`);
-    
-    // Usar los pedidos validados
-    const validatedBody = {
-      ...body,
-      orders: validOrders
+
+    // Validar coordenadas de todos los waypoints
+    const validatedWaypoints: Point[] = [];
+    const invalidWaypoints: { waypoint: Point; error: string }[] = [];
+
+    for (const waypoint of body.waypoints) {
+      const validation = validateAndCleanCoordinate(waypoint.lat, waypoint.lon);
+      
+      if (!validation.isValid) {
+        invalidWaypoints.push({
+          waypoint,
+          error: validation.error || 'Coordenadas inválidas'
+        });
+      } else if (validation.cleanedCoordinate) {
+        validatedWaypoints.push({
+          lat: validation.cleanedCoordinate.lat,
+          lon: validation.cleanedCoordinate.lng,
+          name: waypoint.name
+        });
+      } else {
+        validatedWaypoints.push(waypoint);
+      }
+    }
+
+    if (invalidWaypoints.length > 0) {
+      console.error('Waypoints con coordenadas inválidas:', invalidWaypoints);
+      
+      const errorDetails = invalidWaypoints.map(({ waypoint, error }) => ({
+        coordinates: {
+          lat: waypoint.lat,
+          lon: waypoint.lon
+        },
+        name: waypoint.name,
+        error
+      }));
+      
+      return NextResponse.json(
+        {
+          success: false,
+          error: `${invalidWaypoints.length} waypoint(s) tienen coordenadas inválidas`,
+          details: errorDetails
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log(`✅ ${validatedWaypoints.length} waypoints con coordenadas válidas`);
+
+    // Preparar el cuerpo de la solicitud para FastAPI
+    const requestBody = {
+      origin: {
+        lat: originValidation.cleanedCoordinate?.lat || body.origin.lat,
+        lon: originValidation.cleanedCoordinate?.lng || body.origin.lon,
+        name: body.origin.name
+      },
+      destination: {
+        lat: destinationValidation.cleanedCoordinate?.lat || body.destination.lat,
+        lon: destinationValidation.cleanedCoordinate?.lng || body.destination.lon,
+        name: body.destination.name
+      },
+      waypoints: validatedWaypoints,
+      alternatives: body.alternatives !== undefined ? body.alternatives : true
     };
 
     // Verificar que la URL base esté configurada correctamente
@@ -158,9 +196,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<TomTomOpt
       );
     }
 
-    const apiUrl = `${FASTAPI_BASE_URL}/api/v1/routes/optimize-tomtom`;
+    const apiUrl = `${FASTAPI_BASE_URL}/api/v1/routes/traffic/optimize-route`;
     console.log('Intentando conectar a:', apiUrl);
-    console.log('Datos a enviar:', JSON.stringify(validatedBody, null, 2));
+    console.log('Datos a enviar:', JSON.stringify(requestBody, null, 2));
 
     // Enviar solicitud a tu FastAPI
     const fastApiResponse = await fetch(apiUrl, {
@@ -168,7 +206,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TomTomOpt
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(validatedBody),
+      body: JSON.stringify(requestBody),
     });
 
     if (!fastApiResponse.ok) {
@@ -189,11 +227,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<TomTomOpt
     return NextResponse.json({
       success: true,
       data: optimizationResult,
-      message: 'Ruta optimizada exitosamente con TomTom',
+      message: 'Ruta optimizada exitosamente con tráfico en tiempo real',
     });
 
   } catch (error) {
-    console.error('Error en la API de optimización con TomTom:', error);
+    console.error('Error en la API de optimización con tráfico:', error);
     
     // Manejar errores de conexión específicamente
     if (error instanceof Error) {
@@ -204,7 +242,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TomTomOpt
             error: 'No se puede conectar al servidor FastAPI',
             details: {
               message: 'Verifica que tu FastAPI esté ejecutándose en el puerto 8000',
-              url: `${FASTAPI_BASE_URL}/api/v1/routes/optimize-tomtom`,
+              url: `${FASTAPI_BASE_URL}/api/v1/routes/traffic/optimize-route`,
               error: error.message
             }
           },

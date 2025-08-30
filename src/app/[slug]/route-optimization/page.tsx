@@ -49,17 +49,14 @@ export default function RouteOptimizationPage() {
     }));
   };
 
-  // Hook para optimización con tráfico
+  // Hook para optimización con tráfico - ACTUALIZADO
   const {
-    isOptimizing: isTrafficOptimizing,
-    optimizationResult: trafficOptimizedRoute,
+    optimizeRoute: optimizeRouteWithTraffic,
+    isLoading: isTrafficOptimizing,
     error: trafficError,
-    optimizeWithTraffic,
-    clearResult: clearTrafficResult
-  } = useTrafficOptimization({
-    pickupLocation: pickupLocation!,
-    orders: getOrdersForMap()
-  });
+    data: trafficOptimizedRoute,
+    reset: clearTrafficResult
+  } = useTrafficOptimization();
 
   // Cargar pedidos y ubicación de pickup
   useEffect(() => {
@@ -113,28 +110,19 @@ export default function RouteOptimizationPage() {
   };
 
   const handleSelectAll = () => {
-    const validOrderIds = orders.map(order => order.uuid);
-    
-    if (selectedOrders.length === validOrderIds.length) {
-      setSelectedOrders([]);
-    } else {
-      setSelectedOrders(validOrderIds);
-    }
+    const allOrderIds = orders.map(order => order.uuid);
+    setSelectedOrders(allOrderIds);
   };
 
   const handleClearAll = () => {
     setSelectedOrders([]);
-    setOptimizedRoute(null);
-    setShowOptimizedRoute(false);
-    clearTrafficResult();
-    setOptimizationType(null);
   };
 
   const handleOptimizeRoute = async () => {
     if (selectedOrders.length < 2 || !pickupLocation) return;
     
-    setIsOptimizing(true);
     setOptimizationType('normal');
+    setIsOptimizing(true);
     
     try {
       const selectedOrdersData = getOrdersForMap().filter(order => 
@@ -155,7 +143,6 @@ export default function RouteOptimizationPage() {
       if (response.success) {
         setOptimizedRoute(response);
         setShowOptimizedRoute(true);
-        setShowTrafficOptimizedRoute(false);
       } else {
         console.error('❌ Error optimizing route:', response.error_message);
       }
@@ -167,18 +154,42 @@ export default function RouteOptimizationPage() {
   };
 
   const handleOptimizeRouteWithTraffic = async () => {
-    if (selectedOrders.length < 2 || !pickupLocation) return;
+    if (selectedOrders.length < 1 || !pickupLocation) return;
     
     setOptimizationType('traffic');
     
+    // Convertir pedidos seleccionados a waypoints para el nuevo endpoint
     const selectedOrdersData = getOrdersForMap().filter(order => 
       selectedOrders.includes(order.id)
     );
 
-    const result = await optimizeWithTraffic();
+    // Crear estructura para el nuevo endpoint
+    const origin = {
+      lat: pickupLocation.lat,
+      lon: pickupLocation.lng,
+      name: pickupLocation.address
+    };
+
+    const destination = {
+      lat: pickupLocation.lat,
+      lon: pickupLocation.lng,
+      name: pickupLocation.address
+    };
+
+    const waypoints = selectedOrdersData.map(order => ({
+      lat: order.deliveryLocation.lat,
+      lon: order.deliveryLocation.lng,
+      name: order.deliveryLocation.address
+    }));
+
+    // Llamar al nuevo endpoint con origin, destination y waypoints
+    const result = await optimizeRouteWithTraffic(origin, destination, waypoints);
     
-    if (result) {
+    if (result.success) {
       setShowOptimizedRoute(false);
+      // El resultado se maneja automáticamente por el hook
+    } else {
+      console.error('❌ Error optimizing route with traffic:', result.error);
     }
   };
 
@@ -266,7 +277,7 @@ export default function RouteOptimizationPage() {
                         ) : (
                           <>
                             <Route className="w-4 h-4" />
-                            Optimizar con TomTom
+                            Optimizar con Tráfico
                           </>
                         )}
                       </button>
@@ -276,8 +287,6 @@ export default function RouteOptimizationPage() {
               </div>
             </div>
           )}
-          
-          {/* Información de la ruta optimizada - REMOVIDA DE AQUÍ */}
           
           {/* Mapa de ruta optimizada just show if showOptimizedRoute is true */}
           {!showOptimizedRoute && !trafficOptimizedRoute && (
@@ -302,21 +311,37 @@ export default function RouteOptimizationPage() {
             />
           )}
 
-          {/* Mapa de ruta optimizada con tráfico */}
+          {/* Mapa de ruta optimizada con tráfico - ACTUALIZADO */}
           {trafficOptimizedRoute && (
             <TrafficOptimizedRouteMap
-              pickupLocation={pickupLocation}
+              origin={{
+                lat: pickupLocation.lat,
+                lon: pickupLocation.lng,
+                name: pickupLocation.address
+              }}
+              destination={{
+                lat: pickupLocation.lat,
+                lon: pickupLocation.lng,
+                name: pickupLocation.address
+              }}
+              waypoints={getOrdersForMap()
+                .filter(order => selectedOrders.includes(order.id))
+                .map(order => ({
+                  lat: order.deliveryLocation.lat,
+                  lon: order.deliveryLocation.lng,
+                  name: order.deliveryLocation.address
+                }))}
               trafficOptimizedRoute={trafficOptimizedRoute}
-              orders={getOrdersForMap()}
+              showAlternatives={true}
             />
           )}
 
-          {/* Mostrar error de optimización con TomTom */}
+          {/* Mostrar error de optimización con tráfico */}
           {trafficError && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2 text-red-700">
                 <AlertCircle className="w-5 h-5" />
-                <span className="font-medium">Error en optimización con TomTom:</span>
+                <span className="font-medium">Error en optimización con tráfico:</span>
                 <span>{trafficError}</span>
               </div>
             </div>

@@ -1,105 +1,173 @@
 import { useState, useCallback } from 'react';
 
-interface UseTrafficOptimizationProps {
-  pickupLocation: {
-    lat: number;
-    lng: number;
-    address: string;
-  };
-  orders: Array<{
-    id: string;
-    orderNumber: string;
-    deliveryLocation: {
-      lat: number;
-      lng: number;
-      address: string;
-      id: string;
-    };
-    description?: string;
-    totalAmount: number;
-    createdAt: string;
-  }>;
+interface Point {
+  lat: number;
+  lon: number;
+  name: string;
 }
 
-export function useTrafficOptimization({ pickupLocation, orders }: UseTrafficOptimizationProps) {
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [optimizationResult, setOptimizationResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+interface RouteSummary {
+  total_time: number;
+  total_distance: number;
+  traffic_delay: number;
+  base_time?: number;
+  traffic_time?: number;
+  fuel_consumption?: number | null;
+}
 
-  const optimizeWithTraffic = useCallback(async () => {
-    if (orders.length < 2) {
-      setError('Se requieren al menos 2 pedidos para optimizar');
-      return null;
+interface RoutePoint {
+  lat: number;
+  lon: number;
+  traffic_delay: number;
+  speed: number | null;
+  congestion_level: string;
+  waypoint_type: 'origin' | 'destination' | 'waypoint' | 'route';
+  waypoint_index: number | null;
+}
+
+interface Route {
+  summary: RouteSummary;
+  points: RoutePoint[];
+  route_id: string;
+}
+
+interface TrafficOptimizationData {
+  route_info: {
+    origin: Point;
+    destination: Point;
+    waypoints: Point[];
+    total_waypoints: number;
+  };
+  primary_route: Route;
+  alternative_routes: Route[] | null;
+  request_info: any;
+  traffic_conditions: any;
+}
+
+interface TrafficOptimizationResponse {
+  success: boolean;
+  data?: TrafficOptimizationData;
+  error?: string;
+  message?: string;
+}
+
+interface UseTrafficOptimizationReturn {
+  optimizeRoute: (origin: Point, destination: Point, waypoints: Point[], alternatives?: boolean) => Promise<TrafficOptimizationResponse>;
+  isLoading: boolean;
+  error: string | null;
+  data: TrafficOptimizationData | null;
+  reset: () => void;
+}
+
+export function useTrafficOptimization(): UseTrafficOptimizationReturn {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<TrafficOptimizationData | null>(null);
+
+  const optimizeRoute = useCallback(async (
+    origin: Point,
+    destination: Point,
+    waypoints: Point[], 
+    alternatives: boolean = true
+  ): Promise<TrafficOptimizationResponse> => {
+    if (!origin || !destination || !waypoints || waypoints.length === 0) {
+      const errorResponse: TrafficOptimizationResponse = {
+        success: false,
+        error: 'Se requieren origin, destination y al menos 1 waypoint para optimizar la ruta'
+      };
+      setError(errorResponse.error || 'Error de validación');
+      return errorResponse;
     }
 
-    setIsOptimizing(true);
+    setIsLoading(true);
     setError(null);
 
     try {
-      // Crear solicitud para tu FastAPI con TomTom
-      const tomTomRequest = {
-        pickup_location: {
-          lat: pickupLocation.lat,
-          lng: pickupLocation.lng,
-          address: pickupLocation.address
-        },
-        orders: orders.map(order => ({
-          id: order.id,
-          order_number: order.orderNumber,
-          delivery_location: {
-            lat: order.deliveryLocation.lat,
-            lng: order.deliveryLocation.lng,
-            address: order.deliveryLocation.address
-          },
-          description: order.description,
-          total_amount: order.totalAmount
-        }))
-      };
-
-      // Llamar a tu API con TomTom
       const response = await fetch('/api/route-optimization-trafic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(tomTomRequest)
+        body: JSON.stringify({
+          origin,
+          destination,
+          waypoints,
+          alternatives
+        }),
       });
 
-      const result = await response.json();
-      
-      if (result.success) {
-        setOptimizationResult(result.data);
-        return result.data;
-      } else {
-        setError(result.error || 'Error al optimizar la ruta con TomTom');
-        return null;
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error de conexión';
-      setError(errorMessage);
-      return null;
-    } finally {
-      setIsOptimizing(false);
-    }
-  }, [pickupLocation, orders]);
+      const result: TrafficOptimizationResponse = await response.json();
 
-  const clearResult = useCallback(() => {
-    setOptimizationResult(null);
-    setError(null);
+      if (result.success && result.data) {
+        setData(result.data);
+        setError(null);
+      } else {
+        setError(result.error || 'Error desconocido en la optimización');
+        setData(null);
+      }
+
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error de conexión';
+      setError(errorMessage);
+      setData(null);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const getOptimizationStatus = useCallback(() => {
-    if (!optimizationResult) return 'idle';
-    if ('routes' in optimizationResult || 'optimized_route' in optimizationResult) return 'complete';
-    return optimizationResult.status || 'processing';
-  }, [optimizationResult]);
+  const reset = useCallback(() => {
+    setData(null);
+    setError(null);
+    setIsLoading(false);
+  }, []);
 
   return {
-    isOptimizing,
-    optimizationResult,
+    optimizeRoute,
+    isLoading,
     error,
-    optimizeWithTraffic,
-    clearResult,
-    getOptimizationStatus
+    data,
+    reset
+  };
+}
+
+// Hook específico para optimización simple (sin alternativas)
+export function useSimpleTrafficOptimization(): UseTrafficOptimizationReturn {
+  const baseHook = useTrafficOptimization();
+  
+  const optimizeRoute = useCallback(async (
+    origin: Point,
+    destination: Point,
+    waypoints: Point[]
+  ): Promise<TrafficOptimizationResponse> => {
+    return baseHook.optimizeRoute(origin, destination, waypoints, false);
+  }, [baseHook]);
+
+  return {
+    ...baseHook,
+    optimizeRoute
+  };
+}
+
+// Hook para optimización con múltiples alternativas
+export function useAlternativeTrafficOptimization(): UseTrafficOptimizationReturn {
+  const baseHook = useTrafficOptimization();
+  
+  const optimizeRoute = useCallback(async (
+    origin: Point,
+    destination: Point,
+    waypoints: Point[]
+  ): Promise<TrafficOptimizationResponse> => {
+    return baseHook.optimizeRoute(origin, destination, waypoints, true);
+  }, [baseHook]);
+
+  return {
+    ...baseHook,
+    optimizeRoute
   };
 }

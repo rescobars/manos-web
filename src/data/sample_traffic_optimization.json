@@ -1,0 +1,343 @@
+{
+  "route_info": {
+    "origin": {
+      "lat": 14.631631,
+      "lon": -90.606249,
+      "name": "Punto Inicio/Fin"
+    },
+    "destination": {
+      "lat": 14.631631,
+      "lon": -90.606249,
+      "name": "Punto Inicio/Fin"
+    },
+    "waypoints": [
+      {
+        "lat": 14.6349,
+        "lon": -90.5069,
+        "name": "Parada 1"
+      },
+      {
+        "lat": 14.63509,
+        "lon": -90.50034,
+        "name": "Parada 2"
+      },
+      {
+        "lat": 14.618622,
+        "lon": -90.501064,
+        "name": "Parada 3"
+      },
+      {
+        "lat": 14.637967,
+        "lon": -90.551102,
+        "name": "Parada 4"
+      },
+      {
+        "lat": 14.626275,
+        "lon": -90.520625,
+        "name": "Parada 5"
+      },
+      {
+        "lat": 14.665193,
+        "lon": -90.492376,
+        "name": "Parada 6"
+      },
+      {
+        "lat": 14.60849,
+        "lon": -90.529988,
+        "name": "Parada 7"
+      }
+    ],
+    "total_waypoints": 9
+  },
+  "primary_route": {
+    "summary": {
+      "total_time": 7220,
+      "total_distance": 63444,
+      "traffic_delay": 0,
+      "base_time": 7220,
+      "traffic_time": 0,
+      "fuel_consumption": null
+    },
+    "points": [
+      {
+        "lat": 14.63159,
+        "lon": -90.60626,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "origin",
+        "waypoint_index": 0
+      },
+      {
+        "lat": 14.6316,
+        "lon": -90.60633,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "origin",
+        "waypoint_index": 0
+      },
+      {
+        "lat": 14.63113,
+        "lon": -90.60646,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "route",
+        "waypoint_index": null
+      },
+      {
+        "lat": 14.631,
+        "lon": -90.6059,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "route",
+        "waypoint_index": null
+      },
+      {
+        "lat": 14.63062,
+        "lon": -90.60426,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "route",
+        "waypoint_index": null
+      },
+      {
+        "lat": 14.6305,
+        "lon": -90.6035,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "route",
+        "waypoint_index": null
+      },
+      {
+        "lat": 14.6304,
+        "lon": -90.6028,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "route",
+        "waypoint_index": null
+      },
+      {
+        "lat": 14.6303,
+        "lon": -90.6021,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "route",
+        "waypoint_index": null
+      },
+      {
+        "lat": 14.6302,
+        "lon": -90.6014,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "route",
+        "waypoint_index": null
+      },
+      {
+        "lat": 14.6301,
+        "lon": -90.6007,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "route",
+        "waypoint_index": null
+      },
+      {
+        "lat": 14.6300,
+        "lon": -90.6000,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "route",
+        "waypoint_index": null
+      },
+      {
+        "lat": 14.6349,
+        "lon": -90.5069,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "waypoint",
+        "waypoint_index": 1
+      },
+      {
+        "lat": 14.63509,
+        "lon": -90.50034,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "waypoint",
+        "waypoint_index": 2
+      },
+      {
+        "lat": 14.618622,
+        "lon": -90.501064,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "waypoint",
+        "waypoint_index": 3
+      },
+      {
+        "lat": 14.637967,
+        "lon": -90.551102,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "waypoint",
+        "waypoint_index": 4
+      },
+      {
+        "lat": 14.626275,
+        "lon": -90.520625,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "waypoint",
+        "waypoint_index": 5
+      },
+      {
+        "lat": 14.665193,
+        "lon": -90.492376,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "waypoint",
+        "waypoint_index": 6
+      },
+      {
+        "lat": 14.60849,
+        "lon": -90.529988,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "waypoint",
+        "waypoint_index": 7
+      },
+      {
+        "lat": 14.631631,
+        "lon": -90.606249,
+        "traffic_delay": 0,
+        "speed": null,
+        "congestion_level": "free_flow",
+        "waypoint_type": "destination",
+        "waypoint_index": 8
+      }
+    ],
+    "route_id": "primary"
+  },
+  "alternative_routes": [
+    {
+      "summary": {
+        "total_time": 7612,
+        "total_distance": 74380,
+        "traffic_delay": 0,
+        "base_time": 7612,
+        "traffic_time": 0,
+        "fuel_consumption": null
+      },
+      "points": [
+        {
+          "lat": 14.63159,
+          "lon": -90.60626,
+          "traffic_delay": 0,
+          "speed": null,
+          "congestion_level": "free_flow",
+          "waypoint_type": "origin",
+          "waypoint_index": 0
+        },
+        {
+          "lat": 14.63509,
+          "lon": -90.50034,
+          "traffic_delay": 0,
+          "speed": null,
+          "congestion_level": "free_flow",
+          "waypoint_type": "waypoint",
+          "waypoint_index": 2
+        },
+        {
+          "lat": 14.6349,
+          "lon": -90.5069,
+          "traffic_delay": 0,
+          "speed": null,
+          "congestion_level": "free_flow",
+          "waypoint_type": "waypoint",
+          "waypoint_index": 1
+        },
+        {
+          "lat": 14.618622,
+          "lon": -90.501064,
+          "traffic_delay": 0,
+          "speed": null,
+          "congestion_level": "free_flow",
+          "waypoint_type": "waypoint",
+          "waypoint_index": 3
+        },
+        {
+          "lat": 14.637967,
+          "lon": -90.551102,
+          "traffic_delay": 0,
+          "speed": null,
+          "congestion_level": "free_flow",
+          "waypoint_type": "waypoint",
+          "waypoint_index": 4
+        },
+        {
+          "lat": 14.626275,
+          "lon": -90.520625,
+          "traffic_delay": 0,
+          "speed": null,
+          "congestion_level": "free_flow",
+          "waypoint_type": "waypoint",
+          "waypoint_index": 5
+        },
+        {
+          "lat": 14.665193,
+          "lon": -90.492376,
+          "traffic_delay": 0,
+          "speed": null,
+          "congestion_level": "free_flow",
+          "waypoint_type": "waypoint",
+          "waypoint_index": 6
+        },
+        {
+          "lat": 14.60849,
+          "lon": -90.529988,
+          "traffic_delay": 0,
+          "speed": null,
+          "congestion_level": "free_flow",
+          "waypoint_type": "waypoint",
+          "waypoint_index": 7
+        },
+        {
+          "lat": 14.631631,
+          "lon": -90.606249,
+          "traffic_delay": 0,
+          "speed": null,
+          "congestion_level": "free_flow",
+          "waypoint_type": "destination",
+          "waypoint_index": 8
+        }
+      ],
+      "route_id": "alternative_1"
+    }
+  ],
+  "request_info": {
+    "timestamp": "2024-12-19T15:30:00Z",
+    "alternatives_requested": true,
+    "total_routes_generated": 2
+  },
+  "traffic_conditions": {
+    "overall_status": "good",
+    "last_updated": "2024-12-19T15:30:00Z",
+    "traffic_level": "low",
+    "weather_conditions": "clear"
+  }
+}
