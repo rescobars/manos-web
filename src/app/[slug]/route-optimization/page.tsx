@@ -6,7 +6,7 @@ import { ordersApiService } from '@/lib/api/orders';
 import { Order } from '@/types';
 import { IndividualRoutesMap } from '@/components/ui/IndividualRoutesMap';
 import { Page } from '@/components/ui/Page';
-import { Route, AlertCircle } from 'lucide-react';
+import { Route, AlertCircle, Map, Navigation } from 'lucide-react';
 import { BRANCH_LOCATION } from '@/lib/constants';
 import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 
@@ -18,6 +18,8 @@ interface PickupLocation {
   address: string;
 }
 
+type ViewMode = 'individual' | 'optimized';
+
 export default function RouteOptimizationPage() {
   const { currentOrganization } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -25,6 +27,7 @@ export default function RouteOptimizationPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('individual');
   
   // Función para obtener pedidos formateados para el mapa
   const getOrdersForMap = () => {
@@ -143,10 +146,16 @@ export default function RouteOptimizationPage() {
     const result = await optimizeRouteWithTraffic(origin, destination, waypoints);
     
     if (result.success) {
-      // El resultado se maneja automáticamente por el hook
+      // Cambiar a la vista optimizada automáticamente
+      setViewMode('optimized');
     } else {
       console.error('❌ Error optimizing route with traffic:', result.error);
     }
+  };
+
+  const handleClearOptimization = () => {
+    clearTrafficResult();
+    setViewMode('individual');
   };
 
   if (!currentOrganization) {
@@ -191,59 +200,113 @@ export default function RouteOptimizationPage() {
         subtitle={`Visualiza rutas individuales de pedidos para ${currentOrganization.name}`}
       >
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          {selectedOrders.length > 0 && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-blue-700">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                  <span>{selectedOrders.length} pedidos seleccionados</span>
-                </div>
-                
-                <div className="flex gap-2">
-                  {selectedOrders.length >= 1 && (
-                    <button
-                      onClick={handleOptimizeRouteWithTraffic}
-                      disabled={isTrafficOptimizing}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-                    >
-                      {isTrafficOptimizing ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Optimizando...
-                        </>
-                      ) : (
-                        <>
-                          <Route className="w-4 h-4" />
-                          Optimizar con Tráfico
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
+          {/* Sistema de Pestañas */}
+          <div className="mb-6">
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setViewMode('individual')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'individual'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                }`}
+              >
+                <Map className="w-4 h-4" />
+                Rutas Individuales
+              </button>
+              
+              <button
+                onClick={() => setViewMode('optimized')}
+                disabled={!trafficOptimizedRoute}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  !trafficOptimizedRoute
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : viewMode === 'optimized'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                }`}
+              >
+                <Navigation className="w-4 h-4" />
+                Ruta Optimizada
+                {trafficOptimizedRoute && (
+                  <span className="ml-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                )}
+              </button>
             </div>
-          )}
-          
-          {/* Mapa de rutas individuales - mostrar solo si no hay ruta optimizada con tráfico */}
-          {!trafficOptimizedRoute && (
-            <IndividualRoutesMap
-              pickupLocation={pickupLocation}
-              orders={getOrdersForMap()}
-              selectedOrders={selectedOrders}
-              onOrderSelection={handleOrderSelection}
-              onSelectAll={handleSelectAll}
-              onClearAll={handleClearAll}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-            />
+          </div>
+
+          {/* Contenido de las pestañas */}
+          {viewMode === 'individual' && (
+            <>
+              {selectedOrders.length > 0 && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-blue-700">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                      <span>{selectedOrders.length} pedidos seleccionados</span>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {selectedOrders.length >= 1 && (
+                        <button
+                          onClick={handleOptimizeRouteWithTraffic}
+                          disabled={isTrafficOptimizing}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                        >
+                          {isTrafficOptimizing ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Optimizando...
+                            </>
+                          ) : (
+                            <>
+                              <Route className="w-4 h-4" />
+                              Optimizar con Tráfico
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <IndividualRoutesMap
+                pickupLocation={pickupLocation}
+                orders={getOrdersForMap()}
+                selectedOrders={selectedOrders}
+                onOrderSelection={handleOrderSelection}
+                onSelectAll={handleSelectAll}
+                onClearAll={handleClearAll}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+              />
+            </>
           )}
 
-          {/* Mapa de ruta optimizada con tráfico */}
-          {trafficOptimizedRoute && (
-            <TrafficOptimizedRouteMap
-              trafficOptimizedRoute={trafficOptimizedRoute}
-              showAlternatives={true}
-            />
+          {viewMode === 'optimized' && trafficOptimizedRoute && (
+            <div>
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-green-700">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span>Ruta optimizada con tráfico en tiempo real</span>
+                  </div>
+                  
+                  <button
+                    onClick={handleClearOptimization}
+                    className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              </div>
+              
+              <TrafficOptimizedRouteMap
+                trafficOptimizedRoute={trafficOptimizedRoute}
+                showAlternatives={true}
+              />
+            </div>
           )}
 
           {/* Mostrar error de optimización con tráfico */}
