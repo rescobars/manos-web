@@ -4,25 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, AlertCircle } from 'lucide-react';
 import { Button } from './Button';
 import { Checkbox } from './Checkbox';
-import { BaseMap, useMap } from './BaseMap';
-import { MapMarkers } from './MapMarkers';
+import { BaseMap, useMap, MapMarkers } from './mapbox';
 import { isMapboxConfigured } from '@/lib/mapbox';
-
-interface Location {
-  lat: number;
-  lng: number;
-  address: string;
-  id?: string;
-}
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  deliveryLocation: Location;
-  description?: string;
-  totalAmount?: number;
-  createdAt?: string;
-}
+import { Location, Order } from './mapbox/types';
 
 interface IndividualRoutesMapProps {
   pickupLocation: Location;

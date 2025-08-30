@@ -1,12 +1,10 @@
 export { BaseModal } from './BaseModal';
-export { BaseMap, useMap } from './BaseMap';
 export { Button } from './Button';
 export { Card } from './Card';
 export { ConfirmDialog } from './ConfirmDialog';
 export { Input } from './Input';
 export { Checkbox } from './Checkbox';
 export { LocationSelector } from './LocationSelector';
-export { MapMarkers } from './MapMarkers';
 export { QuickOrderScreen } from './QuickOrderScreen';
 export { OrderCard } from './OrderCard';
 export { OrderDetail } from './OrderDetail';
@@ -27,3 +25,6 @@ export { Toast } from './Toast';
 export { UserCapabilities } from './UserCapabilities';
 export { IndividualRoutesMap } from './IndividualRoutesMap';
 export { OptimizedRouteMap } from './OptimizedRouteMap';
+
+// Exportar componentes de Mapbox
+export * from './mapbox';

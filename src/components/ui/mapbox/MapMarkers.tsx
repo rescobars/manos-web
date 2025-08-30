@@ -1,22 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-
-interface Location {
-  lat: number;
-  lng: number;
-  address: string;
-  id?: string;
-}
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  deliveryLocation: Location;
-  description?: string;
-  totalAmount?: number;
-  createdAt?: string;
-}
+import { Location, Order } from './types';
 
 interface MapMarkersProps {
   map: any;
