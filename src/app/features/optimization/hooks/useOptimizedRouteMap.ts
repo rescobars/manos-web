@@ -234,7 +234,7 @@ export const useOptimizedRouteMap = (
             element: createNumberedMarker(stop.stop_number, stopColor),
             anchor: 'bottom'
           })
-          .setLngLat([deliveryLocation.lng, deliveryLocation.lat])
+          .setLngLat([deliveryLocation.lat, deliveryLocation.lng])
           .addTo(map);
 
           // Agregar popup con información del pedido

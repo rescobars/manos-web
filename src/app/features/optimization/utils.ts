@@ -38,12 +38,11 @@ export function createNumberedMarker(stopNumber: number, color: string) {
     background-color: ${color};
     color: white;
     font-weight: bold;
-    font-size: 12px;
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 2px solid white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   `;
   el.textContent = stopNumber.toString();
   return el;
@@ -59,12 +58,11 @@ export function createPickupMarker() {
     background-color: #3B82F6;
     color: white;
     font-weight: bold;
-    font-size: 10px;
+    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 2px solid white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   `;
   el.innerHTML = '🚚';
   return el;

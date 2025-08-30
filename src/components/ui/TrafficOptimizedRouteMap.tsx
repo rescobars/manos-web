@@ -274,8 +274,8 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
       markerElement.className = 'waypoint-marker';
       markerElement.innerHTML = `
         <div style="
-          background: white;
-          color: ${routeColor};
+          background: ${routeColor};
+          color: white;
           border-radius: 50%;
           width: 32px;
           height: 32px;
@@ -284,8 +284,9 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
           justify-content: center;
           font-weight: 700;
           font-size: 14px;
-          border: 3px solid ${routeColor};
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          border: 2px solid white;
+          box-shadow: none !important;
+          filter: none !important;
           position: relative;
         ">
           ${visitNumber}
@@ -295,9 +296,9 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             right: -2px;
             width: 8px;
             height: 8px;
-            background: ${routeColor};
+            background: white;
             border-radius: 50%;
-            border: 2px solid white;
+            border: 2px solid ${routeColor};
           "></div>
         </div>
       `;
