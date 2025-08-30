@@ -6,10 +6,8 @@ import { ordersApiService } from '@/lib/api/orders';
 import { Order } from '@/types';
 import { IndividualRoutesMap } from '@/components/ui/IndividualRoutesMap';
 import { Page } from '@/components/ui/Page';
-import { Route, AlertCircle, Zap } from 'lucide-react';
+import { Route, AlertCircle } from 'lucide-react';
 import { BRANCH_LOCATION } from '@/lib/constants';
-import { routeOptimizationService, type RouteOptimizationResponse } from '@/lib/api/routeOptimization';
-import { OptimizedRouteMap } from '@/components/ui/OptimizedRouteMap';
 import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
@@ -27,10 +25,6 @@ export default function RouteOptimizationPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
-  const [optimizedRoute, setOptimizedRoute] = useState<RouteOptimizationResponse | null>(null);
-  const [showOptimizedRoute, setShowOptimizedRoute] = useState(false);
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [optimizationType, setOptimizationType] = useState<'normal' | 'traffic' | null>(null);
   
   // Función para obtener pedidos formateados para el mapa
   const getOrdersForMap = () => {
@@ -49,7 +43,7 @@ export default function RouteOptimizationPage() {
     }));
   };
 
-  // Hook para optimización con tráfico - ACTUALIZADO
+  // Hook para optimización con tráfico
   const {
     optimizeRoute: optimizeRouteWithTraffic,
     isLoading: isTrafficOptimizing,
@@ -118,45 +112,8 @@ export default function RouteOptimizationPage() {
     setSelectedOrders([]);
   };
 
-  const handleOptimizeRoute = async () => {
-    if (selectedOrders.length < 2 || !pickupLocation) return;
-    
-    setOptimizationType('normal');
-    setIsOptimizing(true);
-    
-    try {
-      const selectedOrdersData = getOrdersForMap().filter(order => 
-        selectedOrders.includes(order.id)
-      );
-
-      const request = {
-        pickup_location: {
-          lat: pickupLocation.lat,
-          lng: pickupLocation.lng,
-          address: pickupLocation.address
-        },
-        orders: routeOptimizationService.convertOrdersForAPI(selectedOrdersData, pickupLocation)
-      };
-
-      const response = await routeOptimizationService.optimizeRoute(request);
-      
-      if (response.success) {
-        setOptimizedRoute(response);
-        setShowOptimizedRoute(true);
-      } else {
-        console.error('❌ Error optimizing route:', response.error_message);
-      }
-    } catch (error) {
-      console.error('💥 Error optimizing route:', error);
-    } finally {
-      setIsOptimizing(false);
-    }
-  };
-
   const handleOptimizeRouteWithTraffic = async () => {
     if (selectedOrders.length < 1 || !pickupLocation) return;
-    
-    setOptimizationType('traffic');
     
     // Convertir pedidos seleccionados a waypoints para el nuevo endpoint
     const selectedOrdersData = getOrdersForMap().filter(order => 
@@ -186,7 +143,6 @@ export default function RouteOptimizationPage() {
     const result = await optimizeRouteWithTraffic(origin, destination, waypoints);
     
     if (result.success) {
-      setShowOptimizedRoute(false);
       // El resultado se maneja automáticamente por el hook
     } else {
       console.error('❌ Error optimizing route with traffic:', result.error);
@@ -244,74 +200,45 @@ export default function RouteOptimizationPage() {
                 </div>
                 
                 <div className="flex gap-2">
-                  {selectedOrders.length >= 2 && (
-                    <>
-                      <button
-                        onClick={handleOptimizeRoute}
-                        disabled={isOptimizing}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-                      >
-                        {isOptimizing ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Optimizando...
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="w-4 h-4" />
-                            Optimizar Ruta
-                          </>
-                        )}
-                      </button>
-                      
-                      <button
-                        onClick={handleOptimizeRouteWithTraffic}
-                        disabled={isTrafficOptimizing}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-                      >
-                        {isTrafficOptimizing ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Optimizando...
-                          </>
-                        ) : (
-                          <>
-                            <Route className="w-4 h-4" />
-                            Optimizar con Tráfico
-                          </>
-                        )}
-                      </button>
-                    </>
+                  {selectedOrders.length >= 1 && (
+                    <button
+                      onClick={handleOptimizeRouteWithTraffic}
+                      disabled={isTrafficOptimizing}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      {isTrafficOptimizing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Optimizando...
+                        </>
+                      ) : (
+                        <>
+                          <Route className="w-4 h-4" />
+                          Optimizar con Tráfico
+                        </>
+                      )}
+                    </button>
                   )}
                 </div>
               </div>
             </div>
           )}
           
-          {/* Mapa de ruta optimizada just show if showOptimizedRoute is true */}
-          {!showOptimizedRoute && !trafficOptimizedRoute && (
-          <IndividualRoutesMap
-            pickupLocation={pickupLocation}
-            orders={getOrdersForMap()}
-            selectedOrders={selectedOrders}
-            onOrderSelection={handleOrderSelection}
-            onSelectAll={handleSelectAll}
-            onClearAll={handleClearAll}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-          />
-          )}
-            
-          {/* Mapa de ruta optimizada normal */}
-          {showOptimizedRoute && optimizedRoute && (
-            <OptimizedRouteMap
+          {/* Mapa de rutas individuales - mostrar solo si no hay ruta optimizada con tráfico */}
+          {!trafficOptimizedRoute && (
+            <IndividualRoutesMap
               pickupLocation={pickupLocation}
-              optimizedRoute={optimizedRoute}
-              showOptimizedRoute={showOptimizedRoute}
+              orders={getOrdersForMap()}
+              selectedOrders={selectedOrders}
+              onOrderSelection={handleOrderSelection}
+              onSelectAll={handleSelectAll}
+              onClearAll={handleClearAll}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
             />
           )}
 
-          {/* Mapa de ruta optimizada con tráfico - ACTUALIZADO */}
+          {/* Mapa de ruta optimizada con tráfico */}
           {trafficOptimizedRoute && (
             <TrafficOptimizedRouteMap
               trafficOptimizedRoute={trafficOptimizedRoute}

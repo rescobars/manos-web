@@ -24,7 +24,6 @@ export { TextArea } from './TextArea';
 export { Toast } from './Toast';
 export { UserCapabilities } from './UserCapabilities';
 export { IndividualRoutesMap } from './IndividualRoutesMap';
-export { OptimizedRouteMap } from './OptimizedRouteMap';
 
 // Exportar componentes de Mapbox
 export * from './mapbox';
