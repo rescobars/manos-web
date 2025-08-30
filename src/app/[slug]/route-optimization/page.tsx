@@ -10,7 +10,7 @@ import { Route, AlertCircle, Zap } from 'lucide-react';
 import { BRANCH_LOCATION } from '@/lib/constants';
 import { routeOptimizationService, type RouteOptimizationResponse } from '@/lib/api/routeOptimization';
 import { OptimizedRouteMap } from '@/components/ui/OptimizedRouteMap';
-import { TrafficOptimizedRouteMap } from '@/components/ui/TrafficOptimizedRouteMap';
+import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 

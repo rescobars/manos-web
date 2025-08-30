@@ -1,701 +1,443 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, MapPin, Clock, Navigation, Car, Route } from 'lucide-react';
-import { getMapboxToken, isMapboxConfigured } from '@/lib/mapbox';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
-// Declaración de tipos para Mapbox
-declare global {
-  interface Window {
-    mapboxgl: any;
-  }
-}
+// Configurar Mapbox
+mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
 interface Point {
   lat: number;
   lon: number;
   name: string;
+  waypoint_type?: string;
+  waypoint_index?: number;
+}
+
+interface VisitOrderItem {
+  name: string;
+  waypoint_index: number;
+}
+
+interface RouteInfo {
+  origin: Point;
+  destination: Point;
+  waypoints: Point[];
+  total_waypoints: number;
+  optimized_waypoints: Point[];
+  visit_order: VisitOrderItem[];
 }
 
 interface RouteSummary {
   total_time: number;
   total_distance: number;
   traffic_delay: number;
-  base_time?: number;
-  traffic_time?: number;
-  fuel_consumption?: number | null;
+  base_time: number;
+  traffic_time: number;
+  fuel_consumption: number | null;
 }
 
-interface RoutePoint {
-  lat: number;
-  lon: number;
-  traffic_delay: number;
-  speed: number | null;
-  congestion_level: string;
-  waypoint_type: 'origin' | 'destination' | 'waypoint' | 'route';
-  waypoint_index: number | null;
-}
-
-interface Route {
+interface PrimaryRoute {
   summary: RouteSummary;
-  points: RoutePoint[];
+  points: Point[];
   route_id: string;
 }
 
-interface TrafficOptimizationData {
-  route_info: {
-    origin: Point;
-    destination: Point;
-    waypoints: Point[];
-    total_waypoints: number;
-  };
-  primary_route: Route;
-  alternative_routes: Route[] | null;
+interface TrafficOptimizedRoute {
+  route_info: RouteInfo;
+  primary_route: PrimaryRoute;
+  alternative_routes: any[] | null;
   request_info: any;
   traffic_conditions: any;
 }
 
 interface TrafficOptimizedRouteMapProps {
-  origin: Point;
-  destination: Point;
-  waypoints: Point[];
-  trafficOptimizedRoute: TrafficOptimizationData;
-  showAlternatives?: boolean;
+  trafficOptimizedRoute: TrafficOptimizedRoute | null;
 }
 
-export function TrafficOptimizedRouteMap({
-  origin,
-  destination,
-  waypoints,
+const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   trafficOptimizedRoute,
-  showAlternatives = false
-}: TrafficOptimizedRouteMapProps) {
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any>(null);
+}) => {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<PrimaryRoute | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [selectedRoute, setSelectedRoute] = useState<Route>(trafficOptimizedRoute.primary_route);
-  const [availableRoutes, setAvailableRoutes] = useState<Route[]>([]);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [initializationError, setInitializationError] = useState<string | null>(null);
+  const [addedSources, setAddedSources] = useState<string[]>([]);
+  const [addedLayers, setAddedLayers] = useState<string[]>([]);
 
-  // Colores para cada ruta
-  const getRouteColor = (routeId: string, isPrimary: boolean) => {
-    if (isPrimary) return '#10b981'; // Verde para ruta primaria
-    
-    // 10 colores únicos para rutas alternativas (1-10)
-    const alternativeColors = [
-      '#3b82f6', // Azul - Alternativa 1
-      '#8b5cf6', // Púrpura - Alternativa 2
-      '#f59e0b', // Naranja - Alternativa 3
-      '#ef4444', // Rojo - Alternativa 4
-      '#06b6d4', // Cian - Alternativa 5
-      '#84cc16', // Verde lima - Alternativa 6
-      '#f97316', // Naranja oscuro - Alternativa 7
-      '#a855f7', // Violeta - Alternativa 8
-      '#ec4899', // Rosa - Alternativa 9
-      '#14b8a6'  // Verde azulado - Alternativa 10
-    ];
-    
-    // Si routeId es un número, usarlo directamente
-    if (typeof routeId === 'number') {
-      return alternativeColors[routeId % alternativeColors.length];
-    }
-    
-    // Si es string, intentar parsearlo
-    const numericId = parseInt(routeId);
-    if (!isNaN(numericId)) {
-      return alternativeColors[numericId % alternativeColors.length];
-    }
-    
-    // Si no se puede parsear, usar un color por defecto basado en el string
-    const hash = routeId.split('').reduce((a, b) => {
-      a = ((a << 5) - a + b.charCodeAt(0)) & 0xffffffff;
-      return a;
-    }, 0);
-    return alternativeColors[Math.abs(hash) % alternativeColors.length];
-  };
+  // Colores para las rutas
+  const primaryColor = '#00d4aa'; // Verde moderno para ruta principal
+  const alternativeColors = [
+    '#ff6b6b', // Rojo
+    '#4ecdc4', // Turquesa
+    '#45b7d1', // Azul
+    '#96ceb4', // Verde claro
+    '#feca57', // Amarillo
+    '#ff9ff3', // Rosa
+    '#54a0ff', // Azul claro
+    '#5f27cd', // Púrpura
+    '#00d2d3', // Cian
+    '#ff9f43', // Naranja
+  ];
 
   useEffect(() => {
-    // Preparar todas las rutas disponibles
-    const routes = [trafficOptimizedRoute.primary_route];
-    if (trafficOptimizedRoute.alternative_routes) {
-      routes.push(...trafficOptimizedRoute.alternative_routes);
-    }
-    setAvailableRoutes(routes);
-    setSelectedRoute(trafficOptimizedRoute.primary_route);
-  }, [trafficOptimizedRoute]);
+    if (!mapContainer.current || map.current) return;
 
-  // Inicializar el mapa de Mapbox
-  useEffect(() => {
-    if (!mapContainerRef.current || !isMapboxConfigured()) return;
-
-    const allPoints = [origin, ...waypoints, destination];
-
-    if (!allPoints || allPoints.length === 0) {
-      setInitializationError('No hay puntos disponibles para mostrar en el mapa');
-      return;
-    }
-
-    const validPoints = allPoints.filter(point => 
-      typeof point.lat === 'number' && 
-      typeof point.lon === 'number' && 
-      !isNaN(point.lat) && 
-      !isNaN(point.lon) &&
-      point.lat !== 0 && 
-      point.lon !== 0
-    );
-
-    if (validPoints.length === 0) {
-      setInitializationError('Los puntos proporcionados no tienen coordenadas válidas');
-      return;
-    }
-
-    setIsInitializing(true);
-    setInitializationError(null);
-
-    const loadMapbox = async () => {
-      try {
-        if (window.mapboxgl) {
-          initializeMap(validPoints);
-          return;
-        }
-
-        const link = document.createElement('link');
-        link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
-        link.rel = 'stylesheet';
-        document.head.appendChild(link);
-
-        const script = document.createElement('script');
-        script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
-        script.onload = () => {
-          window.mapboxgl.accessToken = getMapboxToken();
-          initializeMap(validPoints);
-        };
-        document.head.appendChild(script);
-      } catch (error) {
-        console.error('Error loading Mapbox:', error);
-        setInitializationError('Error al cargar Mapbox');
-        setIsInitializing(false);
-      }
-    };
-
-    loadMapbox();
-  }, [origin, destination, waypoints]);
-
-  // Mostrar ruta cuando el mapa esté listo
-  useEffect(() => {
-    if (isMapReady && map && selectedRoute) {
-      displayRoute();
-    }
-  }, [isMapReady, map, selectedRoute]);
-
-  const initializeMap = (validPoints: Point[]) => {
-    if (!mapContainerRef.current) return;
-
-    const centerLat = validPoints.reduce((sum, point) => sum + point.lat, 0) / validPoints.length;
-    const centerLon = validPoints.reduce((sum, point) => sum + point.lon, 0) / validPoints.length;
-
-    if (isNaN(centerLat) || isNaN(centerLon)) {
-      setInitializationError('Error al calcular el centro del mapa');
-      setIsInitializing(false);
-      return;
-    }
-
-    const mapInstance = new window.mapboxgl.Map({
-      container: mapContainerRef.current,
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [centerLon, centerLat],
-      zoom: 12,
-      attributionControl: false
+      center: [-90.606249, 14.631631], // Guatemala City
+      zoom: 10,
     });
 
-    mapInstance.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
-    mapInstance.addControl(new window.mapboxgl.FullscreenControl(), 'top-right');
+    map.current.addControl(new mapboxgl.NavigationControl());
 
-    mapInstance.on('load', () => {
+    // Esperar a que el estilo del mapa esté completamente cargado
+    map.current.on('style.load', () => {
+      console.log('🎉 Evento style.load disparado - Mapa cargado completamente');
       setIsMapReady(true);
-      setIsInitializing(false);
+    });
+    
+    // También escuchar el evento load general
+    map.current.on('load', () => {
+      console.log('🚀 Evento load disparado - Mapa inicializado');
     });
 
-    setMap(mapInstance);
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+      // Limpiar estados
+      setAddedSources([]);
+      setAddedLayers([]);
+      setIsMapReady(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('🔄 useEffect ejecutado:', { 
+      mapExists: !!map.current, 
+      hasData: !!trafficOptimizedRoute, 
+      isMapReady 
+    });
+    
+    if (!map.current || !trafficOptimizedRoute || !isMapReady) {
+      console.log('❌ useEffect: Condiciones no cumplidas');
+      return;
+    }
+
+    console.log('✅ useEffect: Todas las condiciones cumplidas, procediendo...');
+
+    // Limpiar mapas existentes
+    clearMap();
+
+    // Seleccionar la ruta principal por defecto
+    setSelectedRoute(trafficOptimizedRoute.primary_route);
+
+    // Dibujar la ruta principal
+    displayRoute(trafficOptimizedRoute.primary_route, 0);
+
+    // Ajustar el mapa para mostrar toda la ruta
+    fitMapToRoute(trafficOptimizedRoute.primary_route.points);
+  }, [trafficOptimizedRoute, isMapReady]);
+
+  const clearMap = () => {
+    console.log('🧹 clearMap llamado:', { mapExists: !!map.current, isMapReady });
+    if (!map.current || !isMapReady) return;
+
+    console.log('🗑️ Removiendo fuentes y capas personalizadas:', { addedSources, addedLayers });
+    
+    // Remover capas personalizadas primero
+    addedLayers.forEach(layerId => {
+      if (map.current?.getLayer(layerId)) {
+        map.current.removeLayer(layerId);
+        console.log('🗑️ Capa personalizada removida:', layerId);
+      }
+    });
+    
+    // Luego remover fuentes personalizadas
+    addedSources.forEach(sourceId => {
+      if (map.current?.getSource(sourceId)) {
+        map.current.removeSource(sourceId);
+        console.log('🗑️ Fuente personalizada removida:', sourceId);
+      }
+    });
+    
+    // Limpiar los estados
+    setAddedSources([]);
+    setAddedLayers([]);
   };
 
-  const displayRoute = async () => {
-    if (!map || !selectedRoute) return;
+  const displayRoute = (route: PrimaryRoute, routeIndex: number) => {
+    console.log('🚀 displayRoute llamado:', { route, routeIndex, isMapReady, mapExists: !!map.current });
+    
+    if (!map.current || !isMapReady) {
+      console.log('❌ displayRoute: Mapa no está listo');
+      return;
+    }
 
-    // Limpiar capas existentes
-    if (map.getLayer('route-line')) map.removeLayer('route-line');
-    if (map.getSource('route-source')) map.removeSource('route-source');
-    if (map.getLayer('waypoints-layer')) map.removeLayer('waypoints-layer');
-    if (map.getLayer('waypoints-text')) map.removeLayer('waypoints-text');
-    if (map.getSource('waypoints-source')) map.removeSource('waypoints-source');
+    const routeId = `route-${routeIndex}`;
+    const isPrimary = routeIndex === 0;
+    const color = isPrimary ? primaryColor : alternativeColors[routeIndex % alternativeColors.length];
+    
+    console.log('🎨 Color de ruta:', { routeId, isPrimary, color });
+    console.log('📍 Puntos de ruta:', route.points.length, route.points.slice(0, 3));
 
-    // Usar los puntos reales de la ruta seleccionada de TomTom
-    if (selectedRoute.points && selectedRoute.points.length > 0) {
-      const routeCoordinates = selectedRoute.points.map(point => [point.lon, point.lat]);
-      
-      // Agregar fuente de la ruta
-      map.addSource('route-source', {
+    // Agregar fuente para los puntos de la ruta
+    const coordinates = route.points.map(point => [point.lon, point.lat]);
+    console.log('🗺️ Coordenadas de la ruta:', coordinates.slice(0, 5));
+    
+    try {
+      map.current.addSource(routeId, {
         type: 'geojson',
         data: {
           type: 'Feature',
-          properties: {
-            route_id: selectedRoute.route_id,
-            route_type: selectedRoute.route_id === 'primary' ? 'primary' : 'alternative'
-          },
+          properties: {},
           geometry: {
             type: 'LineString',
-            coordinates: routeCoordinates
-          }
-        }
-      });
-
-      // Agregar capa de la ruta con color específico
-      const isPrimary = selectedRoute.route_id === 'primary';
-      const routeColor = getRouteColor(selectedRoute.route_id, isPrimary);
-      
-      // Debug: Verificar el color generado
-      console.log('🎨 Debug - Color de ruta:', {
-        routeId: selectedRoute.route_id,
-        isPrimary,
-        routeColor,
-        type: typeof selectedRoute.route_id
-      });
-
-      map.addLayer({
-        id: 'route-line',
-        type: 'line',
-        source: 'route-source',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
+            coordinates: coordinates,
+          },
         },
-        paint: {
-          'line-color': routeColor,
-          'line-width': isPrimary ? 5 : 4,
-          'line-opacity': 0.8
-        }
       });
-
-      // Ajustar vista para mostrar toda la ruta
-      const bounds = new window.mapboxgl.LngLatBounds();
-      routeCoordinates.forEach((coord: number[]) => bounds.extend(coord as [number, number]));
-      
-      if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, { 
-          padding: 80,
-          duration: 1000,
-          essential: true
-        });
-      }
+      console.log('✅ Fuente agregada:', routeId);
+      setAddedSources(prev => [...prev, routeId]);
+    } catch (error) {
+      console.error('❌ Error al agregar fuente:', error);
+      return;
     }
 
-    // Agregar fuente de los waypoints
-    const allPoints = [origin, ...waypoints, destination];
-    map.addSource('waypoints-source', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: allPoints.map((point: Point, index: number) => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [point.lon, point.lat]
-          },
-          properties: {
-            index: index,
-            title: point.name || `Punto ${index + 1}`,
-            isStart: index === 0,
-            isEnd: index === allPoints.length - 1,
-            pointType: index === 0 ? 'origin' : index === allPoints.length - 1 ? 'destination' : 'waypoint'
-          }
-        }))
-      }
-    });
+    // Agregar capa para la línea de la ruta
+    try {
+      map.current.addLayer({
+        id: `${routeId}-line`,
+        type: 'line',
+        source: routeId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': color,
+          'line-width': isPrimary ? 6 : 4,
+          'line-opacity': 0.8,
+        },
+      });
+      console.log('✅ Capa agregada:', `${routeId}-line`);
+      setAddedLayers(prev => [...prev, `${routeId}-line`]);
+    } catch (error) {
+      console.error('❌ Error al agregar capa:', error);
+      return;
+    }
 
-    // Agregar capa de los waypoints
-    map.addLayer({
-      id: 'waypoints-layer',
-      type: 'circle',
-      source: 'waypoints-source',
-      paint: {
-        'circle-radius': [
-          'case',
-          ['==', ['get', 'isStart'], true], 12,
-          ['==', ['get', 'isEnd'], true], 12,
-          10
-        ],
-        'circle-color': [
-          'case',
-          ['==', ['get', 'isStart'], true], '#059669',
-          ['==', ['get', 'isEnd'], true], '#dc2626',
-          '#10b981'
-        ],
-        'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 3
-      }
-    });
+    // Agregar marcadores para los waypoints según el visit_order
+    addWaypointMarkers(route, routeIndex, color);
+  };
 
-    // Agregar capa de texto para los waypoints
-    map.addLayer({
-      id: 'waypoints-text',
-      type: 'symbol',
-      source: 'waypoints-source',
-      layout: {
-        'text-field': [
-          'case',
-          ['==', ['get', 'isStart'], true], '🏁',
-          ['==', ['get', 'isEnd'], true], '🎯',
-          ['to-string', ['+', ['get', 'index'], 1]]
-        ],
-        'text-size': 12,
-        'text-font': ['Open Sans Bold'],
-        'text-offset': [0, 0],
-        'text-anchor': 'center'
-      },
-      paint: {
-        'text-color': '#ffffff',
-        'text-halo-color': '#000000',
-        'text-halo-width': 1
-      }
-    });
+  const addWaypointMarkers = (route: PrimaryRoute, routeIndex: number, routeColor: string) => {
+    if (!map.current || !trafficOptimizedRoute || !isMapReady) return;
 
-    // Agregar popups para los waypoints
-    map.on('click', 'waypoints-layer', (e: any) => {
-      const coordinates = e.features[0].geometry.coordinates.slice();
-      const properties = e.features[0].properties;
+    const { visit_order, optimized_waypoints } = trafficOptimizedRoute!.route_info;
 
-      const popupContent = `
-        <div class="text-sm">
-          <b>${properties.title}</b><br/>
-          <b>Coordenadas:</b> ${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}<br/>
-          <b>Tipo:</b> ${properties.isStart ? 'Inicio' : properties.isEnd ? 'Fin' : 'Intermedio'}
+    // Crear marcadores para cada waypoint en el orden de visita
+    visit_order.forEach((visitItem, index) => {
+      const waypoint = optimized_waypoints.find(wp => wp.name === visitItem.name);
+      if (!waypoint) return;
+
+      const markerId = `marker-${routeIndex}-${index}`;
+      const visitNumber = index + 1; // Número de visita (1, 2, 3...)
+
+      // Crear el elemento del marcador
+      const markerElement = document.createElement('div');
+      markerElement.className = 'waypoint-marker';
+      markerElement.innerHTML = `
+        <div style="
+          background: ${routeColor};
+          color: white;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 14px;
+          border: 3px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        ">
+          ${visitNumber}
         </div>
       `;
 
-      new window.mapboxgl.Popup()
-        .setLngLat(coordinates)
-        .setHTML(popupContent)
-        .addTo(map);
-    });
+      // Crear el popup
+      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
+        <div style="padding: 8px;">
+          <h4 style="margin: 0 0 8px 0; color: #333;">${waypoint.name}</h4>
+          <p style="margin: 0; color: #666;">Orden de visita: <strong>#${visitNumber}</strong></p>
+          <p style="margin: 4px 0 0 0; color: #666; font-size: 12px;">
+            Coordenadas: ${waypoint.lat.toFixed(4)}, ${waypoint.lon.toFixed(4)}
+          </p>
+        </div>
+      `);
 
-    // Cambiar cursor al pasar sobre los waypoints
-    map.on('mouseenter', 'waypoints-layer', () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
+      // Crear y agregar el marcador
+      const marker = new mapboxgl.Marker(markerElement)
+        .setLngLat([waypoint.lon, waypoint.lat])
+        .setPopup(popup)
+        .addTo(map.current!);
 
-    map.on('mouseleave', 'waypoints-layer', () => {
-      map.getCanvas().style.cursor = '';
+      // Guardar referencia del marcador para poder removerlo después
+      (marker as any).id = markerId;
     });
   };
 
-  const handleRouteChange = (route: Route) => {
-    setSelectedRoute(route);
-    if (map && route) {
-      setTimeout(() => {
-        displayRoute();
-      }, 100);
-    }
+  const fitMapToRoute = (points: Point[]) => {
+    if (!map.current || points.length === 0 || !isMapReady) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+    points.forEach(point => {
+      bounds.extend([point.lon, point.lat]);
+    });
+
+    map.current!.fitBounds(bounds, {
+      padding: 50,
+      maxZoom: 15,
+    });
   };
 
-  // Función para obtener el orden real de las paradas basado en la ruta del endpoint
-  const getRealStopOrder = () => {
-    if (!selectedRoute || !selectedRoute.points) return [];
-    
-    // Filtrar SOLO los puntos con waypoint_type: "waypoint" (estas son las paradas reales)
-    // Los puntos con waypoint_type: "route" son solo coordenadas para pintar la ruta
-    const waypointPoints = selectedRoute.points.filter(point => 
-      point.waypoint_type === 'waypoint'
-    );
-    
-    // Ordenar por waypoint_index (orden de atención) y agregar número de parada
-    return waypointPoints
-      .sort((a, b) => (a.waypoint_index || 0) - (b.waypoint_index || 0))
-      .map((point, index) => ({
-        ...point,
-        stopNumber: index + 2 // Comenzar en 2
-      }));
-  };
+  const getVisitOrderDisplay = () => {
+    if (!trafficOptimizedRoute) return null;
 
-  if (!isMapboxConfigured()) {
+    const { visit_order, optimized_waypoints } = trafficOptimizedRoute!.route_info;
+
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-        <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-yellow-800 mb-2">Mapbox no configurado</h3>
-        <p className="text-yellow-700">Configura tu token de Mapbox para usar la visualización de rutas con tráfico.</p>
+      <div className="bg-white p-4 rounded-lg shadow-md mb-4">
+        <h3 className="text-lg font-semibold mb-3 text-gray-800">
+          📍 Orden de Visita Optimizado - {visit_order.length} paradas
+        </h3>
+        <p className="text-sm text-gray-600 mb-3">
+          El orden en que se deben visitar las paradas según la optimización del backend:
+        </p>
+        <div className="space-y-2">
+          {visit_order.map((visitItem, index) => {
+            const waypoint = optimized_waypoints.find(wp => wp.name === visitItem.name);
+            if (!waypoint) return null;
+
+            const visitNumber = index + 1;
+            const color = index === 0 ? primaryColor : alternativeColors[index % alternativeColors.length];
+
+            return (
+              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div
+                  className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                  style={{ backgroundColor: color }}
+                >
+                  {visitNumber}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-gray-800">{waypoint.name}</div>
+                  <div className="text-sm text-gray-500">
+                    Coordenadas: {waypoint.lat.toFixed(4)}, {waypoint.lon.toFixed(4)}
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400">
+                  Orden #{visitNumber}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  if (!trafficOptimizedRoute) {
+    return (
+      <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+        <p className="text-gray-500">No hay datos de ruta para mostrar</p>
       </div>
     );
   }
 
-  const realStopOrder = getRealStopOrder();
-  
-  // Debug: Mostrar información de los datos recibidos
-  console.log('🔍 Debug - Datos de entrada:', {
-    origin,
-    waypoints: waypoints.length,
-    destination,
-    selectedRoutePoints: selectedRoute?.points?.length || 0,
-    waypointTypes: selectedRoute?.points?.map(p => p.waypoint_type) || [],
-    waypointIndexes: selectedRoute?.points?.map(p => p.waypoint_index) || [],
-    realStopOrder: realStopOrder.length,
-    waypointPoints: selectedRoute?.points?.filter(p => p.waypoint_type === 'waypoint').length || 0
-  });
-
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-4">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-lg">🚦</span>
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">
-              Optimización de Ruta con Tráfico
-            </h3>
-            <p className="text-sm text-gray-600">
-              Visualización de rutas optimizadas considerando condiciones de tráfico
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Selector de rutas */}
-      {showAlternatives && availableRoutes.length > 1 && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="text-sm font-semibold text-blue-900 mb-3">Seleccionar Ruta</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {availableRoutes.map((route, index) => {
-              const isPrimary = route.route_id === 'primary';
-              const routeColor = getRouteColor(route.route_id, isPrimary);
-              
-              return (
-                <button
-                  key={route.route_id}
-                  onClick={() => handleRouteChange(route)}
-                  className={`p-3 rounded-lg border-2 transition-all ${
-                    selectedRoute.route_id === route.route_id
-                      ? 'border-blue-600 bg-blue-100'
-                      : 'border-gray-200 bg-white hover:border-blue-300'
-                  }`}
-                >
-                  <div className="text-left">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: routeColor }}
-                      ></div>
-                      <span className="font-medium text-sm">
-                        {isPrimary ? 'Ruta Principal' : `Alternativa ${index}`}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-600 space-y-1">
-                      <div>Tiempo: {Math.round(route.summary.total_time / 60)} min</div>
-                      <div>Distancia: {(route.summary.total_distance / 1000).toFixed(1)} km</div>
-                      <div>Retraso: {route.summary.traffic_delay}s</div>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Información de la ruta seleccionada */}
-      {selectedRoute && (
-        <div className={`mb-6 p-4 border rounded-lg ${
-          selectedRoute.route_id === 'primary' 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-blue-50 border-blue-200'
-        }`}>
-          <div className="flex items-center gap-2 mb-3">
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: getRouteColor(selectedRoute.route_id, selectedRoute.route_id === 'primary') }}
-            ></div>
-            <h4 className="font-semibold text-gray-900">
-              {selectedRoute.route_id === 'primary' ? 'Ruta Principal' : 'Ruta Alternativa'}
-            </h4>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium text-blue-900">Tiempo Total</p>
-                <p className="text-lg font-bold text-blue-700">
-                  {Math.round(selectedRoute.summary.total_time / 60)} min
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Navigation className="w-5 h-5 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium text-blue-900">Distancia Total</p>
-                <p className="text-lg font-bold text-blue-700">
-                  {(selectedRoute.summary.total_distance / 1000).toFixed(1)} km
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Car className="w-5 h-5 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium text-blue-900">Retraso por Tráfico</p>
-                <p className="text-lg font-bold text-blue-700">
-                  {selectedRoute.summary.traffic_delay}s
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+    <div className="space-y-4">
       {/* Mapa */}
-      <div className="mb-6">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-          🗺️ Mapa de Ruta
-        </h4>
-        <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
-          <div className="relative">
-            {isInitializing && (
-              <div className="absolute inset-0 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center z-10">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-sm text-gray-600">Inicializando mapa...</p>
-                </div>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 border-b bg-gray-50">
+          <h2 className="text-xl font-semibold text-gray-800">Mapa de Ruta Optimizada</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Visualización del orden de visita optimizado según el backend
+          </p>
+        </div>
+        <div className="relative w-full h-96">
+          <div ref={mapContainer} className="w-full h-96" />
+          {!isMapReady && (
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-sm text-gray-600">Cargando mapa...</p>
               </div>
-            )}
-            {initializationError && (
-              <div className="absolute inset-0 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center z-10">
-                <div className="text-center">
-                  <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-red-800 mb-2">{initializationError}</h3>
-                  <p className="text-red-700">Por favor, verifica los waypoints proporcionados.</p>
-                </div>
-              </div>
-            )}
-            
-            <div 
-              ref={mapContainerRef} 
-              className={`w-full h-96 rounded-lg overflow-hidden ${
-                isInitializing || initializationError ? 'opacity-50' : 'opacity-100'
-              } transition-opacity duration-300`}
-              style={{ minHeight: '400px' }}
-            />
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Orden de paradas real */}
-      {realStopOrder.length > 0 && (
-        <div className="mb-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-            📍 Orden de Paradas (Según Ruta Optimizada) - {realStopOrder.length} paradas
-          </h4>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Total de paradas detectadas:</strong> {realStopOrder.length} 
-                {waypoints.length !== realStopOrder.length && (
-                  <span className="text-orange-600 ml-2">
-                    (Esperado: {waypoints.length}, Detectado: {realStopOrder.length})
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {realStopOrder.map((stop, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    {stop.stopNumber}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">
-                      {stop.waypoint_index !== null ? `Waypoint ${stop.waypoint_index + 1}` : 'Parada'}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Coord: {stop.lat.toFixed(4)}, {stop.lon.toFixed(4)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Congestión: {stop.congestion_level}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Información del orden de visita */}
+      {getVisitOrderDisplay()}
 
       {/* Leyenda del mapa */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h5 className="text-sm font-semibold text-gray-700 mb-3">Leyenda del Mapa</h5>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">🏁</div>
-            <span>Inicio</span>
+      <div className="bg-white p-4 rounded-lg shadow-md">
+        <h3 className="text-lg font-semibold mb-3 text-gray-800">Leyenda del Mapa</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium text-gray-700 mb-2">Ruta Principal</h4>
+            <div className="flex items-center space-x-2">
+              <div
+                className="w-6 h-6 rounded"
+                style={{ backgroundColor: primaryColor }}
+              ></div>
+              <span className="text-sm text-gray-600">Ruta optimizada (verde moderno)</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
-            <span>Waypoint 1</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">2</div>
-            <span>Waypoint 2</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-600 rounded-full flex items-center justify-center text-white text-xs font-bold">🎯</div>
-            <span>Destino</span>
+          <div>
+            <h4 className="font-medium text-gray-700 mb-2">Marcadores de Paradas</h4>
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">
+                1
+              </div>
+              <span className="text-sm text-gray-600">Número indica orden de visita</span>
+            </div>
           </div>
         </div>
-        
-        {/* Leyenda de colores de rutas */}
-        <div className="mt-3 pt-3 border-t border-gray-200">
-          <h6 className="text-xs font-semibold text-gray-600 mb-2">Colores de Rutas</h6>
-          <div className="space-y-2 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-3 bg-green-600 rounded"></div>
-              <span>Ruta Principal (Verde)</span>
+      </div>
+
+      {/* Información de la ruta */}
+      <div className="bg-white p-4 rounded-lg shadow-md">
+        <h3 className="text-lg font-semibold mb-3 text-gray-800">Información de la Ruta</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">
+              {Math.round(trafficOptimizedRoute.primary_route.summary.total_time / 60)}
             </div>
-            {availableRoutes.filter(r => r.route_id !== 'primary').map((route, index) => {
-              const routeColor = getRouteColor(route.route_id, false);
-              return (
-                <div key={route.route_id} className="flex items-center gap-2">
-                  <div className="w-4 h-3 rounded" style={{ backgroundColor: routeColor }}></div>
-                  <span>Ruta Alternativa {index + 1}</span>
-                </div>
-              );
-            })}
+            <div className="text-sm text-blue-600">Minutos</div>
           </div>
-          
-          {/* Mostrar todos los colores disponibles para referencia */}
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <h6 className="text-xs font-semibold text-gray-500 mb-2">Paleta de Colores Disponibles</h6>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {[
-                { color: '#3b82f6', name: 'Azul' },
-                { color: '#8b5cf6', name: 'Púrpura' },
-                { color: '#f59e0b', name: 'Naranja' },
-                { color: '#ef4444', name: 'Rojo' },
-                { color: '#06b6d4', name: 'Cian' },
-                { color: '#84cc16', name: 'Verde Lima' },
-                { color: '#f97316', name: 'Naranja Oscuro' },
-                { color: '#a855f7', name: 'Violeta' },
-                { color: '#ec4899', name: 'Rosa' },
-                { color: '#14b8a6', name: 'Verde Azulado' }
-              ].map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-gray-600">{item.name}</span>
-                </div>
-              ))}
+          <div className="text-center p-3 bg-green-50 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">
+              {Math.round(trafficOptimizedRoute.primary_route.summary.total_distance / 1000)}
             </div>
+            <div className="text-sm text-green-600">Kilómetros</div>
+          </div>
+          <div className="text-center p-3 bg-purple-50 rounded-lg">
+            <div className="text-2xl font-bold text-purple-600">
+              {trafficOptimizedRoute.primary_route.summary.traffic_delay}
+            </div>
+            <div className="text-sm text-purple-600">Segundos de retraso</div>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default TrafficOptimizedRouteMap;

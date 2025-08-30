@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TrafficOptimizedRouteMap } from '@/components/ui/TrafficOptimizedRouteMap';
+import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 
 export default function TestTrafficOptimizationPage() {
