@@ -67,32 +67,64 @@ export function MapMarkers({
   };
 
   const addPickupMarker = () => {
-    // Limpiar marcador de pickup anterior si existe
-    if (markersRef.current.has('pickup')) {
-      markersRef.current.get('pickup').remove();
-      markersRef.current.delete('pickup');
+    // Verificar que el mapa esté listo
+    if (!map || !map.isStyleLoaded || !pickupLocation) {
+      return;
+    }
+    
+    // Verificación adicional: asegurar que el mapa tenga un contenedor válido
+    const container = map.getContainer();
+    if (!container || !container.parentNode) {
+      console.log('Map container not ready, skipping pickup marker');
+      return;
     }
 
-    const pickupMarker = new window.mapboxgl.Marker({ 
-      element: createCustomMarker('Sucursal', '#2563EB')
-    })
-      .setLngLat([pickupLocation.lng, pickupLocation.lat])
-      .addTo(map);
+    try {
+      // Limpiar marcador de pickup anterior si existe
+      if (markersRef.current.has('pickup')) {
+        const existingMarker = markersRef.current.get('pickup');
+        if (existingMarker && typeof existingMarker.remove === 'function') {
+          existingMarker.remove();
+        }
+        markersRef.current.delete('pickup');
+      }
 
-    const popup = new window.mapboxgl.Popup({ offset: 25 })
-      .setHTML(`
-        <div class="text-center">
-          <div class="font-semibold text-blue-600">🏪 Sucursal</div>
-          <div class="text-sm text-gray-600">${pickupLocation.address}</div>
-        </div>
-      `);
-    pickupMarker.setPopup(popup);
+      const pickupMarker = new window.mapboxgl.Marker({ 
+        element: createCustomMarker('Sucursal', '#2563EB')
+      })
+        .setLngLat([pickupLocation.lng, pickupLocation.lat])
+        .addTo(map);
 
-    markersRef.current.set('pickup', pickupMarker);
+      const popup = new window.mapboxgl.Popup({ offset: 25 })
+        .setHTML(`
+          <div class="text-center">
+            <div class="font-semibold text-blue-600">🏪 Sucursal</div>
+            <div class="text-sm text-gray-600">${pickupLocation.address}</div>
+          </div>
+        `);
+      pickupMarker.setPopup(popup);
+
+      markersRef.current.set('pickup', pickupMarker);
+    } catch (error) {
+      console.error('Error adding pickup marker:', error);
+    }
   };
 
   const loadRouteForOrder = async (order: Order, color: string) => {
     try {
+      // Verificar que el mapa esté completamente listo
+      if (!map || !map.isStyleLoaded || !map.getContainer()) {
+        console.log('Map not ready, skipping route load for order:', order.orderNumber);
+        return;
+      }
+      
+      // Verificación adicional: asegurar que el mapa tenga un contenedor válido
+      const container = map.getContainer();
+      if (!container || !container.parentNode) {
+        console.log('Map container not ready, skipping route load for order:', order.orderNumber);
+        return;
+      }
+
       if (!order.deliveryLocation.lat || !order.deliveryLocation.lng) {
         return;
       }
@@ -142,15 +174,30 @@ export function MapMarkers({
         const routeId = `route-${order.id}`;
         const sourceId = `source-${order.id}`;
         
+        // Verificar que el mapa esté listo antes de manipular capas
+        if (!map.isStyleLoaded()) {
+          console.log('Map style not loaded, skipping route layer for order:', order.orderNumber);
+          return;
+        }
+        
         // Limpiar ruta anterior si existe
         if (routesRef.current.has(routeId)) {
-          if (map.getLayer(routeId)) {
-            map.removeLayer(routeId);
-          }
-          if (map.getSource(sourceId)) {
-            map.removeSource(sourceId);
+          try {
+            if (map.getLayer(routeId)) {
+              map.removeLayer(routeId);
+            }
+            if (map.getSource(sourceId)) {
+              map.removeSource(sourceId);
+            }
+          } catch (error) {
+            console.warn('Error removing existing route:', error);
           }
           routesRef.current.delete(routeId);
+        }
+        
+        // Verificar que la fuente no exista antes de agregarla
+        if (map.getSource(sourceId)) {
+          map.removeSource(sourceId);
         }
         
         map.addSource(sourceId, {
@@ -180,7 +227,14 @@ export function MapMarkers({
         
         // Limpiar marcador anterior si existe
         if (markersRef.current.has(markerId)) {
-          markersRef.current.get(markerId).remove();
+          try {
+            const existingMarker = markersRef.current.get(markerId);
+            if (existingMarker && typeof existingMarker.remove === 'function') {
+              existingMarker.remove();
+            }
+          } catch (error) {
+            console.warn('Error removing existing marker:', error);
+          }
           markersRef.current.delete(markerId);
         }
 
@@ -212,34 +266,52 @@ export function MapMarkers({
   };
 
   const clearAllRoutes = () => {
-    // Limpiar todas las capas de rutas
-    routesRef.current.forEach((routeInfo, routeId) => {
-      if (map.getLayer(routeId)) {
-        map.removeLayer(routeId);
-      }
-      if (map.getSource(routeInfo.sourceId)) {
-        map.removeSource(routeInfo.sourceId);
-      }
-    });
-    routesRef.current.clear();
+    if (!map || !map.isStyleLoaded) {
+      return;
+    }
 
-    // Limpiar todos los marcadores excepto el de pickup
-    markersRef.current.forEach((marker, markerId) => {
-      if (markerId !== 'pickup') {
-        marker.remove();
+    try {
+      // Limpiar todas las capas de rutas
+      routesRef.current.forEach((routeInfo, routeId) => {
+        try {
+          if (map.getLayer(routeId)) {
+            map.removeLayer(routeId);
+          }
+          if (map.getSource(routeInfo.sourceId)) {
+            map.removeSource(routeInfo.sourceId);
+          }
+        } catch (error) {
+          console.warn('Error removing route:', error);
+        }
+      });
+      routesRef.current.clear();
+
+      // Limpiar todos los marcadores excepto el de pickup
+      markersRef.current.forEach((marker, markerId) => {
+        if (markerId !== 'pickup') {
+          try {
+            if (marker && typeof marker.remove === 'function') {
+              marker.remove();
+            }
+          } catch (error) {
+            console.warn('Error removing marker:', error);
+          }
+        }
+      });
+      
+      // Mantener solo el marcador de pickup
+      const pickupMarker = markersRef.current.get('pickup');
+      markersRef.current.clear();
+      if (pickupMarker) {
+        markersRef.current.set('pickup', pickupMarker);
       }
-    });
-    
-    // Mantener solo el marcador de pickup
-    const pickupMarker = markersRef.current.get('pickup');
-    markersRef.current.clear();
-    if (pickupMarker) {
-      markersRef.current.set('pickup', pickupMarker);
+    } catch (error) {
+      console.error('Error clearing routes:', error);
     }
   };
 
   const fitMapToAllRoutes = () => {
-    if (!map || selectedOrders.length === 0) return;
+    if (!map || !map.isStyleLoaded || selectedOrders.length === 0) return;
 
     try {
       const bounds = new window.mapboxgl.LngLatBounds();
@@ -257,43 +329,61 @@ export function MapMarkers({
         map.fitBounds(bounds, { padding: 50 });
       }
     } catch (error) {
-      map.setCenter([pickupLocation.lng, pickupLocation.lat]);
-      map.setZoom(12);
+      console.warn('Error fitting bounds, using fallback:', error);
+      try {
+        map.setCenter([pickupLocation.lng, pickupLocation.lat]);
+        map.setZoom(12);
+      } catch (fallbackError) {
+        console.error('Fallback center/zoom failed:', fallbackError);
+      }
     }
   };
 
   // Cargar marcador de pickup cuando el mapa esté listo
   useEffect(() => {
-    if (map && pickupLocation) {
-      addPickupMarker();
+    if (map && map.isStyleLoaded && pickupLocation) {
+      try {
+        addPickupMarker();
+      } catch (error) {
+        console.error('Error adding pickup marker:', error);
+      }
     }
   }, [map, pickupLocation]);
 
   // Cargar rutas cuando cambien los pedidos seleccionados
   useEffect(() => {
-    if (!map || selectedOrders.length === 0) {
-      clearAllRoutes();
+    if (!map || !map.isStyleLoaded || selectedOrders.length === 0) {
+      if (map && map.isStyleLoaded) {
+        clearAllRoutes();
+      }
       return;
     }
 
     const loadAllRoutes = async () => {
-      clearAllRoutes();
-      
-      // Cargar ruta para cada pedido seleccionado
-      for (let i = 0; i < selectedOrders.length; i++) {
-        const orderId = selectedOrders[i];
-        const order = orders.find(o => o.id === orderId);
-        if (order) {
-          const color = generateRouteColor(order.id);
-          await loadRouteForOrder(order, color);
+      try {
+        // Agregar un pequeño delay para asegurar que el mapa esté completamente listo
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        clearAllRoutes();
+        
+        // Cargar ruta para cada pedido seleccionado
+        for (let i = 0; i < selectedOrders.length; i++) {
+          const orderId = selectedOrders[i];
+          const order = orders.find(o => o.id === orderId);
+          if (order) {
+            const color = generateRouteColor(order.id);
+            await loadRouteForOrder(order, color);
+          }
         }
-      }
 
-      // Ajustar vista para mostrar todas las rutas
-      fitMapToAllRoutes();
-      
-      if (onRouteLoaded) {
-        onRouteLoaded();
+        // Ajustar vista para mostrar todas las rutas
+        fitMapToAllRoutes();
+        
+        if (onRouteLoaded) {
+          onRouteLoaded();
+        }
+      } catch (error) {
+        console.error('Error loading all routes:', error);
       }
     };
 
@@ -303,18 +393,32 @@ export function MapMarkers({
   // Limpiar al desmontar
   useEffect(() => {
     return () => {
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current.clear();
-      
-      routesRef.current.forEach((routeInfo, routeId) => {
-        if (map && map.getLayer(routeId)) {
-          map.removeLayer(routeId);
+      try {
+        markersRef.current.forEach(marker => {
+          if (marker && typeof marker.remove === 'function') {
+            marker.remove();
+          }
+        });
+        markersRef.current.clear();
+        
+        if (map && map.isStyleLoaded) {
+          routesRef.current.forEach((routeInfo, routeId) => {
+            try {
+              if (map.getLayer(routeId)) {
+                map.removeLayer(routeId);
+              }
+              if (map.getSource(routeInfo.sourceId)) {
+                map.removeSource(routeInfo.sourceId);
+              }
+            } catch (error) {
+              console.warn('Error removing route on cleanup:', error);
+            }
+          });
         }
-        if (map && map.getSource(routeInfo.sourceId)) {
-          map.removeSource(routeInfo.sourceId);
-        }
-      });
-      routesRef.current.clear();
+        routesRef.current.clear();
+      } catch (error) {
+        console.error('Error during cleanup:', error);
+      }
     };
   }, [map]);
 

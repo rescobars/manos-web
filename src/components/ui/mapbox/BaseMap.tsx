@@ -150,8 +150,44 @@ export function useMap() {
   const [isMapReady, setIsMapReady] = useState(false);
 
   const handleMapReady = useCallback((mapInstance: any) => {
-    setMap(mapInstance);
-    setIsMapReady(true);
+    // Verificar que el mapa esté completamente inicializado
+    if (mapInstance && mapInstance.isStyleLoaded && mapInstance.getContainer()) {
+      setMap(mapInstance);
+      setIsMapReady(true);
+    } else {
+      // Si el mapa no está completamente listo, esperar al evento 'idle'
+      const handleIdle = () => {
+        if (mapInstance.isStyleLoaded && mapInstance.getContainer()) {
+          setMap(mapInstance);
+          setIsMapReady(true);
+          mapInstance.off('idle', handleIdle);
+        }
+      };
+      
+      mapInstance.on('idle', handleIdle);
+      
+      // También verificar en el evento 'load' por si acaso
+      const handleLoad = () => {
+        if (mapInstance.isStyleLoaded && mapInstance.getContainer()) {
+          setMap(mapInstance);
+          setIsMapReady(true);
+          mapInstance.off('load', handleLoad);
+          mapInstance.off('idle', handleIdle);
+        }
+      };
+      
+      mapInstance.on('load', handleLoad);
+      
+      // Verificación adicional con timeout
+      setTimeout(() => {
+        if (mapInstance.isStyleLoaded && mapInstance.getContainer()) {
+          setMap(mapInstance);
+          setIsMapReady(true);
+          mapInstance.off('idle', handleIdle);
+          mapInstance.off('load', handleLoad);
+        }
+      }, 500);
+    }
   }, []);
 
   return { map, isMapReady, handleMapReady };
