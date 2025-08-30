@@ -11,7 +11,7 @@ import { BRANCH_LOCATION } from '@/lib/constants';
 import { routeOptimizationService, type RouteOptimizationResponse } from '@/lib/api/routeOptimization';
 import { OptimizedRouteMap } from '@/components/ui/OptimizedRouteMap';
 import { TrafficOptimizedRouteMap } from '@/components/ui/TrafficOptimizedRouteMap';
-import { TomTomResponseDebug } from '@/components/ui/TomTomResponseDebug';
+
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 
 interface PickupLocation {
@@ -304,21 +304,11 @@ export default function RouteOptimizationPage() {
 
           {/* Mapa de ruta optimizada con tráfico */}
           {trafficOptimizedRoute && (
-            <>
-              <TrafficOptimizedRouteMap
-                pickupLocation={pickupLocation}
-                trafficOptimizedRoute={trafficOptimizedRoute}
-                orders={getOrdersForMap()}
-              />
-              
-              {/* Componente de debug para TomTom */}
-              <div className="mt-6">
-                <TomTomResponseDebug 
-                  response={trafficOptimizedRoute} 
-                  orders={getOrdersForMap()} 
-                />
-              </div>
-            </>
+            <TrafficOptimizedRouteMap
+              pickupLocation={pickupLocation}
+              trafficOptimizedRoute={trafficOptimizedRoute}
+              orders={getOrdersForMap()}
+            />
           )}
 
           {/* Mostrar error de optimización con TomTom */}
