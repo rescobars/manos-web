@@ -1,55 +1,13 @@
 import { useState, useCallback } from 'react';
-
-interface Point {
-  lat: number;
-  lon: number;
-  name: string;
-}
-
-interface RouteSummary {
-  total_time: number;
-  total_distance: number;
-  traffic_delay: number;
-  base_time?: number;
-  traffic_time?: number;
-  fuel_consumption?: number | null;
-}
-
-interface RoutePoint {
-  lat: number;
-  lon: number;
-  traffic_delay: number;
-  speed: number | null;
-  congestion_level: string;
-  waypoint_type: 'origin' | 'destination' | 'waypoint' | 'route';
-  waypoint_index: number | null;
-}
-
-interface Route {
-  summary: RouteSummary;
-  points: RoutePoint[];
-  route_id: string;
-}
-
-interface TrafficOptimizationData {
-  route_info: {
-    origin: Point;
-    destination: Point;
-    waypoints: Point[];
-    total_waypoints: number;
-  };
-  primary_route: Route;
-  alternative_routes: Route[] | null;
-  request_info: any;
-  traffic_conditions: any;
-}
-
-interface TrafficOptimizationResponse {
-  success: boolean;
-  data?: TrafficOptimizationData;
-  error?: string;
-  message?: string;
-}
+import { 
+  Point, 
+  VisitOrderItem, 
+  RouteSummary, 
+  RoutePoint, 
+  Route, 
+  TrafficOptimizationData, 
+  TrafficOptimizationResponse 
+} from '@/types/traffic-optimization';
 
 interface UseTrafficOptimizationReturn {
   optimizeRoute: (origin: Point, destination: Point, waypoints: Point[], alternatives?: boolean) => Promise<TrafficOptimizationResponse>;

@@ -1,52 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAndCleanCoordinate } from '@/lib/coordinate-utils';
-
-interface Point {
-  lat: number;
-  lon: number;
-  name: string;
-}
-
-interface TrafficOptimizationRequest {
-  origin: Point;
-  destination: Point;
-  waypoints: Point[];
-  alternatives?: boolean;
-}
-
-interface RouteSummary {
-  total_time: number;
-  total_distance: number;
-  traffic_delay: number;
-  base_time?: number;
-  traffic_time?: number;
-}
-
-interface RoutePoint {
-  lat: number;
-  lon: number;
-  traffic_delay: number;
-  speed: number | null;
-  congestion_level: string;
-}
-
-interface Route {
-  summary: RouteSummary;
-  points: RoutePoint[];
-  route_id: string;
-}
-
-interface TrafficOptimizationResponse {
-  success: boolean;
-  data?: {
-    primary_route: Route;
-    alternative_routes: Route[] | null;
-    request_info: any;
-    traffic_conditions: any;
-  };
-  error?: string;
-  message?: string;
-}
+import { 
+  Point, 
+  VisitOrderItem, 
+  TrafficOptimizationRequest, 
+  RouteSummary, 
+  RoutePoint, 
+  Route, 
+  TrafficOptimizationResponse 
+} from '@/types/traffic-optimization';
 
 const FASTAPI_BASE_URL = process.env.FASTAPI_BASE_URL || 'http://localhost:8000';
 

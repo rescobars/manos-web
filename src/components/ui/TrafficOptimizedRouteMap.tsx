@@ -3,57 +3,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { 
+  Point, 
+  VisitOrderItem, 
+  RouteInfo, 
+  RouteSummary, 
+  Route as RouteType,
+  TrafficOptimizationData 
+} from '@/types/traffic-optimization';
 
 // Configurar Mapbox
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
-interface Point {
-  lat: number;
-  lon: number;
-  name: string;
-  waypoint_type?: string;
-  waypoint_index?: number;
-}
-
-interface VisitOrderItem {
-  name: string;
-  waypoint_index: number;
-}
-
-interface RouteInfo {
-  origin: Point;
-  destination: Point;
-  waypoints: Point[];
-  total_waypoints: number;
-  optimized_waypoints: Point[];
-  visit_order: VisitOrderItem[];
-}
-
-interface RouteSummary {
-  total_time: number;
-  total_distance: number;
-  traffic_delay: number;
-  base_time: number;
-  traffic_time: number;
-  fuel_consumption: number | null;
-}
-
-interface PrimaryRoute {
-  summary: RouteSummary;
-  points: Point[];
-  route_id: string;
-}
-
-interface TrafficOptimizedRoute {
-  route_info: RouteInfo;
-  primary_route: PrimaryRoute;
-  alternative_routes: any[] | null;
-  request_info: any;
-  traffic_conditions: any;
-}
-
 interface TrafficOptimizedRouteMapProps {
-  trafficOptimizedRoute: TrafficOptimizedRoute | null;
+  trafficOptimizedRoute: TrafficOptimizationData | null;
 }
 
 const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
@@ -61,7 +24,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [selectedRoute, setSelectedRoute] = useState<PrimaryRoute | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [addedSources, setAddedSources] = useState<string[]>([]);
@@ -83,10 +46,10 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   ];
 
   // Obtener todas las rutas disponibles
-  const getAvailableRoutes = () => {
+  const getAvailableRoutes = (): RouteType[] => {
     if (!trafficOptimizedRoute) return [];
     
-    const routes = [trafficOptimizedRoute.primary_route];
+    const routes: RouteType[] = [trafficOptimizedRoute.primary_route];
     if (trafficOptimizedRoute.alternative_routes) {
       routes.push(...trafficOptimizedRoute.alternative_routes);
     }
@@ -101,7 +64,12 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     if (routeIndex < 0 || routeIndex >= routes.length) return;
     
     const newRoute = routes[routeIndex];
-    console.log('🔄 Cambiando a ruta:', { routeIndex, routeId: newRoute.route_id });
+    console.log('🔄 Cambiando a ruta:', { 
+      routeIndex, 
+      routeId: newRoute.route_id,
+      visitOrderLength: newRoute.visit_order?.length,
+      visitOrder: newRoute.visit_order
+    });
     
     // Limpiar mapa actual
     clearMap();
@@ -207,7 +175,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     setAddedLayers([]);
   };
 
-  const displayRoute = (route: PrimaryRoute, routeIndex: number) => {
+  const displayRoute = (route: RouteType, routeIndex: number) => {
     console.log('🚀 displayRoute llamado:', { route, routeIndex, isMapReady, mapExists: !!map.current });
     
     if (!map.current || !isMapReady) {
@@ -272,10 +240,26 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     addWaypointMarkers(route, routeIndex, color);
   };
 
-  const addWaypointMarkers = (route: PrimaryRoute, routeIndex: number, routeColor: string) => {
+  const addWaypointMarkers = (route: RouteType, routeIndex: number, routeColor: string) => {
     if (!map.current || !trafficOptimizedRoute || !isMapReady) return;
 
-    const { visit_order, optimized_waypoints } = trafficOptimizedRoute!.route_info;
+    // Usar el visit_order específico de esta ruta
+    const { visit_order } = route;
+    
+    // Usar optimized_waypoints de la ruta si está disponible, sino del route_info
+    const optimized_waypoints = route.optimized_waypoints || trafficOptimizedRoute.route_info.optimized_waypoints;
+    
+    console.log('📍 addWaypointMarkers - Waypoints utilizados:', {
+      routeId: route.route_id,
+      hasRouteWaypoints: !!route.optimized_waypoints,
+      hasFallbackWaypoints: !!trafficOptimizedRoute.route_info.optimized_waypoints,
+      waypointsCount: optimized_waypoints?.length
+    });
+    
+    if (!optimized_waypoints) {
+      console.warn('⚠️ No hay optimized_waypoints disponibles para la ruta:', route.route_id);
+      return;
+    }
 
     // Crear marcadores para cada waypoint en el orden de visita
     visit_order.forEach((visitItem, index) => {
@@ -355,9 +339,27 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   };
 
   const getVisitOrderDisplay = () => {
-    if (!trafficOptimizedRoute) return null;
+    if (!trafficOptimizedRoute || !selectedRoute) return null;
 
-    const { visit_order, optimized_waypoints } = trafficOptimizedRoute!.route_info;
+    // Usar el visit_order específico de la ruta seleccionada
+    const { visit_order } = selectedRoute;
+    
+    // Usar optimized_waypoints de la ruta si está disponible, sino del route_info
+    const optimized_waypoints = selectedRoute.optimized_waypoints || trafficOptimizedRoute.route_info.optimized_waypoints;
+    
+    if (!optimized_waypoints) {
+      console.warn('⚠️ No hay optimized_waypoints disponibles para mostrar el orden de visita');
+      return null;
+    }
+    
+    console.log('🎯 getVisitOrderDisplay - Ruta seleccionada:', {
+      routeId: selectedRoute.route_id,
+      routeIndex: selectedRouteIndex,
+      visitOrderLength: visit_order?.length,
+      visitOrder: visit_order,
+      hasOptimizedWaypoints: !!selectedRoute.optimized_waypoints,
+      fallbackWaypoints: !!trafficOptimizedRoute.route_info.optimized_waypoints
+    });
 
     return (
       <div className="space-y-3">
@@ -454,18 +456,17 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             )}
           </div>
           
-          {/* Selector de Rutas Compacto */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+          {/* Selector de Rutas con Diseño Card */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
               Seleccionar Ruta
             </h3>
-            <div className="flex items-center space-x-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {getAvailableRoutes().map((route, index) => {
                 const isSelected = index === selectedRouteIndex;
                 const isPrimary = index === 0;
                 const routeColor = isPrimary ? primaryColor : alternativeColors[index % alternativeColors.length];
-                
-
                 
                 return (
                   <button
@@ -475,42 +476,68 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                       isSelected ? 'transform scale-105' : 'hover:scale-102'
                     }`}
                   >
-                    {/* Botón compacto */}
+                    {/* Card tipo botón */}
                     <div 
-                      className={`w-16 h-16 rounded-xl flex flex-col items-center justify-center transition-all duration-200 ${
+                      className={`w-full p-2 rounded-xl border-2 transition-all duration-200 ${
                         isSelected 
-                          ? 'ring-2 ring-offset-2 shadow-lg' 
-                          : 'shadow-md hover:shadow-lg'
+                          ? 'ring-2 ring-offset-2 ring-blue-500 shadow-lg border-blue-500' 
+                          : 'shadow-md hover:shadow-lg border-gray-200 hover:border-gray-300'
                       }`}
                       style={{
-                        backgroundColor: routeColor,
-                        color: 'white',
+                        backgroundColor: isSelected ? routeColor : 'white',
+                        color: isSelected ? 'white' : 'inherit',
                       }}
                     >
-                      <span className="text-sm font-bold mb-1">
-                        {isPrimary ? 'P' : index}
-                      </span>
-                      <span className="text-xs opacity-90">
-                        {isPrimary ? 'Principal' : 'Alt'}
-                      </span>
+                      {/* Header del card */}
+                      <div className="flex items-center justify-between mb-1">
+                        <div 
+                          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                            isSelected ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                          }`}
+                          style={{
+                            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : undefined,
+                            color: isSelected ? 'white' : routeColor,
+                          }}
+                        >
+                          {isPrimary ? 'P' : index}
+                        </div>
+                        {isSelected && (
+                          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                        )}
+                      </div>
+                      
+                      {/* Título del card */}
+                      <div className="text-center mb-1">
+                        <div className={`font-semibold text-sm mb-0.5 ${
+                          isSelected ? 'text-white' : 'text-gray-800'
+                        }`}>
+                          {isPrimary ? 'Ruta Principal' : `Ruta ${index}`}
+                        </div>
+                        <div className={`text-xs ${
+                          isSelected ? 'text-white text-opacity-90' : 'text-gray-500'
+                        }`}>
+                          {isPrimary ? 'Ruta recomendada' : 'Alternativa disponible'}
+                        </div>
+                      </div>
+                      
+                      {/* Información de la ruta */}
+                      <div className={`space-y-0.5 text-center ${
+                        isSelected ? 'text-white' : 'text-gray-700'
+                      }`}>
+                        <div className="flex items-center justify-center space-x-1">
+                          <span className="text-xs">⏱️</span>
+                          <span className="text-sm font-medium">
+                            {Math.round(route.summary.total_time / 60)} min
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-center space-x-1">
+                          <span className="text-xs">📏</span>
+                          <span className="text-sm font-medium">
+                            {(route.summary.total_distance / 1000).toFixed(1)} km
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    
-                    {/* Información compacta debajo */}
-                    <div className="mt-2 text-center">
-                      <div className="text-xs font-semibold text-gray-800">
-                        {Math.round(route.summary.total_time / 60)} min
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {(route.summary.total_distance / 1000).toFixed(1)} km
-                      </div>
-                    </div>
-                    
-                    {/* Indicador de selección */}
-                    {isSelected && (
-                      <div className="mt-1 text-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mx-auto"></div>
-                      </div>
-                    )}
                   </button>
                 );
               })}
@@ -537,11 +564,14 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
           <h3 className="text-lg font-semibold text-gray-800 flex items-center">
             <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-            Orden de Visita Optimizado
+            Orden de Visita de la Ruta {selectedRouteIndex === 0 ? 'Principal' : `Alternativa ${selectedRouteIndex}`}
             <span className="ml-auto bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-              {trafficOptimizedRoute?.route_info.visit_order.length || 0} paradas
+              {selectedRoute?.visit_order.length || 0} paradas
             </span>
           </h3>
+          <p className="text-sm text-blue-700 mt-2">
+            🎯 Mostrando el orden específico de la ruta seleccionada
+          </p>
         </div>
         <div className="p-6">
           {getVisitOrderDisplay()}
