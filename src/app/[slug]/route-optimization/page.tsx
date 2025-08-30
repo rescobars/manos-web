@@ -10,6 +10,9 @@ import { Route, AlertCircle, Zap } from 'lucide-react';
 import { BRANCH_LOCATION } from '@/lib/constants';
 import { routeOptimizationService, type RouteOptimizationResponse } from '@/lib/api/routeOptimization';
 import { OptimizedRouteMap } from '@/components/ui/OptimizedRouteMap';
+import { TrafficOptimizedRouteMap } from '@/components/ui/TrafficOptimizedRouteMap';
+import { TomTomResponseDebug } from '@/components/ui/TomTomResponseDebug';
+import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 
 interface PickupLocation {
   lat: number;
@@ -27,6 +30,36 @@ export default function RouteOptimizationPage() {
   const [optimizedRoute, setOptimizedRoute] = useState<RouteOptimizationResponse | null>(null);
   const [showOptimizedRoute, setShowOptimizedRoute] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizationType, setOptimizationType] = useState<'normal' | 'traffic' | null>(null);
+  
+  // Función para obtener pedidos formateados para el mapa
+  const getOrdersForMap = () => {
+    return orders.map(order => ({
+      id: order.uuid,
+      orderNumber: order.order_number,
+      deliveryLocation: {
+        lat: order.delivery_lat!,
+        lng: order.delivery_lng!,
+        address: order.delivery_address || '',
+        id: order.uuid
+      },
+      description: order.description,
+      totalAmount: order.total_amount,
+      createdAt: order.created_at
+    }));
+  };
+
+  // Hook para optimización con tráfico
+  const {
+    isOptimizing: isTrafficOptimizing,
+    optimizationResult: trafficOptimizedRoute,
+    error: trafficError,
+    optimizeWithTraffic,
+    clearResult: clearTrafficResult
+  } = useTrafficOptimization({
+    pickupLocation: pickupLocation!,
+    orders: getOrdersForMap()
+  });
 
   // Cargar pedidos y ubicación de pickup
   useEffect(() => {
@@ -93,28 +126,15 @@ export default function RouteOptimizationPage() {
     setSelectedOrders([]);
     setOptimizedRoute(null);
     setShowOptimizedRoute(false);
-  };
-
-  const getOrdersForMap = () => {
-    return orders.map(order => ({
-      id: order.uuid,
-      orderNumber: order.order_number,
-      deliveryLocation: {
-        lat: order.delivery_lat!,
-        lng: order.delivery_lng!,
-        address: order.delivery_address || '',
-        id: order.uuid
-      },
-      description: order.description,
-      totalAmount: order.total_amount,
-      createdAt: order.created_at
-    }));
+    clearTrafficResult();
+    setOptimizationType(null);
   };
 
   const handleOptimizeRoute = async () => {
     if (selectedOrders.length < 2 || !pickupLocation) return;
     
     setIsOptimizing(true);
+    setOptimizationType('normal');
     
     try {
       const selectedOrdersData = getOrdersForMap().filter(order => 
@@ -135,6 +155,7 @@ export default function RouteOptimizationPage() {
       if (response.success) {
         setOptimizedRoute(response);
         setShowOptimizedRoute(true);
+        setShowTrafficOptimizedRoute(false);
       } else {
         console.error('❌ Error optimizing route:', response.error_message);
       }
@@ -142,6 +163,22 @@ export default function RouteOptimizationPage() {
       console.error('💥 Error optimizing route:', error);
     } finally {
       setIsOptimizing(false);
+    }
+  };
+
+  const handleOptimizeRouteWithTraffic = async () => {
+    if (selectedOrders.length < 2 || !pickupLocation) return;
+    
+    setOptimizationType('traffic');
+    
+    const selectedOrdersData = getOrdersForMap().filter(order => 
+      selectedOrders.includes(order.id)
+    );
+
+    const result = await optimizeWithTraffic();
+    
+    if (result) {
+      setShowOptimizedRoute(false);
     }
   };
 
@@ -197,23 +234,43 @@ export default function RouteOptimizationPage() {
                 
                 <div className="flex gap-2">
                   {selectedOrders.length >= 2 && (
-                    <button
-                      onClick={handleOptimizeRoute}
-                      disabled={isOptimizing}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-                    >
-                      {isOptimizing ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Optimizando...
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-4 h-4" />
-                          Optimizar Ruta
-                        </>
-                      )}
-                    </button>
+                    <>
+                      <button
+                        onClick={handleOptimizeRoute}
+                        disabled={isOptimizing}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                      >
+                        {isOptimizing ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Optimizando...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4" />
+                            Optimizar Ruta
+                          </>
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={handleOptimizeRouteWithTraffic}
+                        disabled={isTrafficOptimizing}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                      >
+                        {isTrafficOptimizing ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Optimizando...
+                          </>
+                        ) : (
+                          <>
+                            <Route className="w-4 h-4" />
+                            Optimizar con TomTom
+                          </>
+                        )}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -223,7 +280,7 @@ export default function RouteOptimizationPage() {
           {/* Información de la ruta optimizada - REMOVIDA DE AQUÍ */}
           
           {/* Mapa de ruta optimizada just show if showOptimizedRoute is true */}
-          {!showOptimizedRoute && (
+          {!showOptimizedRoute && !trafficOptimizedRoute && (
           <IndividualRoutesMap
             pickupLocation={pickupLocation}
             orders={getOrdersForMap()}
@@ -236,13 +293,43 @@ export default function RouteOptimizationPage() {
           />
           )}
             
-          {/* Mapa de ruta optimizada */}
+          {/* Mapa de ruta optimizada normal */}
           {showOptimizedRoute && optimizedRoute && (
             <OptimizedRouteMap
               pickupLocation={pickupLocation}
               optimizedRoute={optimizedRoute}
               showOptimizedRoute={showOptimizedRoute}
             />
+          )}
+
+          {/* Mapa de ruta optimizada con tráfico */}
+          {trafficOptimizedRoute && (
+            <>
+              <TrafficOptimizedRouteMap
+                pickupLocation={pickupLocation}
+                trafficOptimizedRoute={trafficOptimizedRoute}
+                orders={getOrdersForMap()}
+              />
+              
+              {/* Componente de debug para TomTom */}
+              <div className="mt-6">
+                <TomTomResponseDebug 
+                  response={trafficOptimizedRoute} 
+                  orders={getOrdersForMap()} 
+                />
+              </div>
+            </>
+          )}
+
+          {/* Mostrar error de optimización con TomTom */}
+          {trafficError && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">Error en optimización con TomTom:</span>
+                <span>{trafficError}</span>
+              </div>
+            </div>
           )}
         </div>
       </Page>

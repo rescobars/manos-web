@@ -233,3 +233,115 @@ export interface OrderFilters {
   date_from?: string;
   date_to?: string;
 }
+
+// Tipos para Mapbox Optimization API v2
+export interface MapboxLocation {
+  name: string;
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+export interface MapboxVehicle {
+  name: string;
+  routing_profile?: 'mapbox/driving' | 'mapbox/driving-traffic' | 'mapbox/cycling' | 'mapbox/walking';
+  start_location?: string;
+  end_location?: string;
+  capacities?: Record<string, number>;
+  capabilities?: string[];
+  earliest_start?: string;
+  latest_end?: string;
+  breaks?: Array<{
+    earliest_start: string;
+    latest_end: string;
+    duration: number;
+  }>;
+  loading_policy?: 'any' | 'fifo' | 'lifo';
+}
+
+export interface MapboxService {
+  name: string;
+  location: string;
+  duration?: number;
+  requirements?: string[];
+  service_times?: Array<{
+    earliest: string;
+    latest: string;
+    type?: 'strict' | 'soft' | 'soft_start' | 'soft_end';
+  }>;
+}
+
+export interface MapboxShipment {
+  name: string;
+  from: string;
+  to: string;
+  size?: Record<string, number>;
+  requirements?: string[];
+  pickup_duration?: number;
+  dropoff_duration?: number;
+  pickup_times?: Array<{
+    earliest: string;
+    latest: string;
+    type?: 'strict' | 'soft' | 'soft_start' | 'soft_end';
+  }>;
+  dropoff_times?: Array<{
+    earliest: string;
+    latest: string;
+    type?: 'strict' | 'soft' | 'soft_start' | 'soft_end';
+  }>;
+}
+
+export interface MapboxOptimizationOptions {
+  objectives?: ['min-total-travel-duration'] | ['min-schedule-completion-time'];
+}
+
+export interface MapboxOptimizationRequest {
+  version: 1;
+  locations: MapboxLocation[];
+  vehicles: MapboxVehicle[];
+  services?: MapboxService[];
+  shipments?: MapboxShipment[];
+  options?: MapboxOptimizationOptions;
+}
+
+export interface MapboxOptimizationSubmission {
+  id: string;
+  status: 'pending' | 'processing' | 'complete' | 'ok';
+  status_date: string;
+}
+
+export interface MapboxOptimizationStop {
+  type: 'start' | 'service' | 'pickup' | 'dropoff' | 'break' | 'end';
+  location: string;
+  eta: string;
+  odometer: number;
+  wait?: number;
+  duration?: number;
+  services?: string[];
+  pickups?: string[];
+  dropoffs?: string[];
+}
+
+export interface MapboxOptimizationRoute {
+  vehicle: string;
+  stops: MapboxOptimizationStop[];
+}
+
+export interface MapboxOptimizationSolution {
+  dropped: {
+    services: string[];
+    shipments: string[];
+  };
+  routes: MapboxOptimizationRoute[];
+}
+
+export interface MapboxOptimizationError {
+  code: string;
+  message: string;
+}
+
+// Tipos para las respuestas de la API
+export interface MapboxOptimizationResponse {
+  success: boolean;
+  data?: MapboxOptimizationSubmission | MapboxOptimizationSolution | MapboxOptimizationSubmission[];
+  error?: string;
+  message?: string;
+}
