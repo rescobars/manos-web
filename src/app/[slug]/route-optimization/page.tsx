@@ -12,6 +12,8 @@ import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 import { useRouteCreation } from '@/hooks/useRouteCreation';
+import { useToast } from '@/hooks/useToast';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 
 interface PickupLocation {
   lat: number;
@@ -64,6 +66,9 @@ export default function RouteOptimizationPage() {
     error: routeCreationError,
     reset: clearRouteCreationError
   } = useRouteCreation();
+
+  // Hook para notificaciones toast
+  const { toasts, success, error: showErrorToast, removeToast } = useToast();
 
   // Cargar pedidos y ubicación de pickup
   useEffect(() => {
@@ -190,13 +195,26 @@ export default function RouteOptimizationPage() {
       
       if (result.success) {
         console.log('✅ Ruta creada exitosamente:', result.data);
-        // Aquí podrías mostrar un toast de éxito
+        success(
+          '¡Ruta guardada exitosamente!',
+          `La ruta optimizada con ${selectedOrders.length} pedidos ha sido guardada en el sistema.`,
+          5000
+        );
       } else {
         console.error('❌ Error al crear la ruta:', result.error);
-        // Aquí podrías mostrar un toast de error
+        showErrorToast(
+          'Error al guardar la ruta',
+          result.error || 'No se pudo guardar la ruta. Por favor, inténtalo de nuevo.',
+          6000
+        );
       }
     } catch (error) {
       console.error('❌ Error inesperado al crear la ruta:', error);
+      showErrorToast(
+        'Error inesperado',
+        'Ocurrió un error inesperado al guardar la ruta. Por favor, inténtalo de nuevo.',
+        6000
+      );
     }
   };
 
@@ -425,6 +443,9 @@ export default function RouteOptimizationPage() {
           )}
         </div>
       </Page>
+      
+      {/* Toast Container para notificaciones */}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </>
   );
 }
