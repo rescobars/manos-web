@@ -10,7 +10,8 @@ export async function POST(request: NextRequest) {
       selectedOrders, // Array de UUIDs de pedidos seleccionados
       organizationId, // UUID de la organización
       routeName, // Nombre opcional para la ruta
-      description // Descripción opcional
+      description, // Descripción opcional
+      selectedRouteIndex // Índice de la ruta seleccionada (0 = primary, 1+ = alternativas)
     } = body;
 
     // Validar datos requeridos
@@ -21,81 +22,147 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Preparar el payload para el backend
+    // Obtener la ruta seleccionada (primary o alternativa)
+    const selectedRoute = selectedRouteIndex === 0 || !selectedRouteIndex 
+      ? routeData.primary_route 
+      : routeData.alternative_routes[selectedRouteIndex - 1];
+
+    // Preparar el payload para el backend con solo los campos requeridos
     const payload = {
+      // 1. organization_id
       organization_id: organizationId,
+      
+      // 2. route_name
       route_name: routeName || `Ruta Optimizada ${new Date().toLocaleDateString()}`,
+      
+      // 3. description
       description: description || 'Ruta optimizada con tráfico en tiempo real',
       
-      // Datos de la ruta optimizada
+      // 4. origin
       origin: routeData.route_info.origin,
+      
+      // 5. destination
       destination: routeData.route_info.destination,
+      
+      // 6. waypoints
       waypoints: routeData.route_info.waypoints,
       
-      // Ruta principal seleccionada
-      primary_route: {
-        route_id: routeData.primary_route.route_id,
-        summary: routeData.primary_route.summary,
-        points: routeData.primary_route.points,
-        visit_order: routeData.primary_route.visit_order
-      },
+      // 7. route - array de coordenadas de toda la ruta seleccionada
+      route: selectedRoute.points,
       
-      // Rutas alternativas (si existen)
-      alternative_routes: routeData.alternative_routes,
+      // 8. ordered_waypoints - pedidos con UUID y orden de entrega del backend
+      ordered_waypoints: selectedRoute.visit_order.map((visitItem: any, index: number) => {
+        // Buscar el pedido correspondiente en selectedOrders basado en el índice
+        const orderId = selectedOrders[index];
+        return {
+          order_id: orderId,
+          order: visitItem.waypoint_index + 1 // Usar el orden del backend
+        };
+      }),
       
-      // Información de tráfico
-      traffic_conditions: routeData.traffic_conditions,
+      // 9. traffic_condition
+      traffic_condition: routeData.traffic_conditions,
       
-      // Pedidos asociados con su orden de visita
-      orders: selectedOrders.map((orderId: string, index: number) => ({
-        order_id: orderId,
-        visit_order: index + 1, // Orden secuencial
-        waypoint_index: routeData.primary_route.visit_order.find(
-          (item: any) => item.waypoint_index === index
-        )?.waypoint_index || index
-      })),
-      
-      // Metadatos
-      created_at: new Date().toISOString(),
-      status: 'active',
-      total_orders: selectedOrders.length,
-      total_distance: routeData.primary_route.summary.total_distance,
-      total_time: routeData.primary_route.summary.total_time,
-      traffic_delay: routeData.primary_route.summary.traffic_delay
+      // 10. traffic_delay
+      traffic_delay: selectedRoute.summary.traffic_delay
     };
 
     // Console.log para ver qué se enviará al backend
     console.log('🚀 Enviando ruta al backend:');
     console.log('📋 Payload completo:', JSON.stringify(payload, null, 2));
+    console.log('🏢 Organización:', payload.organization_id);
+    console.log('📝 Nombre ruta:', payload.route_name);
     console.log('📍 Origen:', payload.origin);
     console.log('🎯 Destino:', payload.destination);
     console.log('🛣️  Waypoints:', payload.waypoints.length);
-    console.log('📦 Pedidos:', payload.orders);
-    console.log('⏱️  Tiempo total:', payload.total_time);
-    console.log('📏 Distancia total:', payload.total_distance);
-    console.log('🚦 Retraso por tráfico:', payload.traffic_delay);
+    console.log('🗺️  Coordenadas ruta:', payload.route.length);
+    console.log('📦 Pedidos ordenados:', payload.ordered_waypoints);
+    console.log('🚦 Condiciones tráfico:', payload.traffic_condition);
+    console.log('⏱️  Retraso tráfico:', payload.traffic_delay);
 
-    // TODO: Aquí irá la llamada real al backend
-    // const response = await fetch('TU_BACKEND_URL/api/routes', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${token}`
-    //   },
-    //   body: JSON.stringify(payload)
-    // });
+    // Log detallado de la estructura de route para debug
+    console.log('🔍 Estructura de route:');
+    payload.route.forEach((point: any, index: number) => {
+      console.log(`  Punto ${index}:`, {
+        lat: point.lat,
+        lon: point.lon,
+        name: point.name,
+        speed: point.speed,
+        traffic_delay: point.traffic_delay,
+        congestion_level: point.congestion_level,
+        waypoint_type: point.waypoint_type,
+        waypoint_index: point.waypoint_index
+      });
+    });
 
-    // Por ahora, simulamos una respuesta exitosa
-    const mockResponse = {
-      success: true,
-      data: {
-        route_id: `route_${Date.now()}`,
-        message: 'Ruta creada exitosamente en el backend',
-        payload_sent: payload
+    // Limpiar y validar los datos antes de enviar
+    const cleanedPayload = {
+      ...payload,
+      route: payload.route.map((point: any) => ({
+        lat: point.lat || 0,
+        lon: point.lon || 0,
+        name: point.name || `Punto ${point.waypoint_index || 'N/A'}`,
+        traffic_delay: point.traffic_delay || 0,
+        speed: point.speed || 0,
+        congestion_level: point.congestion_level || 'unknown',
+        waypoint_type: point.waypoint_type || 'route',
+        waypoint_index: point.waypoint_index || 0
+      })),
+      traffic_condition: {
+        current_time: payload.traffic_condition?.current_time || new Date().toISOString(),
+        weather: payload.traffic_condition?.weather || 'clear',
+        road_conditions: payload.traffic_condition?.road_conditions || 'good',
+        general_congestion: payload.traffic_condition?.general_congestion || 'low'
       }
     };
 
-    return NextResponse.json(mockResponse);
+    console.log('🧹 Payload limpiado:', JSON.stringify(cleanedPayload, null, 2));
+
+    // Llamada real al backend de Next.js API
+    const backendUrl = process.env.API_BASE_URL || 'http://localhost:3000/api';
+    const apiUrl = `${backendUrl}/routes`;
+    
+    console.log('🌐 Enviando a:', apiUrl);
+    
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'organization-id': organizationId.toString()
+        },
+        body: JSON.stringify(cleanedPayload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Error del backend:', response.status, errorData);
+        
+        return NextResponse.json({
+          success: false,
+          error: `Error del backend: ${response.status}`,
+          details: errorData
+        }, { status: response.status });
+      }
+
+      const backendResponse = await response.json();
+      console.log('✅ Respuesta del backend:', backendResponse);
+
+      return NextResponse.json({
+        success: true,
+        data: backendResponse,
+        message: 'Ruta creada exitosamente en el backend'
+      });
+
+    } catch (backendError) {
+      console.error('❌ Error de conexión con el backend:', backendError);
+      
+      return NextResponse.json({
+        success: false,
+        error: 'Error de conexión con el backend',
+        details: backendError instanceof Error ? backendError.message : 'Error desconocido'
+      }, { status: 503 });
+    }
 
   } catch (error) {
     console.error('❌ Error en la API route de rutas:', error);

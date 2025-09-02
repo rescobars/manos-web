@@ -5,6 +5,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { 
   Point, 
+  RoutePoint,
   VisitOrderItem, 
   RouteInfo, 
   RouteSummary, 
@@ -31,6 +32,16 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   const [isMapReady, setIsMapReady] = useState(false);
   const [addedSources, setAddedSources] = useState<string[]>([]);
   const [addedLayers, setAddedLayers] = useState<string[]>([]);
+  
+  // Estados para la simulación del vehículo
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationProgress, setSimulationProgress] = useState(0);
+  const [simulationSpeed, setSimulationSpeed] = useState(1); // Velocidad base (1x)
+  const vehicleMarker = useRef<mapboxgl.Marker | null>(null);
+  const animationId = useRef<number | null>(null);
+  const simulationStartTime = useRef<number>(0);
+  const isSimulatingRef = useRef<boolean>(false);
+  const simulationSpeedRef = useRef<number>(1);
 
   // Colores modernos y elegantes para las rutas
   const primaryColor = '#10b981'; // Verde esmeralda moderno
@@ -73,6 +84,9 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
       visitOrder: newRoute.visit_order
     });
     
+    // Detener simulación si está activa
+    stopSimulation();
+    
     // Limpiar mapa actual
     clearMap();
     
@@ -85,6 +99,299 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     
     // Ajustar mapa a la nueva ruta
     fitMapToRoute(newRoute.points);
+  };
+
+  // Función para iniciar la simulación
+  const startSimulation = () => {
+    if (!map.current || !selectedRoute || isSimulatingRef.current) {
+      console.log('❌ startSimulation: Condiciones no cumplidas', {
+        mapExists: !!map.current,
+        hasSelectedRoute: !!selectedRoute,
+        isSimulating: isSimulatingRef.current
+      });
+      return;
+    }
+    
+    console.log('🚗 Iniciando simulación de recorrido', {
+      totalTime: selectedRoute.summary.total_time,
+      totalDistance: selectedRoute.summary.total_distance,
+      pointsCount: selectedRoute.points.length,
+      firstPoint: selectedRoute.points[0],
+      lastPoint: selectedRoute.points[selectedRoute.points.length - 1]
+    });
+    
+    // Actualizar estado y referencia
+    isSimulatingRef.current = true;
+    simulationSpeedRef.current = 1; // Velocidad inicial 1x
+    setIsSimulating(true);
+    setSimulationSpeed(1);
+    setSimulationProgress(0);
+    simulationStartTime.current = Date.now();
+    
+    // Crear marcador del vehículo
+    createVehicleMarker();
+    
+    // Iniciar animación inmediatamente
+    animateVehicle();
+  };
+
+  // Función para detener la simulación
+  const stopSimulation = () => {
+    console.log('🛑 Deteniendo simulación');
+    isSimulatingRef.current = false;
+    setIsSimulating(false);
+    setSimulationProgress(0);
+    
+    if (animationId.current) {
+      cancelAnimationFrame(animationId.current);
+      animationId.current = null;
+    }
+    
+    // Remover marcador del vehículo
+    if (vehicleMarker.current) {
+      vehicleMarker.current.remove();
+      vehicleMarker.current = null;
+    }
+  };
+
+  // Función para crear el marcador del vehículo
+  const createVehicleMarker = () => {
+    if (!map.current || !selectedRoute) {
+      console.log('❌ createVehicleMarker: Condiciones no cumplidas', {
+        mapExists: !!map.current,
+        hasSelectedRoute: !!selectedRoute
+      });
+      return;
+    }
+    
+    console.log('🚗 Creando marcador del vehículo en:', {
+      lat: selectedRoute.points[0].lat,
+      lon: selectedRoute.points[0].lon,
+      totalPoints: selectedRoute.points.length
+    });
+    
+    // Crear elemento del vehículo
+    const vehicleElement = document.createElement('div');
+    vehicleElement.className = 'vehicle-marker';
+    vehicleElement.innerHTML = `
+      <div style="
+        width: 24px;
+        height: 24px;
+        background: #ef4444;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: rotate(0deg);
+        transition: transform 0.3s ease;
+      ">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+          <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+        </svg>
+      </div>
+    `;
+    
+    // Crear marcador
+    vehicleMarker.current = new mapboxgl.Marker(vehicleElement)
+      .setLngLat([selectedRoute.points[0].lon, selectedRoute.points[0].lat])
+      .addTo(map.current);
+    
+    console.log('✅ Marcador del vehículo creado exitosamente');
+  };
+
+  // Función para animar el vehículo
+  const animateVehicle = () => {
+    if (!map.current || !selectedRoute || !vehicleMarker.current || !isSimulatingRef.current) {
+      console.log('❌ animateVehicle: Condiciones no cumplidas', {
+        mapExists: !!map.current,
+        hasSelectedRoute: !!selectedRoute,
+        hasVehicleMarker: !!vehicleMarker.current,
+        isSimulating: isSimulatingRef.current
+      });
+      return;
+    }
+    
+    const points = selectedRoute.points;
+    const totalDistance = selectedRoute.summary.total_distance;
+    const totalTime = selectedRoute.summary.total_time * 1000; // Convertir a milisegundos
+    
+    // Usar velocidad dinámica
+    const adjustedTotalTime = totalTime / simulationSpeedRef.current;
+    
+    const elapsed = Date.now() - simulationStartTime.current;
+    const progress = Math.min(elapsed / adjustedTotalTime, 1);
+    
+    console.log('🚗 Animando vehículo:', {
+      progress: progress.toFixed(3),
+      elapsed: Math.round(elapsed / 1000) + 's',
+      totalTime: Math.round(totalTime / 1000) + 's',
+      adjustedTime: Math.round(adjustedTotalTime / 1000) + 's',
+      speed: simulationSpeedRef.current + 'x',
+      currentDistance: Math.round(progress * totalDistance) + 'm',
+      totalDistance: Math.round(totalDistance) + 'm'
+    });
+    
+    setSimulationProgress(progress);
+    
+    if (progress >= 1) {
+      // Simulación completada
+      console.log('✅ Simulación completada');
+      stopSimulation();
+      return;
+    }
+    
+    // Verificar si la simulación sigue activa
+    if (!isSimulatingRef.current) {
+      console.log('🛑 Simulación detenida');
+      return;
+    }
+    
+    // Calcular posición actual en la ruta
+    const currentDistance = progress * totalDistance;
+    const currentPoint = getPointAtDistance(points, currentDistance);
+    
+    if (currentPoint) {
+      console.log('📍 Posición actual:', {
+        lat: currentPoint.lat.toFixed(6),
+        lon: currentPoint.lon.toFixed(6)
+      });
+      
+      // Actualizar posición del vehículo
+      vehicleMarker.current.setLngLat([currentPoint.lon, currentPoint.lat]);
+      
+      // Calcular dirección para rotar el vehículo
+      const nextPoint = getNextPoint(points, currentDistance);
+      if (nextPoint) {
+        const angle = calculateBearing(currentPoint, nextPoint);
+        const vehicleElement = vehicleMarker.current.getElement();
+        const iconElement = vehicleElement.querySelector('div');
+        if (iconElement) {
+          iconElement.style.transform = `rotate(${angle}deg)`;
+        }
+      }
+    } else {
+      console.warn('⚠️ No se pudo calcular la posición actual');
+    }
+    
+    // Continuar animación
+    animationId.current = requestAnimationFrame(animateVehicle);
+  };
+
+  // Función para obtener el punto en una distancia específica
+  const getPointAtDistance = (points: RoutePoint[], distance: number): RoutePoint | null => {
+    if (points.length < 2) return points[0] || null;
+    
+    let accumulatedDistance = 0;
+    
+    for (let i = 0; i < points.length - 1; i++) {
+      const currentPoint = points[i];
+      const nextPoint = points[i + 1];
+      
+      const segmentDistance = calculateDistance(currentPoint, nextPoint);
+      
+      if (accumulatedDistance + segmentDistance >= distance) {
+        // Interpolar entre los dos puntos
+        const segmentProgress = (distance - accumulatedDistance) / segmentDistance;
+        return {
+          lat: currentPoint.lat + (nextPoint.lat - currentPoint.lat) * segmentProgress,
+          lon: currentPoint.lon + (nextPoint.lon - currentPoint.lon) * segmentProgress,
+          name: `interpolated-${i}-${segmentProgress.toFixed(2)}`,
+          traffic_delay: currentPoint.traffic_delay,
+          speed: currentPoint.speed,
+          congestion_level: currentPoint.congestion_level,
+          waypoint_type: currentPoint.waypoint_type,
+          waypoint_index: currentPoint.waypoint_index
+        };
+      }
+      
+      accumulatedDistance += segmentDistance;
+    }
+    
+    return points[points.length - 1];
+  };
+
+  // Función para obtener el siguiente punto
+  const getNextPoint = (points: RoutePoint[], distance: number): RoutePoint | null => {
+    if (points.length < 2) return null;
+    
+    let accumulatedDistance = 0;
+    
+    for (let i = 0; i < points.length - 1; i++) {
+      const currentPoint = points[i];
+      const nextPoint = points[i + 1];
+      
+      const segmentDistance = calculateDistance(currentPoint, nextPoint);
+      
+      if (accumulatedDistance + segmentDistance >= distance) {
+        return nextPoint;
+      }
+      
+      accumulatedDistance += segmentDistance;
+    }
+    
+    return null;
+  };
+
+  // Función para calcular distancia entre dos puntos
+  const calculateDistance = (point1: Point | RoutePoint, point2: Point | RoutePoint): number => {
+    const R = 6371e3; // Radio de la Tierra en metros
+    const φ1 = point1.lat * Math.PI / 180;
+    const φ2 = point2.lat * Math.PI / 180;
+    const Δφ = (point2.lat - point1.lat) * Math.PI / 180;
+    const Δλ = (point2.lon - point1.lon) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
+  };
+
+  // Función para calcular el bearing (dirección) entre dos puntos
+  const calculateBearing = (point1: Point | RoutePoint, point2: Point | RoutePoint): number => {
+    const φ1 = point1.lat * Math.PI / 180;
+    const φ2 = point2.lat * Math.PI / 180;
+    const Δλ = (point2.lon - point1.lon) * Math.PI / 180;
+
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1) * Math.sin(φ2) -
+              Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  };
+
+  // Función para cambiar la velocidad de la simulación
+  const changeSimulationSpeed = (newSpeed: number) => {
+    if (!isSimulatingRef.current) return;
+    
+    console.log('⚡ Cambiando velocidad de simulación:', {
+      from: simulationSpeedRef.current + 'x',
+      to: newSpeed + 'x'
+    });
+    
+    simulationSpeedRef.current = newSpeed;
+    setSimulationSpeed(newSpeed);
+  };
+
+  // Función para aumentar la velocidad
+  const increaseSpeed = () => {
+    const currentSpeed = simulationSpeedRef.current;
+    const speeds = [0.25, 0.5, 1, 2, 4, 8, 16, 32];
+    const currentIndex = speeds.indexOf(currentSpeed);
+    const nextIndex = Math.min(currentIndex + 1, speeds.length - 1);
+    changeSimulationSpeed(speeds[nextIndex]);
+  };
+
+  // Función para disminuir la velocidad
+  const decreaseSpeed = () => {
+    const currentSpeed = simulationSpeedRef.current;
+    const speeds = [0.25, 0.5, 1, 2, 4, 8, 16, 32];
+    const currentIndex = speeds.indexOf(currentSpeed);
+    const prevIndex = Math.max(currentIndex - 1, 0);
+    changeSimulationSpeed(speeds[prevIndex]);
   };
 
   useEffect(() => {
@@ -151,6 +458,9 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
       setAddedSources([]);
       setAddedLayers([]);
       setIsMapReady(false);
+      
+      // Limpiar simulación
+      stopSimulation();
     };
   }, []);
 
@@ -168,6 +478,9 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
 
     console.log('✅ useEffect: Todas las condiciones cumplidas, procediendo...');
 
+    // Detener simulación si está activa
+    stopSimulation();
+
     // Limpiar mapas existentes
     clearMap();
 
@@ -181,6 +494,13 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     // Ajustar el mapa para mostrar toda la ruta
     fitMapToRoute(trafficOptimizedRoute.primary_route.points);
   }, [trafficOptimizedRoute, isMapReady]);
+
+  // Efecto para limpiar simulación cuando cambie la ruta seleccionada
+  useEffect(() => {
+    if (isSimulatingRef.current) {
+      stopSimulation();
+    }
+  }, [selectedRouteIndex]);
 
 
 
@@ -636,6 +956,93 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                 );
               })}
             </div>
+          </div>
+
+          {/* Controles de Simulación */}
+          <div className="mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
+              <span className="w-2 h-2 bg-red-500 rounded-full mr-2 sm:mr-3"></span>
+              Simulación de Recorrido
+            </h3>
+            
+            {/* Botón de Simulación */}
+            <div className="flex items-center justify-center mb-3">
+              <button
+                onClick={isSimulating ? stopSimulation : startSimulation}
+                disabled={!selectedRoute}
+                className={`px-6 py-3 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 flex items-center space-x-2 ${
+                  isSimulating
+                    ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg'
+                    : 'bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl'
+                } ${
+                  !selectedRoute ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'
+                }`}
+              >
+                {isSimulating ? (
+                  <>
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <span>Detener Simulación</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                    </svg>
+                    <span>Iniciar Simulación</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Controles de velocidad */}
+            {isSimulating && (
+              <div className="flex items-center justify-center space-x-4 mb-3">
+                <button
+                  onClick={decreaseSpeed}
+                  className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-sm border border-gray-200 hover:border-gray-300"
+                  title="Velocidad más lenta"
+                >
+                  Más lento
+                </button>
+                
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-4 py-2 text-center shadow-sm">
+                  <div className="text-lg font-bold text-blue-700">{simulationSpeed}x</div>
+                  <div className="text-xs text-blue-600">Velocidad</div>
+                </div>
+                
+                <button
+                  onClick={increaseSpeed}
+                  className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-sm border border-gray-200 hover:border-gray-300"
+                  title="Velocidad más rápida"
+                >
+                  Más rápido
+                </button>
+              </div>
+            )}
+
+            {/* Barra de Progreso */}
+            {isSimulating && (
+              <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Progreso del recorrido</span>
+                  <span className="text-sm font-bold text-gray-900">
+                    {Math.round(simulationProgress * 100)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${simulationProgress * 100}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Inicio</span>
+                  <span>Final</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] xl:h-[550px] overflow-hidden rounded-lg map-container">
