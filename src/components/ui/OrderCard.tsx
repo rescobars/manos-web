@@ -13,7 +13,8 @@ import {
   Truck,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Package
 } from 'lucide-react';
 
 interface OrderCardProps {
@@ -34,6 +35,13 @@ export function OrderCard({ order, onEdit, onView, className = '' }: OrderCardPr
           text: 'Pendiente'
         };
       case 'ASSIGNED':
+        return {
+          icon: Package,
+          color: 'bg-purple-100 text-purple-800 border-purple-200',
+          bgColor: 'bg-purple-50',
+          text: 'Asignado'
+        };
+      case 'IN_ROUTE':
         return {
           icon: Truck,
           color: 'bg-blue-100 text-blue-800 border-blue-200',

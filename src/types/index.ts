@@ -196,7 +196,7 @@ export interface Order {
   updated_at: string;
 }
 
-export type OrderStatus = 'PENDING' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
+export type OrderStatus = 'PENDING' | 'ASSIGNED' | 'IN_ROUTE' | 'COMPLETED' | 'CANCELLED';
 
 export interface CreateOrderFormData {
   organization_uuid: string;

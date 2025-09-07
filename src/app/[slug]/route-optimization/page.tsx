@@ -6,14 +6,16 @@ import { ordersApiService } from '@/lib/api/orders';
 import { Order } from '@/types';
 import { IndividualRoutesMap } from '@/components/ui/IndividualRoutesMap';
 import { Page } from '@/components/ui/Page';
-import { Route, AlertCircle, Map, Navigation } from 'lucide-react';
+import { Route, AlertCircle, Map, Navigation, Save } from 'lucide-react';
 import { BRANCH_LOCATION } from '@/lib/constants';
 import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 import { useRouteCreation } from '@/hooks/useRouteCreation';
+import { useSavedRoutes, SavedRoute } from '@/hooks/useSavedRoutes';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
+import SavedRoutesList from '@/components/ui/SavedRoutesList';
 
 interface PickupLocation {
   lat: number;
@@ -21,7 +23,7 @@ interface PickupLocation {
   address: string;
 }
 
-type ViewMode = 'individual' | 'optimized';
+type ViewMode = 'individual' | 'optimized' | 'saved';
 
 export default function RouteOptimizationPage() {
   const { currentOrganization } = useAuth();
@@ -70,12 +72,28 @@ export default function RouteOptimizationPage() {
   // Hook para notificaciones toast
   const { toasts, success, error: showErrorToast, removeToast } = useToast();
 
+  // Hook para rutas guardadas
+  const {
+    savedRoutes,
+    isLoading: isLoadingSavedRoutes,
+    error: savedRoutesError,
+    fetchSavedRoutes,
+    reset: resetSavedRoutes
+  } = useSavedRoutes();
+
   // Cargar pedidos y ubicación de pickup
   useEffect(() => {
     if (currentOrganization) {
       loadData();
     }
   }, [currentOrganization]);
+
+  // Cargar rutas guardadas cuando se cambie a la pestaña correspondiente
+  useEffect(() => {
+    if (viewMode === 'saved' && currentOrganization) {
+      fetchSavedRoutes(currentOrganization.uuid);
+    }
+  }, [viewMode, currentOrganization, fetchSavedRoutes]);
 
   const loadData = async () => {
     if (!currentOrganization) return;
@@ -179,6 +197,27 @@ export default function RouteOptimizationPage() {
     clearTrafficResult();
     clearRouteCreationError();
     setViewMode('individual');
+  };
+
+  // Funciones para manejar rutas guardadas
+  const handleViewSavedRoute = (route: SavedRoute) => {
+    console.log('Ver ruta guardada:', route);
+    // TODO: Implementar visualización de la ruta guardada
+    success(
+      'Ruta cargada',
+      `Se ha cargado la ruta "${route.route_name}" para visualización.`,
+      3000
+    );
+  };
+
+  const handleStartSavedRoute = (route: SavedRoute) => {
+    console.log('Iniciar ruta guardada:', route);
+    // TODO: Implementar inicio de ruta guardada
+    success(
+      'Ruta iniciada',
+      `Se ha iniciado la ruta "${route.route_name}".`,
+      3000
+    );
   };
 
   const handleSaveRoute = async () => {
@@ -291,6 +330,18 @@ export default function RouteOptimizationPage() {
                 {trafficOptimizedRoute && (
                   <span className="ml-1 w-2 h-2 bg-green-500 rounded-full"></span>
                 )}
+              </button>
+              
+              <button
+                onClick={() => setViewMode('saved')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'saved'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                }`}
+              >
+                <Save className="w-4 h-4" />
+                Rutas Guardadas
               </button>
             </div>
           </div>
@@ -416,6 +467,46 @@ export default function RouteOptimizationPage() {
               <TrafficOptimizedRouteMap
                 trafficOptimizedRoute={trafficOptimizedRoute}
                 showAlternatives={true}
+              />
+            </div>
+          )}
+
+          {viewMode === 'saved' && (
+            <div>
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-blue-700">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span>Rutas guardadas en el sistema</span>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => fetchSavedRoutes(currentOrganization?.uuid || '')}
+                      disabled={isLoadingSavedRoutes}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2"
+                    >
+                      {isLoadingSavedRoutes ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          Cargando...
+                        </>
+                      ) : (
+                        <>
+                          🔄 Actualizar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <SavedRoutesList
+                savedRoutes={savedRoutes}
+                isLoading={isLoadingSavedRoutes}
+                error={savedRoutesError}
+                onViewRoute={handleViewSavedRoute}
+                onStartRoute={handleStartSavedRoute}
               />
             </div>
           )}

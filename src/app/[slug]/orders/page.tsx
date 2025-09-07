@@ -128,7 +128,8 @@ export default function OrdersPage() {
   const filterOptions = [
     { value: 'ALL', label: 'Todos los estados' },
     { value: 'PENDING', label: 'Pendientes' },
-    { value: 'ASSIGNED', label: 'En Camino' },
+    { value: 'ASSIGNED', label: 'Asignados' },
+    { value: 'IN_ROUTE', label: 'En Camino' },
     { value: 'COMPLETED', label: 'Entregados' },
     { value: 'CANCELLED', label: 'Cancelados' }
   ];
@@ -167,7 +168,7 @@ export default function OrdersPage() {
         headerActions={headerActions}
       >
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <StatCard
             title="Total Pedidos"
             value={orders.length}
@@ -185,8 +186,16 @@ export default function OrdersPage() {
           />
           
           <StatCard
-            title="En Camino"
+            title="Asignados"
             value={orders.filter(o => o.status === 'ASSIGNED').length}
+            icon={Package}
+            iconColor="text-purple-600"
+            iconBgColor="bg-purple-100"
+          />
+          
+          <StatCard
+            title="En Camino"
+            value={orders.filter(o => o.status === 'IN_ROUTE').length}
             icon={Truck}
             iconColor="text-blue-600"
             iconBgColor="bg-blue-100"
