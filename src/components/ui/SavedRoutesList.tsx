@@ -16,7 +16,10 @@ import {
   AlertCircle,
   Package,
   Truck,
-  DollarSign
+  DollarSign,
+  UserPlus,
+  Pause,
+  PlayCircle
 } from 'lucide-react';
 import SavedRouteMap from './SavedRouteMap';
 
@@ -26,6 +29,7 @@ interface SavedRoutesListProps {
   error: string | null;
   onViewRoute: (route: SavedRoute) => void;
   onStartRoute: (route: SavedRoute) => void;
+  onAssignRoute?: (route: SavedRoute) => void;
   viewMode?: 'grid' | 'table';
 }
 
@@ -35,9 +39,17 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
   error,
   onViewRoute,
   onStartRoute,
-  viewMode = 'grid'
+  onAssignRoute,
+  viewMode
 }) => {
   const [selectedRouteForMap, setSelectedRouteForMap] = useState<SavedRoute | null>(null);
+  
+  // Usar el viewMode que viene del padre, con table por defecto
+  const actualViewMode = viewMode || 'table';
+  
+  // Debug: verificar el viewMode recibido
+  console.log('SavedRoutesList viewMode recibido:', viewMode);
+  console.log('SavedRoutesList actualViewMode:', actualViewMode);
   const getOrderStatusIcon = (status: string) => {
     switch (status) {
       case 'PENDING':
@@ -89,6 +101,93 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
     }
   };
 
+  const getRouteStatusIcon = (status: string) => {
+    switch (status) {
+      case 'PLANNED':
+        return <Clock className="w-3 h-3 text-blue-500" />;
+      case 'ASSIGNED':
+        return <UserPlus className="w-3 h-3 text-purple-500" />;
+      case 'IN_PROGRESS':
+        return <PlayCircle className="w-3 h-3 text-green-500" />;
+      case 'COMPLETED':
+        return <CheckCircle className="w-3 h-3 text-green-500" />;
+      case 'CANCELLED':
+        return <XCircle className="w-3 h-3 text-red-500" />;
+      case 'PAUSED':
+        return <Pause className="w-3 h-3 text-orange-500" />;
+      default:
+        return <AlertCircle className="w-3 h-3 text-gray-500" />;
+    }
+  };
+
+  const getRouteStatusColor = (status: string) => {
+    switch (status) {
+      case 'PLANNED':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'ASSIGNED':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'IN_PROGRESS':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'PAUSED':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getRouteStatusText = (status: string) => {
+    switch (status) {
+      case 'PLANNED':
+        return 'Planificada';
+      case 'ASSIGNED':
+        return 'Asignada';
+      case 'IN_PROGRESS':
+        return 'En Progreso';
+      case 'COMPLETED':
+        return 'Completada';
+      case 'CANCELLED':
+        return 'Cancelada';
+      case 'PAUSED':
+        return 'Pausada';
+      default:
+        return 'Desconocida';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'LOW':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'MEDIUM':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'HIGH':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'URGENT':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPriorityText = (priority: string) => {
+    switch (priority) {
+      case 'LOW':
+        return 'Baja';
+      case 'MEDIUM':
+        return 'Media';
+      case 'HIGH':
+        return 'Alta';
+      case 'URGENT':
+        return 'Urgente';
+      default:
+        return 'Media';
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
@@ -107,6 +206,12 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
 
   const handleCloseMap = () => {
     setSelectedRouteForMap(null);
+  };
+
+  const handleAssignRoute = (route: SavedRoute) => {
+    if (onAssignRoute) {
+      onAssignRoute(route);
+    }
   };
 
   if (isLoading) {
@@ -145,144 +250,88 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
   return (
     <div className="space-y-4">
 
-      {viewMode === 'grid' ? (
-        <div className="grid gap-4">
+      {actualViewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {savedRoutes.map((route) => (
           <div
             key={route.id}
-            className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
+            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h4 className="text-lg font-semibold text-gray-900">{route.route_name}</h4>
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200">
-                    <Route className="w-3 h-3" />
-                    Ruta Guardada
+            {/* Header con título y estado */}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 truncate mb-1">{route.route_name}</h4>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(route.status)}`}>
+                    {getRouteStatusIcon(route.status)}
+                    {getRouteStatusText(route.status)}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(route.priority)}`}>
+                    {getPriorityText(route.priority)}
                   </span>
                 </div>
-                
-                {route.description && (
-                  <p className="text-gray-600 text-sm mb-3">{route.description}</p>
-                )}
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 ml-2">
                 <button
                   onClick={() => handleViewRoute(route)}
-                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  title="Ver detalles de la ruta"
+                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  title="Ver detalles"
                 >
-                  <Eye className="w-5 h-5" />
+                  <Eye className="w-4 h-4" />
                 </button>
                 
-                <button
-                  onClick={() => onStartRoute(route)}
-                  className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                  title="Iniciar ruta"
-                >
-                  <Play className="w-5 h-5" />
-                </button>
-                
-                <button
-                  className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
-                  title="Más opciones"
-                >
-                  <MoreVertical className="w-5 h-5" />
-                </button>
+                {route.status === 'PLANNED' && onAssignRoute && (
+                  <button
+                    onClick={() => handleAssignRoute(route)}
+                    className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                    title="Asignar ruta"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <MapPin className="w-4 h-4 text-blue-500" />
-                <span className="font-medium">Origen:</span>
+            {/* Información básica compacta */}
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <MapPin className="w-3 h-3 text-blue-500 flex-shrink-0" />
                 <span className="truncate">{route.origin_name}</span>
               </div>
               
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Package className="w-4 h-4 text-green-500" />
-                <span className="font-medium">Pedidos:</span>
-                <span>{route.orders.length}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Clock className="w-4 h-4 text-orange-500" />
-                <span className="font-medium">Retraso tráfico:</span>
-                <span>{Math.round(route.traffic_delay / 60)} min</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Calendar className="w-4 h-4 text-purple-500" />
-                <span className="font-medium">Creada:</span>
-                <span>{formatDate(route.created_at)}</span>
+              <div className="flex items-center justify-between text-xs text-gray-600">
+                <div className="flex items-center gap-2">
+                  <Package className="w-3 h-3 text-green-500" />
+                  <span>{route.orders.length} pedidos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3 h-3 text-orange-500" />
+                  <span>{Math.round(route.traffic_delay / 60)}min</span>
+                </div>
               </div>
             </div>
 
-            {/* Lista de pedidos de la ruta */}
-            {route.orders && route.orders.length > 0 && (
-              <div className="mb-4">
-                <h5 className="text-sm font-medium text-gray-700 mb-3">Pedidos en esta ruta:</h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {route.orders.slice(0, 4).map((order, index) => (
-                    <div key={order.order_uuid} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-gray-500">#{order.sequence_order}</span>
-                          <span className="text-sm font-medium text-gray-900">{order.order_number}</span>
-                        </div>
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getOrderStatusColor(order.status)}`}>
-                          {getOrderStatusIcon(order.status)}
-                          {getOrderStatusText(order.status)}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <MapPin className="w-3 h-3 text-blue-500" />
-                          <span className="truncate">{order.delivery_address}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <DollarSign className="w-3 h-3 text-green-500" />
-                          <span>Q{parseFloat(order.total_amount.toString()).toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {route.orders.length > 4 && (
-                    <div className="bg-gray-100 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
-                      <span className="text-xs text-gray-500">
-                        +{route.orders.length - 4} pedidos más
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span>ID: {route.uuid.slice(0, 8)}...</span>
-                <span>•</span>
-                <span>Actualizada: {formatDate(route.updated_at)}</span>
-              </div>
+            {/* Acciones compactas */}
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+              <span className="text-xs text-gray-500">ID: {route.uuid.slice(0, 8)}</span>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => handleViewRoute(route)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
                 >
-                  <Eye className="w-4 h-4" />
-                  Ver Ruta
+                  Ver
                 </button>
                 
-                <button
-                  onClick={() => onStartRoute(route)}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <Play className="w-4 h-4" />
-                  Iniciar
-                </button>
+                {route.status === 'PLANNED' && onAssignRoute && (
+                  <button
+                    onClick={() => handleAssignRoute(route)}
+                    className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
+                  >
+                    Asignar
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -298,6 +347,9 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Estado
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Prioridad
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Distancia
@@ -326,16 +378,21 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200">
-                      <Route className="w-3 h-3" />
-                      Ruta Guardada
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(route.status)}`}>
+                      {getRouteStatusIcon(route.status)}
+                      {getRouteStatusText(route.status)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(route.priority)}`}>
+                      {getPriorityText(route.priority)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {route.total_distance?.toFixed(1) || 'N/A'} km
+                    N/A km
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {route.total_duration ? Math.round(route.total_duration / 60) : 'N/A'} min
+                    {Math.round(route.traffic_delay / 60)} min
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {route.orders?.length || 0}
@@ -358,12 +415,14 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
                       >
                         Ver
                       </button>
-                      <button
-                        onClick={() => onStartRoute(route)}
-                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors"
-                      >
-                        Iniciar
-                      </button>
+                      {route.status === 'PLANNED' && onAssignRoute && (
+                        <button
+                          onClick={() => handleAssignRoute(route)}
+                          className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-lg transition-colors"
+                        >
+                          Asignar
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

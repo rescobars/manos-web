@@ -198,6 +198,9 @@ export interface Order {
 
 export type OrderStatus = 'PENDING' | 'ASSIGNED' | 'IN_ROUTE' | 'COMPLETED' | 'CANCELLED';
 
+export type RouteStatus = 'PLANNED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PAUSED';
+export type RoutePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
 export interface CreateOrderFormData {
   organization_uuid: string;
   user_uuid?: string;
@@ -407,6 +410,8 @@ export interface SavedRoute {
   ordered_waypoints: OrderedWaypoint[];
   traffic_condition: TrafficCondition;
   traffic_delay: number;
+  status: RouteStatus;
+  priority: RoutePriority;
   created_at: string;
   updated_at: string;
   orders: RouteOrder[];
@@ -416,4 +421,10 @@ export interface RoutesResponse {
   success: boolean;
   data: SavedRoute[];
   message: string;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }

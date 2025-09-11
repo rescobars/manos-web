@@ -148,10 +148,18 @@ export async function POST(request: NextRequest) {
       const backendResponse = await response.json();
       console.log('✅ Respuesta del backend:', backendResponse);
 
+      // Extraer el route_id de la respuesta del backend
+      const routeId = backendResponse?.data?.uuid || backendResponse?.data?.id || backendResponse?.route_id || backendResponse?.id || backendResponse?.uuid;
+      console.log('🔑 Route ID extraído:', routeId);
+
       return NextResponse.json({
         success: true,
-        data: backendResponse,
-        message: 'Ruta creada exitosamente en el backend'
+        data: {
+          route_id: routeId,
+          message: 'Ruta creada exitosamente en el backend',
+          payload_sent: cleanedPayload,
+          backend_response: backendResponse
+        }
       });
 
     } catch (backendError) {

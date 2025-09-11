@@ -8,6 +8,7 @@ export interface Driver {
   name: string;
   status: 'ACTIVE' | 'INACTIVE';
   member_since: string;
+  organization_membership_uuid: string;
   roles: Array<{
     role_name: string;
   }>;
@@ -69,6 +70,30 @@ class OrganizationMembersApiService {
   // Obtener todos los miembros de una organización
   async getOrganizationMembers(organizationUuid: string): Promise<ApiResponse<Driver[]>> {
     return this.getOrganizationUsers(organizationUuid);
+  }
+
+  // Asignar ruta a un driver
+  async assignRouteToDriver(
+    routeUuid: string, 
+    membershipUuid: string, 
+    assignmentData: {
+      start_time: string;
+      end_time: string;
+      driver_notes?: string;
+      driver_instructions?: Record<string, any>;
+    },
+    organizationId?: string
+  ): Promise<ApiResponse> {
+    const headers: Record<string, string> = {};
+    if (organizationId) {
+      headers['organization-id'] = organizationId;
+    }
+    
+    return this.request(`/route-drivers/assign/${routeUuid}/${membershipUuid}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(assignmentData),
+    });
   }
 }
 
