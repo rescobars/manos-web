@@ -6,14 +6,16 @@ import { ordersApiService } from '@/lib/api/orders';
 import { Order } from '@/types';
 import { IndividualRoutesMap } from '@/components/ui/IndividualRoutesMap';
 import { Page } from '@/components/ui/Page';
-import { Route, AlertCircle, Map, Navigation, Save, ArrowLeft, ArrowRight, Users, CheckCircle } from 'lucide-react';
+import { Route, AlertCircle, Map, Navigation, Save, ArrowLeft, ArrowRight, Users, CheckCircle, Grid, List, Search, Filter, Plus } from 'lucide-react';
 import { BRANCH_LOCATION } from '@/lib/constants';
 import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 import { useRouteCreation } from '@/hooks/useRouteCreation';
+import { useSavedRoutes } from '@/hooks/useSavedRoutes';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
+import SavedRoutesList from '@/components/ui/SavedRoutesList';
 
 interface PickupLocation {
   lat: number;
@@ -35,6 +37,10 @@ export default function RouteOptimizationPage() {
   const [selectedPilot, setSelectedPilot] = useState<string>('');
   const [pilotNotes, setPilotNotes] = useState<string>('');
   const [routeSaved, setRouteSaved] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'create' | 'routes'>('create');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [routesSearchTerm, setRoutesSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   // Función para obtener pedidos formateados para el mapa
   const getOrdersForMap = useCallback(() => {
@@ -72,6 +78,45 @@ export default function RouteOptimizationPage() {
 
   // Hook para notificaciones toast
   const { toasts, success, error: showErrorToast, removeToast } = useToast();
+  
+  // Hook para rutas guardadas
+  const { savedRoutes, isLoading: routesLoading, error: routesError, fetchSavedRoutes } = useSavedRoutes();
+
+  // Cargar rutas guardadas cuando se cambia a la pestaña de rutas
+  useEffect(() => {
+    if (activeTab === 'routes' && currentOrganization) {
+      fetchSavedRoutes(currentOrganization.uuid);
+    }
+  }, [activeTab, currentOrganization, fetchSavedRoutes]);
+
+  // Funciones para manejar rutas guardadas
+  const handleViewSavedRoute = (route: any) => {
+    console.log('Ver ruta guardada:', route);
+    success(
+      'Ruta cargada',
+      `Se ha cargado la ruta "${route.route_name}" para visualización.`,
+      3000
+    );
+  };
+
+  const handleStartSavedRoute = (route: any) => {
+    console.log('Iniciar ruta guardada:', route);
+    success(
+      'Ruta iniciada',
+      `Se ha iniciado la ruta "${route.route_name}".`,
+      3000
+    );
+  };
+
+  // Filtrar rutas basado en búsqueda y estado
+  const filteredRoutes = savedRoutes.filter(route => {
+    const matchesSearch = route.route_name.toLowerCase().includes(routesSearchTerm.toLowerCase()) ||
+                         route.description?.toLowerCase().includes(routesSearchTerm.toLowerCase());
+    
+    if (filterStatus === 'all') return matchesSearch;
+    // Aquí puedes agregar más filtros según el estado de la ruta
+    return matchesSearch;
+  });
 
   // Cargar pedidos y ubicación de pickup
   useEffect(() => {
@@ -344,78 +389,113 @@ export default function RouteOptimizationPage() {
   return (
     <>
       <Page
-        title="Crear Ruta"
-        subtitle={`Crea rutas optimizadas para ${currentOrganization.name}`}
+        title="Gestion de Rutas"
+        subtitle={`Gestion de rutas para ${currentOrganization.name}`}
       >
         <div className="min-h-screen bg-gray-50">
-          {/* Header minimalista */}
+          {/* Header con pestañas */}
           <div className="bg-white border-b border-gray-200">
             <div className="w-full px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-16">
-                <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <stepInfo.icon className="w-4 h-4 text-white" />
+              {/* Pestañas */}
+              <div className="flex space-x-8 border-b border-gray-200">
+                <button
+                  onClick={() => setActiveTab('create')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === 'create'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Route className="w-4 h-4" />
+                    Crear Ruta
                   </div>
-                  <div>
-                    <h1 className="text-xl font-semibold text-gray-900">{stepInfo.title}</h1>
-                    <p className="text-sm text-gray-500">{stepInfo.description}</p>
+                </button>
+                <button
+                  onClick={() => setActiveTab('routes')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === 'routes'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Navigation className="w-4 h-4" />
+                    Mis Rutas
                   </div>
-                </div>
-                
-                {/* Progreso minimalista */}
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500">Paso {currentStepIndex + 1} de {steps.length}</span>
-                  <div className="flex items-center gap-1">
-                    {steps.map((_, index) => (
-                      <div
-                        key={index}
-                        className={`w-2 h-2 rounded-full ${
-                          index <= currentStepIndex ? 'bg-blue-600' : 'bg-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
+                </button>
               </div>
+              
+              {/* Información del paso actual (solo en pestaña crear) */}
+              {activeTab === 'create' && (
+                <div className="flex items-center justify-between h-16">
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <stepInfo.icon className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-semibold text-gray-900">{stepInfo.title}</h1>
+                      <p className="text-sm text-gray-500">{stepInfo.description}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Progreso minimalista */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-500">Paso {currentStepIndex + 1} de {steps.length}</span>
+                    <div className="flex items-center gap-1">
+                      {steps.map((_, index) => (
+                        <div
+                          key={index}
+                          className={`w-2 h-2 rounded-full ${
+                            index <= currentStepIndex ? 'bg-blue-600' : 'bg-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Contenido principal */}
           <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              {/* Botones de navegación en la parte superior */}
-              <div className="bg-gray-50 border-b border-gray-200 px-8 py-4">
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={goBack}
-                    disabled={!canGoBack}
-                    className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                      canGoBack
-                        ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                        : 'text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Atrás
-                  </button>
-                  
-                  <button
-                    onClick={executeCurrentStepAction}
-                    disabled={!stepInfo.canNext}
-                    className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
-                      stepInfo.canNext
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {stepInfo.nextText}
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+              {activeTab === 'create' ? (
+                <>
+                  {/* Botones de navegación en la parte superior */}
+                  <div className="bg-gray-50 border-b border-gray-200 px-8 py-4">
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={goBack}
+                        disabled={!canGoBack}
+                        className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                          canGoBack
+                            ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                            : 'text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        Atrás
+                      </button>
+                      
+                      <button
+                        onClick={executeCurrentStepAction}
+                        disabled={!stepInfo.canNext}
+                        className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
+                          stepInfo.canNext
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {stepInfo.nextText}
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
 
-              {/* Contenido del paso actual */}
-              <div className="p-8">
+                  {/* Contenido del paso actual */}
+                  <div className="p-8">
                 {currentStep === 'select' && (
                   <div className="space-y-8">
                     {/* Opciones de optimización */}
@@ -602,8 +682,148 @@ export default function RouteOptimizationPage() {
                     </div>
                   </div>
                 )}
-              </div>
+                  </div>
+                </>
+              ) : (
+                /* Pestaña de Mis Rutas */
+                <div className="p-8">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Rutas</h2>
+                    <p className="text-gray-600">Administra y visualiza las rutas de {currentOrganization?.name}</p>
+                  </div>
 
+                  {/* Header con controles */}
+                  <div className="mb-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      {/* Búsqueda y filtros */}
+                      <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                        <div className="relative flex-1 max-w-md">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <input
+                            type="text"
+                            placeholder="Buscar rutas..."
+                            value={routesSearchTerm}
+                            onChange={(e) => setRoutesSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Filter className="w-4 h-4 text-gray-500" />
+                          <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="all">Todas las rutas</option>
+                            <option value="active">Activas</option>
+                            <option value="completed">Completadas</option>
+                            <option value="pending">Pendientes</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Controles de vista y acciones */}
+                      <div className="flex items-center gap-3">
+                        {/* Toggle de vista */}
+                        <div className="flex bg-gray-100 rounded-lg p-1">
+                          <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-2 rounded-md transition-colors ${
+                              viewMode === 'grid'
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : 'text-gray-600 hover:text-gray-800'
+                            }`}
+                            title="Vista de cuadrícula"
+                          >
+                            <Grid className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setViewMode('table')}
+                            className={`p-2 rounded-md transition-colors ${
+                              viewMode === 'table'
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : 'text-gray-600 hover:text-gray-800'
+                            }`}
+                            title="Vista de tabla"
+                          >
+                            <List className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Botón crear nueva ruta */}
+                        <button
+                          onClick={() => setActiveTab('create')}
+                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Nueva Ruta
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Estadísticas rápidas */}
+                  <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Route className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium">Total de Rutas</p>
+                          <p className="text-2xl font-bold text-blue-800">{savedRoutes.length}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        </div>
+                        <div>
+                          <p className="text-sm text-green-600 font-medium">Rutas Recientes</p>
+                          <p className="text-2xl font-bold text-green-800">
+                            {savedRoutes.filter(route => {
+                              const createdDate = new Date(route.created_at);
+                              const weekAgo = new Date();
+                              weekAgo.setDate(weekAgo.getDate() - 7);
+                              return createdDate > weekAgo;
+                            }).length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                        </div>
+                        <div>
+                          <p className="text-sm text-purple-600 font-medium">Con Tráfico</p>
+                          <p className="text-2xl font-bold text-purple-800">
+                            {savedRoutes.filter(route => route.traffic_condition.general_congestion === 'heavy').length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lista de rutas */}
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <SavedRoutesList 
+                      savedRoutes={filteredRoutes}
+                      isLoading={routesLoading}
+                      error={routesError}
+                      onViewRoute={handleViewSavedRoute}
+                      onStartRoute={handleStartSavedRoute}
+                      viewMode={viewMode}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -144,14 +144,6 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Rutas Guardadas</h3>
-          <p className="text-sm text-gray-600">
-            {savedRoutes.length} ruta{savedRoutes.length !== 1 ? 's' : ''} encontrada{savedRoutes.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-      </div>
 
       {viewMode === 'grid' ? (
         <div className="grid gap-4">

@@ -102,15 +102,6 @@ export function getNavigationItems(slug: string, userRole: string, isOwner: bool
         showForDriver: false
       },
       {
-        label: 'Rutas',
-        icon: Route,
-        href: `/${slug}/routes`,
-        roles: ['OWNER', 'ADMIN'],
-        showForOwner: true,
-        showForAdmin: true,
-        showForDriver: false
-      },
-      {
         label: 'Configuración',
         icon: Settings,
         href: `/${slug}/settings`,
@@ -144,15 +135,6 @@ export function getNavigationItems(slug: string, userRole: string, isOwner: bool
         label: 'Mis Entregas',
         icon: Package,
         href: `/${slug}/my-deliveries`,
-        roles: ['DRIVER'],
-        showForOwner: false,
-        showForAdmin: false,
-        showForDriver: true
-      },
-      {
-        label: 'Rutas',
-        icon: Truck,
-        href: `/${slug}/routes`,
         roles: ['DRIVER'],
         showForOwner: false,
         showForAdmin: false,
