@@ -48,6 +48,7 @@ export default function RouteOptimizationPage() {
   const [routesSearchTerm, setRoutesSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('PLANNED');
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
+  const [allRoutes, setAllRoutes] = useState<SavedRoute[]>([]); // Para los contadores
   const [routesLoading, setRoutesLoading] = useState(false);
   const [routesError, setRoutesError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<{
@@ -99,6 +100,37 @@ export default function RouteOptimizationPage() {
   
   // Hook para conductores
   const { drivers, isLoading: driversLoading, error: driversError, fetchDrivers } = useDrivers();
+
+  // Función para obtener todas las rutas (para contadores)
+  const fetchAllRoutes = async () => {
+    if (!currentOrganization) return;
+
+    try {
+      const apiUrl = '/api/routes?limit=1000'; // Obtener todas las rutas
+
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'organization-id': currentOrganization.uuid,
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const routesWithDefaults = result.data.map((route: any) => ({
+          ...route,
+          status: route.status || 'PLANNED',
+          priority: route.priority || 'MEDIUM'
+        }));
+        
+        setAllRoutes(routesWithDefaults);
+      }
+    } catch (err) {
+      console.error('Error loading all routes for counters:', err);
+    }
+  };
 
   // Función para obtener rutas del API
   const fetchRoutes = async (status?: string, page: number = 1) => {
@@ -156,6 +188,9 @@ export default function RouteOptimizationPage() {
   // Cargar rutas guardadas cuando se cambia a la pestaña de rutas
   useEffect(() => {
     if (activeTab === 'routes' && currentOrganization) {
+      // Cargar todas las rutas para los contadores
+      fetchAllRoutes();
+      // Cargar rutas filtradas para la visualización
       fetchRoutes('PLANNED', 1);
     }
   }, [activeTab, currentOrganization]);
@@ -167,7 +202,7 @@ export default function RouteOptimizationPage() {
     }
   }, [currentStep, currentOrganization, fetchDrivers]);
 
-  // Función para cambiar filtro
+  // Función para cambiar filtro desde las tarjetas KPI
   const handleFilterChange = (newStatus: string) => {
     setFilterStatus(newStatus);
     const status = newStatus === 'all' ? undefined : newStatus;
@@ -621,8 +656,9 @@ export default function RouteOptimizationPage() {
           clearTrafficResult();
         }
         
-        // Recargar rutas para mostrar el cambio de estado
+        // Recargar todas las rutas para actualizar contadores
         if (currentOrganization) {
+          fetchAllRoutes();
           const status = filterStatus === 'all' ? undefined : filterStatus;
           fetchRoutes(status, 1);
         }
@@ -1078,23 +1114,21 @@ export default function RouteOptimizationPage() {
                   {/* Header con controles */}
                   <div className="mb-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      {/* Filtros */}
+                      {/* Título y estado actual */}
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <Filter className="w-4 h-4 text-gray-500" />
-                          <select
-                            value={filterStatus}
-                            onChange={(e) => handleFilterChange(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="all">Todas las rutas</option>
-                            <option value="PLANNED">Planificadas</option>
-                            <option value="ASSIGNED">Asignadas</option>
-                            <option value="IN_PROGRESS">En Progreso</option>
-                            <option value="COMPLETED">Completadas</option>
-                            <option value="CANCELLED">Canceladas</option>
-                            <option value="PAUSED">Pausadas</option>
-                          </select>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {filterStatus === 'all' ? 'Todas las Rutas' : 
+                             filterStatus === 'PLANNED' ? 'Rutas Planificadas' :
+                             filterStatus === 'ASSIGNED' ? 'Rutas Asignadas' :
+                             filterStatus === 'IN_PROGRESS' ? 'Rutas en Progreso' :
+                             filterStatus === 'COMPLETED' ? 'Rutas Completadas' :
+                             filterStatus === 'CANCELLED' ? 'Rutas Canceladas' :
+                             filterStatus === 'PAUSED' ? 'Rutas Pausadas' : 'Rutas Planificadas'}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {routes.length} ruta{routes.length !== 1 ? 's' : ''} encontrada{routes.length !== 1 ? 's' : ''}
+                          </p>
                         </div>
                       </div>
 
@@ -1138,11 +1172,39 @@ export default function RouteOptimizationPage() {
                     </div>
                   </div>
 
-                  {/* Estadísticas por estado */}
+                  {/* Estadísticas por estado - Clickeables */}
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Estadísticas por Estado</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Filtrar por Estado</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                      <button
+                        onClick={() => handleFilterChange('all')}
+                        className={`bg-gray-50 border rounded-lg p-4 text-left transition-all duration-200 hover:shadow-md ${
+                          filterStatus === 'all' 
+                            ? 'border-gray-400 ring-2 ring-gray-200 shadow-lg' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <Route className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 font-medium">Todas</p>
+                            <p className="text-xl font-bold text-gray-800">
+                              {allRoutes.length}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                      
+                      <button
+                        onClick={() => handleFilterChange('PLANNED')}
+                        className={`bg-blue-50 border rounded-lg p-4 text-left transition-all duration-200 hover:shadow-md ${
+                          filterStatus === 'PLANNED' 
+                            ? 'border-blue-400 ring-2 ring-blue-200 shadow-lg' 
+                            : 'border-blue-200 hover:border-blue-300'
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                             <Clock className="w-4 h-4 text-blue-600" />
@@ -1150,13 +1212,20 @@ export default function RouteOptimizationPage() {
                           <div>
                             <p className="text-xs text-blue-600 font-medium">Planificadas</p>
                             <p className="text-xl font-bold text-blue-800">
-                              {routes.filter(route => route.status === 'PLANNED').length}
+                              {allRoutes.filter(route => route.status === 'PLANNED').length}
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                       
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <button
+                        onClick={() => handleFilterChange('ASSIGNED')}
+                        className={`bg-purple-50 border rounded-lg p-4 text-left transition-all duration-200 hover:shadow-md ${
+                          filterStatus === 'ASSIGNED' 
+                            ? 'border-purple-400 ring-2 ring-purple-200 shadow-lg' 
+                            : 'border-purple-200 hover:border-purple-300'
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                             <Users className="w-4 h-4 text-purple-600" />
@@ -1164,13 +1233,20 @@ export default function RouteOptimizationPage() {
                           <div>
                             <p className="text-xs text-purple-600 font-medium">Asignadas</p>
                             <p className="text-xl font-bold text-purple-800">
-                              {routes.filter(route => route.status === 'ASSIGNED').length}
+                              {allRoutes.filter(route => route.status === 'ASSIGNED').length}
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                       
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <button
+                        onClick={() => handleFilterChange('IN_PROGRESS')}
+                        className={`bg-green-50 border rounded-lg p-4 text-left transition-all duration-200 hover:shadow-md ${
+                          filterStatus === 'IN_PROGRESS' 
+                            ? 'border-green-400 ring-2 ring-green-200 shadow-lg' 
+                            : 'border-green-200 hover:border-green-300'
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                             <Route className="w-4 h-4 text-green-600" />
@@ -1178,13 +1254,20 @@ export default function RouteOptimizationPage() {
                           <div>
                             <p className="text-xs text-green-600 font-medium">En Progreso</p>
                             <p className="text-xl font-bold text-green-800">
-                              {routes.filter(route => route.status === 'IN_PROGRESS').length}
+                              {allRoutes.filter(route => route.status === 'IN_PROGRESS').length}
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                       
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                      <button
+                        onClick={() => handleFilterChange('COMPLETED')}
+                        className={`bg-emerald-50 border rounded-lg p-4 text-left transition-all duration-200 hover:shadow-md ${
+                          filterStatus === 'COMPLETED' 
+                            ? 'border-emerald-400 ring-2 ring-emerald-200 shadow-lg' 
+                            : 'border-emerald-200 hover:border-emerald-300'
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                             <CheckCircle className="w-4 h-4 text-emerald-600" />
@@ -1192,13 +1275,20 @@ export default function RouteOptimizationPage() {
                           <div>
                             <p className="text-xs text-emerald-600 font-medium">Completadas</p>
                             <p className="text-xl font-bold text-emerald-800">
-                              {routes.filter(route => route.status === 'COMPLETED').length}
+                              {allRoutes.filter(route => route.status === 'COMPLETED').length}
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                       
-                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <button
+                        onClick={() => handleFilterChange('PAUSED')}
+                        className={`bg-orange-50 border rounded-lg p-4 text-left transition-all duration-200 hover:shadow-md ${
+                          filterStatus === 'PAUSED' 
+                            ? 'border-orange-400 ring-2 ring-orange-200 shadow-lg' 
+                            : 'border-orange-200 hover:border-orange-300'
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
                             <AlertCircle className="w-4 h-4 text-orange-600" />
@@ -1206,13 +1296,20 @@ export default function RouteOptimizationPage() {
                           <div>
                             <p className="text-xs text-orange-600 font-medium">Pausadas</p>
                             <p className="text-xl font-bold text-orange-800">
-                              {routes.filter(route => route.status === 'PAUSED').length}
+                              {allRoutes.filter(route => route.status === 'PAUSED').length}
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                       
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <button
+                        onClick={() => handleFilterChange('CANCELLED')}
+                        className={`bg-red-50 border rounded-lg p-4 text-left transition-all duration-200 hover:shadow-md ${
+                          filterStatus === 'CANCELLED' 
+                            ? 'border-red-400 ring-2 ring-red-200 shadow-lg' 
+                            : 'border-red-200 hover:border-red-300'
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
                             <XCircle className="w-4 h-4 text-red-600" />
@@ -1220,11 +1317,11 @@ export default function RouteOptimizationPage() {
                           <div>
                             <p className="text-xs text-red-600 font-medium">Canceladas</p>
                             <p className="text-xl font-bold text-red-800">
-                              {routes.filter(route => route.status === 'CANCELLED').length}
+                              {allRoutes.filter(route => route.status === 'CANCELLED').length}
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     </div>
                   </div>
 
