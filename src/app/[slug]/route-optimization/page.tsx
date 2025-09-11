@@ -52,11 +52,14 @@ export default function RouteOptimizationPage() {
   const [routesLoading, setRoutesLoading] = useState(false);
   const [routesError, setRoutesError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<{
+    total: number;
     page: number;
     limit: number;
-    total: number;
     totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
   } | undefined>(undefined);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [selectedRouteForMap, setSelectedRouteForMap] = useState<SavedRoute | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [routeToAssign, setRouteToAssign] = useState<SavedRoute | null>(null);
@@ -133,7 +136,7 @@ export default function RouteOptimizationPage() {
   };
 
   // Función para obtener rutas del API
-  const fetchRoutes = async (status?: string, page: number = 1) => {
+  const fetchRoutes = async (status?: string, page: number = 1, limit?: number) => {
     if (!currentOrganization) return;
 
     setRoutesLoading(true);
@@ -145,7 +148,7 @@ export default function RouteOptimizationPage() {
       
       if (status) queryParams.append('status', status);
       queryParams.append('page', page.toString());
-      queryParams.append('limit', '20');
+      queryParams.append('limit', (limit || itemsPerPage).toString());
       
       if (queryParams.toString()) {
         apiUrl += `?${queryParams.toString()}`;
@@ -191,9 +194,9 @@ export default function RouteOptimizationPage() {
       // Cargar todas las rutas para los contadores
       fetchAllRoutes();
       // Cargar rutas filtradas para la visualización
-      fetchRoutes('PLANNED', 1);
+      fetchRoutes('PLANNED', 1, itemsPerPage);
     }
-  }, [activeTab, currentOrganization]);
+  }, [activeTab, currentOrganization, itemsPerPage]);
 
   // Cargar drivers cuando se llega al paso de asignación
   useEffect(() => {
@@ -206,13 +209,20 @@ export default function RouteOptimizationPage() {
   const handleFilterChange = (newStatus: string) => {
     setFilterStatus(newStatus);
     const status = newStatus === 'all' ? undefined : newStatus;
-    fetchRoutes(status, 1);
+    fetchRoutes(status, 1, itemsPerPage);
   };
 
   // Función para cambiar página
   const handlePageChange = (page: number) => {
     const status = filterStatus === 'all' ? undefined : filterStatus;
-    fetchRoutes(status, page);
+    fetchRoutes(status, page, itemsPerPage);
+  };
+
+  // Función para cambiar elementos por página
+  const handleItemsPerPageChange = (newLimit: number) => {
+    setItemsPerPage(newLimit);
+    const status = filterStatus === 'all' ? undefined : filterStatus;
+    fetchRoutes(status, 1, newLimit); // Volver a la página 1 con el nuevo límite
   };
 
   // Función para ordenar
@@ -312,10 +322,11 @@ export default function RouteOptimizationPage() {
       key: 'route_name' as keyof SavedRoute,
       label: 'Ruta',
       sortable: true,
+      className: 'w-1/4',
       render: (value: string, item: SavedRoute) => (
-        <div>
-          <div className="text-sm font-medium text-gray-900">{value}</div>
-          <div className="text-sm text-gray-500 truncate max-w-xs">{item.description}</div>
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-gray-900 truncate">{value}</div>
+          <div className="text-xs text-gray-500 truncate">{item.description}</div>
         </div>
       )
     },
@@ -323,6 +334,7 @@ export default function RouteOptimizationPage() {
       key: 'status' as keyof SavedRoute,
       label: 'Estado',
       sortable: true,
+      className: 'w-20',
       render: (value: string) => (
         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(value)}`}>
           {getRouteStatusText(value)}
@@ -333,6 +345,7 @@ export default function RouteOptimizationPage() {
       key: 'priority' as keyof SavedRoute,
       label: 'Prioridad',
       sortable: true,
+      className: 'w-20',
       render: (value: string) => (
         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(value)}`}>
           {getPriorityText(value)}
@@ -343,9 +356,10 @@ export default function RouteOptimizationPage() {
       key: 'origin_name' as keyof SavedRoute,
       label: 'Origen',
       sortable: true,
+      className: 'w-1/5',
       render: (value: string) => (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <MapPin className="w-4 h-4 text-blue-500" />
+        <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+          <MapPin className="w-4 h-4 text-blue-500 flex-shrink-0" />
           <span className="truncate">{value}</span>
         </div>
       )
@@ -354,6 +368,7 @@ export default function RouteOptimizationPage() {
       key: 'orders' as keyof SavedRoute,
       label: 'Pedidos',
       sortable: true,
+      className: 'w-16',
       render: (value: any[]) => (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Package className="w-4 h-4 text-green-500" />
@@ -365,10 +380,11 @@ export default function RouteOptimizationPage() {
       key: 'traffic_delay' as keyof SavedRoute,
       label: 'Retraso',
       sortable: true,
+      className: 'w-16',
       render: (value: number) => (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Clock className="w-4 h-4 text-orange-500" />
-          <span>{Math.round(value / 60)} min</span>
+          <span>{Math.round(value / 60)}m</span>
         </div>
       )
     },
@@ -376,10 +392,10 @@ export default function RouteOptimizationPage() {
       key: 'created_at' as keyof SavedRoute,
       label: 'Creada',
       sortable: true,
+      className: 'w-20',
       render: (value: string) => (
-        <span className="text-sm text-gray-500">
+        <span className="text-xs text-gray-500">
           {new Date(value).toLocaleDateString('es-ES', {
-            year: 'numeric',
             month: 'short',
             day: 'numeric'
           })}
@@ -390,11 +406,12 @@ export default function RouteOptimizationPage() {
       key: 'actions' as keyof SavedRoute,
       label: 'Acciones',
       sortable: false,
+      className: 'w-32',
       render: (value: any, item: SavedRoute) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={() => handleViewRoute(item)}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
             title="Ver detalles"
           >
             <Eye className="w-3 h-3" />
@@ -403,7 +420,7 @@ export default function RouteOptimizationPage() {
           {item.status === 'PLANNED' && (
             <button
               onClick={() => handleAssignRouteFromTable(item)}
-              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+              className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
               title="Asignar ruta"
             >
               <UserPlus className="w-3 h-3" />
@@ -660,7 +677,7 @@ export default function RouteOptimizationPage() {
         if (currentOrganization) {
           fetchAllRoutes();
           const status = filterStatus === 'all' ? undefined : filterStatus;
-          fetchRoutes(status, 1);
+          fetchRoutes(status, 1, itemsPerPage);
         }
       } else {
         showErrorToast(
@@ -1127,13 +1144,40 @@ export default function RouteOptimizationPage() {
                              filterStatus === 'PAUSED' ? 'Rutas Pausadas' : 'Rutas Planificadas'}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            {routes.length} ruta{routes.length !== 1 ? 's' : ''} encontrada{routes.length !== 1 ? 's' : ''}
+                            {pagination ? (
+                              <>
+                                Mostrando {routes.length} de {pagination.total} ruta{pagination.total !== 1 ? 's' : ''}
+                                {pagination.totalPages > 1 && (
+                                  <span className="ml-2 text-blue-600">
+                                    (Página {pagination.page} de {pagination.totalPages})
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              `${routes.length} ruta${routes.length !== 1 ? 's' : ''} encontrada${routes.length !== 1 ? 's' : ''}`
+                            )}
                           </p>
                         </div>
                       </div>
 
                       {/* Controles de vista y acciones */}
                       <div className="flex items-center gap-3">
+                        {/* Selector de elementos por página */}
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm text-gray-600">Mostrar:</label>
+                          <select
+                            value={itemsPerPage}
+                            onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                            className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                          </select>
+                          <span className="text-sm text-gray-600">por página</span>
+                        </div>
+
                         {/* Toggle de vista */}
                         <div className="flex bg-gray-100 rounded-lg p-1">
                           <button

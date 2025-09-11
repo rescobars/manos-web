@@ -12,10 +12,12 @@ interface Column<T> {
 }
 
 interface Pagination {
+  total: number;
   page: number;
   limit: number;
-  total: number;
   totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 interface DataTableProps<T> {
@@ -56,9 +58,11 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   const renderPagination = () => {
-    if (!pagination || pagination.totalPages <= 1) return null;
+    if (!pagination) {
+      return null;
+    }
 
-    const { page, totalPages } = pagination;
+    const { page, totalPages, hasNext, hasPrev } = pagination;
     const pages = [];
     
     // Calcular páginas a mostrar
@@ -70,39 +74,47 @@ export function DataTable<T extends Record<string, any>>({
     }
 
     return (
-      <div className="flex items-center justify-between px-6 py-3 bg-white border-t border-gray-200">
-        <div className="flex items-center text-sm text-gray-700">
-          <span>
+      <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <div className="flex items-center text-sm text-gray-600">
+          <span className="font-medium">
             Mostrando {((page - 1) * pagination.limit) + 1} a {Math.min(page * pagination.limit, pagination.total)} de {pagination.total} resultados
           </span>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1">
+          {/* Botón Primera página */}
           <button
             onClick={() => onPageChange?.(1)}
-            disabled={page === 1}
-            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!hasPrev}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+            title="Primera página"
           >
             <ChevronsLeft className="w-4 h-4" />
           </button>
           
+          {/* Botón Página anterior */}
           <button
             onClick={() => onPageChange?.(page - 1)}
-            disabled={page === 1}
-            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!hasPrev}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+            title="Página anterior"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           
+          {/* Separador */}
+          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+          
+          {/* Números de página */}
           <div className="flex space-x-1">
             {pages.map((pageNum) => (
               <button
                 key={pageNum}
                 onClick={() => onPageChange?.(pageNum)}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   pageNum === page
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-600 text-white shadow-md border border-blue-700'
+                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm border border-transparent hover:border-gray-200'
                 }`}
               >
                 {pageNum}
@@ -110,18 +122,25 @@ export function DataTable<T extends Record<string, any>>({
             ))}
           </div>
           
+          {/* Separador */}
+          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+          
+          {/* Botón Página siguiente */}
           <button
             onClick={() => onPageChange?.(page + 1)}
-            disabled={page === totalPages}
-            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!hasNext}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+            title="Página siguiente"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
           
+          {/* Botón Última página */}
           <button
             onClick={() => onPageChange?.(totalPages)}
-            disabled={page === totalPages}
-            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!hasNext}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+            title="Última página"
           >
             <ChevronsRight className="w-4 h-4" />
           </button>
@@ -160,8 +179,11 @@ export function DataTable<T extends Record<string, any>>({
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${className}`}>
+      {/* Paginación arriba */}
+      {renderPagination()}
+      
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="w-full divide-y divide-gray-200 table-fixed">
           <thead className="bg-gray-50">
             <tr>
               {columns.map((column) => (
@@ -203,8 +225,6 @@ export function DataTable<T extends Record<string, any>>({
           </tbody>
         </table>
       </div>
-      
-      {renderPagination()}
     </div>
   );
 }

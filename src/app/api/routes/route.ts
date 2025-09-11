@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: backendResponse.data || [],
+        pagination: backendResponse.pagination || null,
         message: backendResponse.message || 'Rutas obtenidas exitosamente'
       });
 
