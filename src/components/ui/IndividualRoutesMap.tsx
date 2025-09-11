@@ -446,16 +446,6 @@ export function IndividualRoutesMap({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="text-sm text-gray-600">
-              {!isMapReady && <span className="text-blue-600">🗺️ Cargando mapa...</span>}
-              {isMapReady && orders.length === 0 && <span className="text-yellow-600">📦 Esperando pedidos del backend...</span>}
-              {isMapReady && orders.length > 0 && selectedOrders.length === 0 && <span className="text-yellow-600">✅ Mapa listo, selecciona pedidos</span>}
-              {isMapReady && orders.length > 0 && selectedOrders.length > 0 && !routesLoaded && <span className="text-green-600">🚀 Cargando rutas...</span>}
-              {routesLoaded && <span className="text-green-600">✅ Últimas rutas cargadas</span>}
-            </div>
-          </div>
-
           <div className="relative">
             <div className="w-full h-[600px] rounded-lg border border-gray-200 overflow-hidden">
               <div 
