@@ -26,6 +26,7 @@ interface SavedRoutesListProps {
   error: string | null;
   onViewRoute: (route: SavedRoute) => void;
   onStartRoute: (route: SavedRoute) => void;
+  viewMode?: 'grid' | 'table';
 }
 
 const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
@@ -33,7 +34,8 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
   isLoading,
   error,
   onViewRoute,
-  onStartRoute
+  onStartRoute,
+  viewMode = 'grid'
 }) => {
   const [selectedRouteForMap, setSelectedRouteForMap] = useState<SavedRoute | null>(null);
   const getOrderStatusIcon = (status: string) => {
@@ -151,8 +153,9 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
         </div>
       </div>
 
-      <div className="grid gap-4">
-        {savedRoutes.map((route) => (
+      {viewMode === 'grid' ? (
+        <div className="grid gap-4">
+          {savedRoutes.map((route) => (
           <div
             key={route.id}
             className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
@@ -292,7 +295,91 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ruta
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Distancia
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Duración
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Pedidos
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Creada
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {savedRoutes.map((route) => (
+                <tr key={route.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{route.route_name}</div>
+                      <div className="text-sm text-gray-500 truncate max-w-xs">{route.description}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200">
+                      <Route className="w-3 h-3" />
+                      Ruta Guardada
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {route.total_distance?.toFixed(1) || 'N/A'} km
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {route.total_duration ? Math.round(route.total_duration / 60) : 'N/A'} min
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {route.orders?.length || 0}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatDate(route.created_at)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setSelectedRouteForMap(route)}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Ver en mapa"
+                      >
+                        <MapPin className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleViewRoute(route)}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                      >
+                        Ver
+                      </button>
+                      <button
+                        onClick={() => onStartRoute(route)}
+                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors"
+                      >
+                        Iniciar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Modal del mapa */}
       {selectedRouteForMap && (

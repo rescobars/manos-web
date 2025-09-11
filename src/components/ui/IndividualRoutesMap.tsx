@@ -434,7 +434,7 @@ export function IndividualRoutesMap({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Mapa de Rutas Individuales</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Mapa de Pedidos Individuales</h3>
           <p className="text-sm text-gray-600">
             {selectedOrders.length > 0 
               ? `${selectedOrders.length} pedido(s) seleccionado(s)`

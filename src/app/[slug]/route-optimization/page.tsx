@@ -24,7 +24,7 @@ interface PickupLocation {
   address: string;
 }
 
-type ViewMode = 'individual' | 'optimized' | 'saved';
+type ViewMode = 'individual' | 'optimized' | 'saved' | 'assign';
 
 export default function RouteOptimizationPage() {
   const { currentOrganization } = useAuth();
@@ -90,24 +90,6 @@ export default function RouteOptimizationPage() {
     }
   }, [currentOrganization]);
 
-  // Cargar rutas guardadas cuando se cambie a la pestaña correspondiente
-  useEffect(() => {
-    if (viewMode === 'saved' && currentOrganization) {
-      fetchSavedRoutes(currentOrganization.uuid);
-    }
-  }, [viewMode, currentOrganization, fetchSavedRoutes]);
-
-  // Actualizar rutas guardadas automáticamente después de guardar una nueva ruta
-  useEffect(() => {
-    if (viewMode === 'saved' && currentOrganization && !isCreatingRoute) {
-      // Pequeño delay para asegurar que la ruta se haya guardado en el backend
-      const timer = setTimeout(() => {
-        fetchSavedRoutes(currentOrganization.uuid);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isCreatingRoute, viewMode, currentOrganization, fetchSavedRoutes]);
 
   const loadData = async () => {
     if (!currentOrganization) return;
@@ -245,17 +227,19 @@ export default function RouteOptimizationPage() {
       
       if (result.success) {
         console.log('✅ Ruta creada exitosamente:', result.data);
-        success(
-          '¡Ruta guardada exitosamente!',
-          `La ruta optimizada con ${selectedOrders.length} pedidos ha sido guardada en el sistema.`,
-          5000
-        );
         
         // Marcar la ruta como guardada
         setRouteSaved(true);
         
-        // Cambiar automáticamente a la vista de rutas guardadas
-        setViewMode('saved');
+        // Mostrar mensaje de éxito y cambiar a pantalla de asignación
+        success(
+          '¡Ruta guardada exitosamente!',
+          `La ruta optimizada con ${selectedOrders.length} pedidos ha sido guardada. Ahora puedes asignarla a un piloto.`,
+          5000
+        );
+        
+        // Cambiar a pantalla de asignación
+        setViewMode('assign');
         
         // Actualizar la lista de rutas guardadas
         setTimeout(() => {
@@ -317,10 +301,11 @@ export default function RouteOptimizationPage() {
   return (
     <>
       <Page
-        title="Visualización de Rutas"
-        subtitle={`Visualiza rutas individuales de pedidos para ${currentOrganization.name}`}
+        title="Pedidos"
+        subtitle={`Gestiona pedidos y crea rutas optimizadas para ${currentOrganization.name}`}
       >
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+
           {/* Indicador de Flujo de Trabajo */}
           <div className="mb-6 p-4 bg-gray-50 rounded-xl">
             <div className="flex items-center justify-between">
@@ -365,10 +350,12 @@ export default function RouteOptimizationPage() {
                 <div className="w-8 h-0.5 bg-gray-300"></div>
                 
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-gray-300 text-gray-600">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    viewMode === 'assign' ? 'bg-purple-500 text-white' : 'bg-gray-300 text-gray-600'
+                  }`}>
                     4
                   </div>
-                  <span className="text-sm font-medium text-gray-500">
+                  <span className={`text-sm font-medium ${viewMode === 'assign' ? 'text-purple-700' : 'text-gray-500'}`}>
                     Asignar Piloto
                   </span>
                 </div>
@@ -376,120 +363,9 @@ export default function RouteOptimizationPage() {
             </div>
           </div>
 
-          {/* Sistema de Pestañas */}
-          <div className="mb-6">
-            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-              <button
-                onClick={() => setViewMode('individual')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  viewMode === 'individual'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                }`}
-              >
-                <Map className="w-4 h-4" />
-                Rutas Individuales
-              </button>
-              
-              <button
-                onClick={() => setViewMode('optimized')}
-                disabled={!trafficOptimizedRoute}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  !trafficOptimizedRoute
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : viewMode === 'optimized'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                }`}
-              >
-                <Navigation className="w-4 h-4" />
-                Ruta Optimizada
-                {trafficOptimizedRoute && (
-                  <span className="ml-1 w-2 h-2 bg-green-500 rounded-full"></span>
-                )}
-              </button>
-              
-              <button
-                onClick={() => setViewMode('saved')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  viewMode === 'saved'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                }`}
-              >
-                <Save className="w-4 h-4" />
-                Rutas Guardadas
-              </button>
-            </div>
-          </div>
-
-          {/* Contenido de las pestañas */}
-          {viewMode === 'individual' && (
+          {/* Contenido principal */}
+          {!trafficOptimizedRoute && (
             <>
-              {selectedOrders.length > 0 && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-blue-800">{selectedOrders.length} Pedidos Seleccionados</h3>
-                        <p className="text-sm text-blue-600">Listos para optimización</p>
-                      </div>
-                    </div>
-                    
-                    {selectedOrders.length >= 1 && (
-                      <button
-                        onClick={handleOptimizeRouteWithTraffic}
-                        disabled={isTrafficOptimizing}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3 disabled:cursor-not-allowed"
-                      >
-                        {isTrafficOptimizing ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                            <span>Optimizando...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Route className="w-5 h-5" />
-                            <span>Optimizar con Tráfico</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* Opciones de optimización */}
-                  <div className="mt-4 p-3 bg-white/50 rounded-lg">
-                    <div className="text-sm font-medium text-blue-700 mb-3">Modo de optimización:</div>
-                    <div className="flex items-center gap-6">
-                      <label className="flex items-center gap-3 text-sm text-blue-700 cursor-pointer" title="Mantener el orden cronológico de los pedidos tal como fueron recibidos">
-                        <input
-                          type="radio"
-                          name="queueMode"
-                          checked={queueMode}
-                          onChange={() => setQueueMode(true)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                        />
-                        <span>Mantener orden cronológico</span>
-                      </label>
-                      <label className="flex items-center gap-3 text-sm text-blue-700 cursor-pointer" title="Permitir que el algoritmo reordene las paradas para máxima eficiencia">
-                        <input
-                          type="radio"
-                          name="queueMode"
-                          checked={!queueMode}
-                          onChange={() => setQueueMode(false)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                        />
-                        <span>Optimizar para máxima eficiencia</span>
-                      </label>
-                    </div>
-                    <div className="text-xs text-blue-500 mt-2">
-                      {queueMode ? "Los pedidos se visitarán en el mismo orden en que fueron recibidos" : "El algoritmo reordenará las paradas para minimizar tiempo y distancia"}
-                    </div>
-                  </div>
-                </div>
-              )}
-              
               <IndividualRoutesMap
                 pickupLocation={pickupLocation}
                 orders={ordersForMap}
@@ -500,10 +376,66 @@ export default function RouteOptimizationPage() {
                 searchTerm={searchTerm}
                 onSearchChange={handleSearchChange}
               />
+              
+              {selectedOrders.length > 0 && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                  {/* Opciones de optimización compactas */}
+                  <div className="p-2 bg-white/50 rounded-md">
+                    <div className="text-lg font-medium text-blue-700 mb-2">Modo de optimización:</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-6">
+                        <label className="flex items-center gap-2 text-xs text-blue-700 cursor-pointer" title="Mantener el orden cronológico de los pedidos tal como fueron recibidos">
+                          <input
+                            type="radio"
+                            name="queueMode"
+                            checked={queueMode}
+                            onChange={() => setQueueMode(true)}
+                            className="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span>Mantener orden cronológico</span>
+                        </label>
+                        <label className="flex items-center gap-2 text-xs text-blue-700 cursor-pointer" title="Permitir que el algoritmo reordene las paradas para máxima eficiencia">
+                          <input
+                            type="radio"
+                            name="queueMode"
+                            checked={!queueMode}
+                            onChange={() => setQueueMode(false)}
+                            className="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span>Optimizar para máxima eficiencia</span>
+                        </label>
+                      </div>
+                      
+                      {selectedOrders.length >= 1 && (
+                        <button
+                          onClick={handleOptimizeRouteWithTraffic}
+                          disabled={isTrafficOptimizing}
+                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed"
+                        >
+                          {isTrafficOptimizing ? (
+                            <>
+                              <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                              <span>Optimizando...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Route className="w-4 h-4" />
+                              <span>Optimizar</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-xs text-blue-500 mt-1">
+                      {queueMode ? "Los pedidos se visitarán en el mismo orden en que fueron recibidos" : "El algoritmo reordenará las paradas para minimizar tiempo y distancia"}
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
-          {viewMode === 'optimized' && trafficOptimizedRoute && (
+          {trafficOptimizedRoute && viewMode !== 'assign' && (
             <div>
               <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl">
                 <div className="flex items-center justify-between">
@@ -561,18 +493,108 @@ export default function RouteOptimizationPage() {
             </div>
           )}
 
-          {viewMode === 'saved' && (
-            
 
-              
-              <SavedRoutesList
-                savedRoutes={savedRoutes}
-                isLoading={isLoadingSavedRoutes}
-                error={savedRoutesError}
-                onViewRoute={handleViewSavedRoute}
-                onStartRoute={handleStartSavedRoute}
-              />
-        
+          {/* Pantalla de Asignación de Ruta */}
+          {viewMode === 'assign' && trafficOptimizedRoute && (
+            <div className="mt-6">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-purple-800">Asignar Ruta a Piloto</h3>
+                    <p className="text-sm text-purple-600">Selecciona un piloto para asignar esta ruta optimizada</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Información de la ruta */}
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-3">Detalles de la Ruta</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Pedidos:</span>
+                        <span className="font-medium">{selectedOrders.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Distancia total:</span>
+                        <span className="font-medium">N/A km</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Duración estimada:</span>
+                        <span className="font-medium">N/A min</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Modo de optimización:</span>
+                        <span className="font-medium">{queueMode ? 'Cronológico' : 'Eficiencia'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Selector de piloto */}
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-3">Seleccionar Piloto</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Piloto disponible
+                        </label>
+                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                          <option value="">Selecciona un piloto...</option>
+                          <option value="pilot1">Juan Pérez - Disponible</option>
+                          <option value="pilot2">María García - Disponible</option>
+                          <option value="pilot3">Carlos López - En ruta</option>
+                          <option value="pilot4">Ana Martínez - Disponible</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Notas adicionales (opcional)
+                        </label>
+                        <textarea
+                          placeholder="Instrucciones especiales para el piloto..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent h-20 resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botones de acción fijos */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 -mx-6 -mb-6 rounded-b-xl">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setViewMode('optimized')}
+                      className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors font-medium flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                      </svg>
+                      Volver a la ruta
+                    </button>
+                    
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          success(
+                            'Ruta asignada',
+                            'La ruta ha sido asignada exitosamente al piloto seleccionado.',
+                            3000
+                          );
+                          // TODO: Implementar lógica de asignación
+                        }}
+                        className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                        Asignar Ruta
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Mostrar error de optimización con tráfico */}

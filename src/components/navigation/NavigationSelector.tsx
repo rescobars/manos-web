@@ -102,6 +102,15 @@ export function getNavigationItems(slug: string, userRole: string, isOwner: bool
         showForDriver: false
       },
       {
+        label: 'Rutas',
+        icon: Route,
+        href: `/${slug}/routes`,
+        roles: ['OWNER', 'ADMIN'],
+        showForOwner: true,
+        showForAdmin: true,
+        showForDriver: false
+      },
+      {
         label: 'Configuración',
         icon: Settings,
         href: `/${slug}/settings`,
