@@ -13,6 +13,8 @@ import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 import { useRouteCreation } from '@/hooks/useRouteCreation';
 import { useSavedRoutes } from '@/hooks/useSavedRoutes';
+import { useDrivers } from '@/hooks/useDrivers';
+import { Driver } from '@/lib/api/organization-members';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import SavedRoutesList from '@/components/ui/SavedRoutesList';
@@ -81,6 +83,9 @@ export default function RouteOptimizationPage() {
   
   // Hook para rutas guardadas
   const { savedRoutes, isLoading: routesLoading, error: routesError, fetchSavedRoutes } = useSavedRoutes();
+  
+  // Hook para conductores
+  const { drivers, isLoading: driversLoading, error: driversError, fetchDrivers } = useDrivers();
 
   // Cargar rutas guardadas cuando se cambia a la pestaña de rutas
   useEffect(() => {
@@ -88,6 +93,13 @@ export default function RouteOptimizationPage() {
       fetchSavedRoutes(currentOrganization.uuid);
     }
   }, [activeTab, currentOrganization, fetchSavedRoutes]);
+
+  // Cargar drivers cuando se llega al paso de asignación
+  useEffect(() => {
+    if (currentStep === 'assign' && currentOrganization) {
+      fetchDrivers(currentOrganization.uuid);
+    }
+  }, [currentStep, currentOrganization, fetchDrivers]);
 
   // Funciones para manejar rutas guardadas
   const handleViewSavedRoute = (route: any) => {
@@ -290,10 +302,14 @@ export default function RouteOptimizationPage() {
       return;
     }
 
+    // Encontrar el driver seleccionado
+    const selectedDriver = drivers.find(driver => driver.user_uuid === selectedPilot);
+    const driverName = selectedDriver?.name || 'Piloto desconocido';
+
     // TODO: Implementar lógica de asignación real
     success(
       'Ruta asignada exitosamente',
-      `La ruta ha sido asignada al piloto ${selectedPilot}.`,
+      `La ruta ha sido asignada al piloto ${driverName}.`,
       5000
     );
     
@@ -338,8 +354,8 @@ export default function RouteOptimizationPage() {
           title: 'Asignar Piloto',
           description: 'Asigna la ruta a un piloto disponible',
           icon: Users,
-          canNext: selectedPilot !== '',
-          nextText: 'Asignar Ruta'
+          canNext: selectedPilot !== '' && !driversLoading && drivers.length > 0,
+          nextText: driversLoading ? 'Cargando...' : drivers.length === 0 ? 'Sin conductores' : 'Asignar Ruta'
         };
     }
   };
@@ -653,17 +669,33 @@ export default function RouteOptimizationPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Piloto disponible
                             </label>
-                            <select
-                              value={selectedPilot}
-                              onChange={(e) => setSelectedPilot(e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                            >
-                              <option value="">Selecciona un piloto...</option>
-                              <option value="pilot1">Juan Pérez - Disponible</option>
-                              <option value="pilot2">María García - Disponible</option>
-                              <option value="pilot3">Carlos López - En ruta</option>
-                              <option value="pilot4">Ana Martínez - Disponible</option>
-                            </select>
+                            {driversLoading ? (
+                              <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
+                                <span className="text-gray-600">Cargando conductores...</span>
+                              </div>
+                            ) : driversError ? (
+                              <div className="w-full px-4 py-3 border border-red-300 rounded-lg bg-red-50 text-red-700">
+                                Error al cargar conductores: {driversError}
+                              </div>
+                            ) : drivers.length === 0 ? (
+                              <div className="w-full px-4 py-3 border border-yellow-300 rounded-lg bg-yellow-50 text-yellow-700">
+                                No hay conductores disponibles en esta organización
+                              </div>
+                            ) : (
+                              <select
+                                value={selectedPilot}
+                                onChange={(e) => setSelectedPilot(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                              >
+                                <option value="">Selecciona un piloto...</option>
+                                {drivers.map((driver) => (
+                                  <option key={driver.user_uuid} value={driver.user_uuid}>
+                                    {driver.name} - {driver.status === 'ACTIVE' ? 'Disponible' : 'Inactivo'}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </div>
                           
                           <div>
