@@ -35,6 +35,7 @@ export default function RouteOptimizationPage() {
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('individual');
   const [queueMode, setQueueMode] = useState<boolean>(false);
+  const [routeSaved, setRouteSaved] = useState<boolean>(false);
   
   // Función para obtener pedidos formateados para el mapa
   const getOrdersForMap = useCallback(() => {
@@ -201,16 +202,13 @@ export default function RouteOptimizationPage() {
     if (result.success) {
       // Cambiar a la vista optimizada automáticamente
       setViewMode('optimized');
+      // Resetear el estado de ruta guardada cuando se crea una nueva optimización
+      setRouteSaved(false);
     } else {
       console.error('❌ Error optimizing route with traffic:', result.error);
     }
   };
 
-  const handleClearOptimization = () => {
-    clearTrafficResult();
-    clearRouteCreationError();
-    setViewMode('individual');
-  };
 
   // Funciones para manejar rutas guardadas
   const handleViewSavedRoute = (route: SavedRoute) => {
@@ -234,7 +232,7 @@ export default function RouteOptimizationPage() {
   };
 
   const handleSaveRoute = async () => {
-    if (!trafficOptimizedRoute || !currentOrganization) return;
+    if (!trafficOptimizedRoute || !currentOrganization || routeSaved) return;
     
     try {
       const result = await createRoute({
@@ -253,12 +251,16 @@ export default function RouteOptimizationPage() {
           5000
         );
         
-        // Si estamos en la vista de rutas guardadas, actualizar automáticamente
-        if (viewMode === 'saved') {
-          setTimeout(() => {
-            fetchSavedRoutes(currentOrganization.uuid);
-          }, 500);
-        }
+        // Marcar la ruta como guardada
+        setRouteSaved(true);
+        
+        // Cambiar automáticamente a la vista de rutas guardadas
+        setViewMode('saved');
+        
+        // Actualizar la lista de rutas guardadas
+        setTimeout(() => {
+          fetchSavedRoutes(currentOrganization.uuid);
+        }, 500);
       } else {
         console.error('❌ Error al crear la ruta:', result.error);
         showErrorToast(
@@ -319,6 +321,61 @@ export default function RouteOptimizationPage() {
         subtitle={`Visualiza rutas individuales de pedidos para ${currentOrganization.name}`}
       >
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          {/* Indicador de Flujo de Trabajo */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    selectedOrders.length > 0 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    1
+                  </div>
+                  <span className={`text-sm font-medium ${selectedOrders.length > 0 ? 'text-blue-700' : 'text-gray-500'}`}>
+                    Seleccionar Pedidos
+                  </span>
+                </div>
+                
+                <div className="w-8 h-0.5 bg-gray-300"></div>
+                
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    trafficOptimizedRoute ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    2
+                  </div>
+                  <span className={`text-sm font-medium ${trafficOptimizedRoute ? 'text-green-700' : 'text-gray-500'}`}>
+                    Optimizar Ruta
+                  </span>
+                </div>
+                
+                <div className="w-8 h-0.5 bg-gray-300"></div>
+                
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    routeSaved ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    3
+                  </div>
+                  <span className={`text-sm font-medium ${routeSaved ? 'text-green-700' : 'text-gray-500'}`}>
+                    Crear Ruta
+                  </span>
+                </div>
+                
+                <div className="w-8 h-0.5 bg-gray-300"></div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-gray-300 text-gray-600">
+                    4
+                  </div>
+                  <span className="text-sm font-medium text-gray-500">
+                    Asignar Piloto
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Sistema de Pestañas */}
           <div className="mb-6">
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
@@ -370,65 +427,64 @@ export default function RouteOptimizationPage() {
           {viewMode === 'individual' && (
             <>
               {selectedOrders.length > 0 && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-blue-700">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                      <span>{selectedOrders.length} pedidos seleccionados</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-blue-800">{selectedOrders.length} Pedidos Seleccionados</h3>
+                        <p className="text-sm text-blue-600">Listos para optimización</p>
+                      </div>
                     </div>
                     
-                    <div className="flex gap-2">
-                      {selectedOrders.length >= 1 && (
-                        <>
-                          {/* Opciones de optimización */}
-                          <div className="flex flex-col gap-2 mr-4">
-                            <div className="text-xs text-blue-600 font-medium">Modo de optimización:</div>
-                            <div className="flex items-center gap-4">
-                              <label className="flex items-center gap-2 text-sm text-blue-700" title="Mantener el orden cronológico de los pedidos tal como fueron recibidos">
-                                <input
-                                  type="radio"
-                                  name="queueMode"
-                                  checked={queueMode}
-                                  onChange={() => setQueueMode(true)}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                />
-                                <span>Mantener orden cronológico</span>
-                              </label>
-                              <label className="flex items-center gap-2 text-sm text-blue-700" title="Permitir que el algoritmo reordene las paradas para máxima eficiencia">
-                                <input
-                                  type="radio"
-                                  name="queueMode"
-                                  checked={!queueMode}
-                                  onChange={() => setQueueMode(false)}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                />
-                                <span>Optimizar para máxima eficiencia</span>
-                              </label>
-                            </div>
-                            <div className="text-xs text-blue-500">
-                              {queueMode ? "Los pedidos se visitarán en el mismo orden en que fueron recibidos" : "El algoritmo reordenará las paradas para minimizar tiempo y distancia"}
-                            </div>
-                          </div>
-                          
-                          <button
-                            onClick={handleOptimizeRouteWithTraffic}
-                            disabled={isTrafficOptimizing}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-                          >
-                            {isTrafficOptimizing ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Optimizando...
-                              </>
-                            ) : (
-                              <>
-                                <Route className="w-4 h-4" />
-                                Optimizar con Tráfico
-                              </>
-                            )}
-                          </button>
-                        </>
-                      )}
+                    {selectedOrders.length >= 1 && (
+                      <button
+                        onClick={handleOptimizeRouteWithTraffic}
+                        disabled={isTrafficOptimizing}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3 disabled:cursor-not-allowed"
+                      >
+                        {isTrafficOptimizing ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                            <span>Optimizando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Route className="w-5 h-5" />
+                            <span>Optimizar con Tráfico</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Opciones de optimización */}
+                  <div className="mt-4 p-3 bg-white/50 rounded-lg">
+                    <div className="text-sm font-medium text-blue-700 mb-3">Modo de optimización:</div>
+                    <div className="flex items-center gap-6">
+                      <label className="flex items-center gap-3 text-sm text-blue-700 cursor-pointer" title="Mantener el orden cronológico de los pedidos tal como fueron recibidos">
+                        <input
+                          type="radio"
+                          name="queueMode"
+                          checked={queueMode}
+                          onChange={() => setQueueMode(true)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span>Mantener orden cronológico</span>
+                      </label>
+                      <label className="flex items-center gap-3 text-sm text-blue-700 cursor-pointer" title="Permitir que el algoritmo reordene las paradas para máxima eficiencia">
+                        <input
+                          type="radio"
+                          name="queueMode"
+                          checked={!queueMode}
+                          onChange={() => setQueueMode(false)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span>Optimizar para máxima eficiencia</span>
+                      </label>
+                    </div>
+                    <div className="text-xs text-blue-500 mt-2">
+                      {queueMode ? "Los pedidos se visitarán en el mismo orden en que fueron recibidos" : "El algoritmo reordenará las paradas para minimizar tiempo y distancia"}
                     </div>
                   </div>
                 </div>
@@ -449,38 +505,51 @@ export default function RouteOptimizationPage() {
 
           {viewMode === 'optimized' && trafficOptimizedRoute && (
             <div>
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-green-700">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span>Ruta optimizada con tráfico en tiempo real</span>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${routeSaved ? 'bg-green-500' : 'bg-green-500 animate-pulse'}`}></div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-800">
+                        {routeSaved ? 'Ruta Guardada' : 'Ruta Optimizada'}
+                      </h3>
+                      <p className="text-sm text-green-600">
+                        {routeSaved 
+                          ? 'Ruta guardada exitosamente en el sistema' 
+                          : 'Optimizada con datos de tráfico en tiempo real'
+                        }
+                      </p>
+                    </div>
                   </div>
                   
-                  <div className="flex gap-2">
+                  {!routeSaved ? (
                     <button
                       onClick={handleSaveRoute}
                       disabled={isCreatingRoute}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2"
+                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3 disabled:cursor-not-allowed"
                     >
                       {isCreatingRoute ? (
                         <>
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                          Guardando...
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                          <span>Guardando...</span>
                         </>
                       ) : (
                         <>
-                          💾 Guardar Ruta
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <span>Guardar Ruta</span>
                         </>
                       )}
                     </button>
-                    
-                    <button
-                      onClick={handleClearOptimization}
-                      className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
-                    >
-                      Limpiar
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="font-medium">Ruta Guardada</span>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -488,6 +557,7 @@ export default function RouteOptimizationPage() {
                 trafficOptimizedRoute={trafficOptimizedRoute}
                 showAlternatives={true}
               />
+              
             </div>
           )}
 

@@ -958,6 +958,30 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             </div>
           </div>
 
+
+        </div>
+        <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] xl:h-[550px] overflow-hidden rounded-lg map-container">
+          <div 
+            ref={mapContainer} 
+            className="w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] xl:h-[550px]" 
+            style={{ 
+              position: 'relative', 
+              overflow: 'hidden',
+              cursor: 'grab',
+              touchAction: 'none'
+            }}
+          />
+          {!isMapReady && (
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-xs sm:text-sm text-gray-600">Cargando mapa...</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
           {/* Controles de Simulación */}
           <div className="mb-4 sm:mb-6">
             <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
@@ -1044,29 +1068,6 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
               </div>
             )}
           </div>
-        </div>
-        <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] xl:h-[550px] overflow-hidden rounded-lg map-container">
-          <div 
-            ref={mapContainer} 
-            className="w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] xl:h-[550px]" 
-            style={{ 
-              position: 'relative', 
-              overflow: 'hidden',
-              cursor: 'grab',
-              touchAction: 'none'
-            }}
-          />
-          {!isMapReady && (
-            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                <p className="text-xs sm:text-sm text-gray-600">Cargando mapa...</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Orden de visita con diseño moderno */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b">
@@ -1083,6 +1084,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             🎯 Mostrando el orden específico de la ruta seleccionada
           </p>
         </div>
+        
         <div className="p-3 sm:p-4 md:p-6">
           {getVisitOrderDisplay()}
         </div>
