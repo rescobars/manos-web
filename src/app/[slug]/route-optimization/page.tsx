@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { DataTable } from '@/components/ui/DataTable';
 import { SavedRoute } from '@/types';
+import SavedRouteMap from '@/components/ui/SavedRouteMap';
 
 interface PickupLocation {
   lat: number;
@@ -55,6 +56,9 @@ export default function RouteOptimizationPage() {
     total: number;
     totalPages: number;
   } | undefined>(undefined);
+  const [selectedRouteForMap, setSelectedRouteForMap] = useState<SavedRoute | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [routeToAssign, setRouteToAssign] = useState<SavedRoute | null>(null);
 
   // Función para obtener pedidos formateados para el mapa
   const getOrdersForMap = useCallback(() => {
@@ -163,11 +167,6 @@ export default function RouteOptimizationPage() {
     }
   }, [currentStep, currentOrganization, fetchDrivers]);
 
-  // Debug: Log cuando cambie el createdRouteUuid
-  useEffect(() => {
-    console.log('createdRouteUuid changed:', createdRouteUuid);
-  }, [createdRouteUuid]);
-
   // Función para cambiar filtro
   const handleFilterChange = (newStatus: string) => {
     setFilterStatus(newStatus);
@@ -191,13 +190,33 @@ export default function RouteOptimizationPage() {
   // Función para ver ruta
   const handleViewRoute = (route: SavedRoute) => {
     console.log('Ver ruta:', route);
-    success('Ruta cargada', `Se ha cargado la ruta "${route.route_name}" para visualización.`, 3000);
+    setSelectedRouteForMap(route);
   };
 
-  // Función para asignar ruta desde la tabla
+  // Función para cerrar el modal del mapa
+  const handleCloseMap = () => {
+    setSelectedRouteForMap(null);
+  };
+
+  // Función para abrir modal de asignación
   const handleAssignRouteFromTable = (route: SavedRoute) => {
     console.log('Asignar ruta:', route);
-    success('Ruta asignada', `Se ha asignado la ruta "${route.route_name}" a un conductor.`, 3000);
+    setRouteToAssign(route);
+    setShowAssignModal(true);
+    // Cargar drivers si no están cargados
+    if (currentOrganization && drivers.length === 0) {
+      fetchDrivers(currentOrganization.uuid);
+    }
+  };
+
+  // Función para cerrar modal de asignación
+  const handleCloseAssignModal = () => {
+    setShowAssignModal(false);
+    setRouteToAssign(null);
+    setSelectedPilot('');
+    setPilotNotes('');
+    setStartTime('');
+    setEndTime('');
   };
 
   // Funciones de utilidad para colores y textos
@@ -340,18 +359,20 @@ export default function RouteOptimizationPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleViewRoute(item)}
-            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
             title="Ver detalles"
           >
-            <Eye className="w-4 h-4" />
+            <Eye className="w-3 h-3" />
+            Ver
           </button>
           {item.status === 'PLANNED' && (
             <button
               onClick={() => handleAssignRouteFromTable(item)}
-              className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
               title="Asignar ruta"
             >
-              <UserPlus className="w-4 h-4" />
+              <UserPlus className="w-3 h-3" />
+              Asignar
             </button>
           )}
         </div>
@@ -543,10 +564,11 @@ export default function RouteOptimizationPage() {
       return;
     }
 
-    console.log('Current createdRouteUuid:', createdRouteUuid);
+    // Usar el UUID de la ruta a asignar del modal
+    const routeUuid = routeToAssign?.uuid || createdRouteUuid;
     
-    if (!createdRouteUuid) {
-      showErrorToast('Error de ruta', 'No se encontró el UUID de la ruta creada.', 3000);
+    if (!routeUuid) {
+      showErrorToast('Error de ruta', 'No se encontró el UUID de la ruta a asignar.', 3000);
       return;
     }
 
@@ -576,7 +598,7 @@ export default function RouteOptimizationPage() {
       };
 
       const result = await organizationMembersApiService.assignRouteToDriver(
-        createdRouteUuid,
+        routeUuid,
         selectedDriver.organization_membership_uuid,
         assignmentData,
         currentOrganization?.uuid
@@ -589,14 +611,21 @@ export default function RouteOptimizationPage() {
           5000
         );
         
-        // Resetear el flujo
-        setCurrentStep('select');
-        setSelectedPilot('');
-        setPilotNotes('');
-        setCreatedRouteUuid('');
-        setStartTime('');
-        setEndTime('');
-        clearTrafficResult();
+        // Cerrar modal y resetear
+        handleCloseAssignModal();
+        
+        // Si es del flujo de creación, resetear también ese flujo
+        if (createdRouteUuid) {
+          setCurrentStep('select');
+          setCreatedRouteUuid('');
+          clearTrafficResult();
+        }
+        
+        // Recargar rutas para mostrar el cambio de estado
+        if (currentOrganization) {
+          const status = filterStatus === 'all' ? undefined : filterStatus;
+          fetchRoutes(status, 1);
+        }
       } else {
         showErrorToast(
           'Error al asignar la ruta',
@@ -1255,19 +1284,21 @@ export default function RouteOptimizationPage() {
                                 <div className="flex items-center gap-1 ml-2">
                                   <button
                                     onClick={() => handleViewRoute(route)}
-                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
                                     title="Ver detalles"
                                   >
-                                    <Eye className="w-4 h-4" />
+                                    <Eye className="w-3 h-3" />
+                                    Ver
                                   </button>
                                   
                                   {route.status === 'PLANNED' && (
                                     <button
                                       onClick={() => handleAssignRouteFromTable(route)}
-                                      className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                      className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
                                       title="Asignar ruta"
                                     >
-                                      <UserPlus className="w-4 h-4" />
+                                      <UserPlus className="w-3 h-3" />
+                                      Asignar
                                     </button>
                                   )}
                                 </div>
@@ -1299,16 +1330,18 @@ export default function RouteOptimizationPage() {
                                 <div className="flex items-center gap-1">
                                   <button
                                     onClick={() => handleViewRoute(route)}
-                                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
                                   >
+                                    <Eye className="w-3 h-3" />
                                     Ver
                                   </button>
                                   
                                   {route.status === 'PLANNED' && (
                                     <button
                                       onClick={() => handleAssignRouteFromTable(route)}
-                                      className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
+                                      className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
                                     >
+                                      <UserPlus className="w-3 h-3" />
                                       Asignar
                                     </button>
                                   )}
@@ -1329,6 +1362,174 @@ export default function RouteOptimizationPage() {
       
       {/* Toast Container para notificaciones */}
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      
+      {/* Modal de asignación de ruta */}
+      {showAssignModal && routeToAssign && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Asignar Ruta</h3>
+                  <p className="text-sm text-gray-600 mt-1">{routeToAssign.route_name}</p>
+                </div>
+                <button
+                  onClick={handleCloseAssignModal}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="space-y-6">
+                {/* Información de la ruta */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Información de la Ruta</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Pedidos:</span>
+                      <span className="ml-2 font-medium">{routeToAssign.orders.length}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Origen:</span>
+                      <span className="ml-2 font-medium">{routeToAssign.origin_name}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Retraso:</span>
+                      <span className="ml-2 font-medium">{Math.round(routeToAssign.traffic_delay / 60)} min</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Prioridad:</span>
+                      <span className="ml-2 font-medium">{getPriorityText(routeToAssign.priority)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selector de piloto */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Seleccionar Piloto
+                  </label>
+                  {driversLoading ? (
+                    <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
+                      <span className="text-gray-600">Cargando conductores...</span>
+                    </div>
+                  ) : driversError ? (
+                    <div className="w-full px-4 py-3 border border-red-300 rounded-lg bg-red-50 text-red-700">
+                      Error al cargar conductores: {driversError}
+                    </div>
+                  ) : drivers.length === 0 ? (
+                    <div className="w-full px-4 py-3 border border-yellow-300 rounded-lg bg-yellow-50 text-yellow-700">
+                      No hay conductores disponibles en esta organización
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedPilot}
+                      onChange={(e) => setSelectedPilot(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    >
+                      <option value="">Selecciona un piloto...</option>
+                      {drivers.map((driver) => (
+                        <option key={driver.user_uuid} value={driver.user_uuid}>
+                          {driver.name} - {driver.status === 'ACTIVE' ? 'Disponible' : 'Inactivo'}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                
+                {/* Hora de inicio */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hora de inicio
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  />
+                </div>
+                
+                {/* Hora de fin estimada */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hora de fin estimada
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  />
+                </div>
+                
+                {/* Notas adicionales */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notas adicionales (opcional)
+                  </label>
+                  <textarea
+                    value={pilotNotes}
+                    onChange={(e) => setPilotNotes(e.target.value)}
+                    placeholder="Instrucciones especiales para el piloto..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Botones de acción */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={handleCloseAssignModal}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleAssignRoute()}
+                  disabled={!selectedPilot || driversLoading || drivers.length === 0}
+                  className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                    selectedPilot && !driversLoading && drivers.length > 0
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {driversLoading ? 'Cargando...' : 'Asignar Ruta'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal del mapa de ruta */}
+      {selectedRouteForMap && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Visualización de Ruta</h3>
+              <button
+                onClick={handleCloseMap}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              <SavedRouteMap 
+                route={selectedRouteForMap} 
+                onClose={handleCloseMap}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
