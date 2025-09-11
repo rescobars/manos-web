@@ -345,3 +345,75 @@ export interface MapboxOptimizationResponse {
   error?: string;
   message?: string;
 }
+
+// Tipos para rutas guardadas
+export interface RoutePoint {
+  lat: number;
+  lon: number;
+  name: string;
+  traffic_delay: number;
+  speed: number;
+  congestion_level: string;
+  waypoint_type: string;
+  waypoint_index: number | null;
+}
+
+export interface RouteWaypoint {
+  lat: number;
+  lon: number;
+  name: string;
+}
+
+export interface OrderedWaypoint {
+  order_id: number;
+  order: number;
+}
+
+export interface TrafficCondition {
+  current_time: string;
+  weather: string;
+  road_conditions: string;
+  general_congestion: string;
+}
+
+export interface RouteOrder {
+  order_uuid: string;
+  order_number: string;
+  status: OrderStatus;
+  pickup_address: string;
+  delivery_address: string;
+  pickup_lat: number;
+  pickup_lng: number;
+  delivery_lat: number;
+  delivery_lng: number;
+  total_amount: number;
+  sequence_order: number;
+}
+
+export interface SavedRoute {
+  id: number;
+  uuid: string;
+  organization_id: number;
+  route_name: string;
+  description: string;
+  origin_lat: number;
+  origin_lon: number;
+  origin_name: string;
+  destination_lat: number;
+  destination_lon: number;
+  destination_name: string;
+  waypoints: RouteWaypoint[];
+  route_points: RoutePoint[];
+  ordered_waypoints: OrderedWaypoint[];
+  traffic_condition: TrafficCondition;
+  traffic_delay: number;
+  created_at: string;
+  updated_at: string;
+  orders: RouteOrder[];
+}
+
+export interface RoutesResponse {
+  success: boolean;
+  data: SavedRoute[];
+  message: string;
+}

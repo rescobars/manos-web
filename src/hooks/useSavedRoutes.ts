@@ -1,58 +1,11 @@
 import { useState, useCallback } from 'react';
-
-// Tipos para las rutas guardadas
-export interface SavedRoute {
-  id: string;
-  route_name: string;
-  description: string;
-  organization_id: string;
-  created_at: string;
-  updated_at: string;
-  origin: {
-    lat: number;
-    lon: number;
-    name: string;
-  };
-  destination: {
-    lat: number;
-    lon: number;
-    name: string;
-  };
-  waypoints: Array<{
-    lat: number;
-    lon: number;
-    name: string;
-  }>;
-  route: Array<{
-    lat: number;
-    lon: number;
-    name?: string;
-    traffic_delay?: number;
-    speed?: number;
-    congestion_level?: string;
-    waypoint_type?: string;
-    waypoint_index?: number;
-  }>;
-  ordered_waypoints: Array<{
-    order_id: string;
-    order: number;
-  }>;
-  traffic_condition: any;
-  traffic_delay: number;
-  status: 'active' | 'completed' | 'cancelled';
-}
-
-export interface SavedRoutesResponse {
-  success: boolean;
-  data?: SavedRoute[];
-  error?: string;
-}
+import { SavedRoute, RoutesResponse } from '@/types';
 
 interface UseSavedRoutesReturn {
   savedRoutes: SavedRoute[];
   isLoading: boolean;
   error: string | null;
-  fetchSavedRoutes: (organizationId: string) => Promise<SavedRoutesResponse>;
+  fetchSavedRoutes: (organizationId: string) => Promise<RoutesResponse>;
   reset: () => void;
 }
 
@@ -61,13 +14,14 @@ export function useSavedRoutes(): UseSavedRoutesReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSavedRoutes = useCallback(async (organizationId: string): Promise<SavedRoutesResponse> => {
+  const fetchSavedRoutes = useCallback(async (organizationId: string): Promise<RoutesResponse> => {
     if (!organizationId) {
-      const errorResponse: SavedRoutesResponse = {
+      const errorResponse: RoutesResponse = {
         success: false,
-        error: 'Organization ID is required'
+        data: [],
+        message: 'Organization ID is required'
       };
-      setError(errorResponse.error ?? null);
+      setError('Organization ID is required');
       return errorResponse;
     }
 
@@ -75,21 +29,21 @@ export function useSavedRoutes(): UseSavedRoutesReturn {
     setError(null);
 
     try {
-      // TODO: Reemplazar con el endpoint real cuando esté disponible
-      const response = await fetch(`/api/routes/organization/${organizationId}`, {
+      const response = await fetch('/api/routes', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'organization-id': organizationId,
         },
       });
 
-      const result: SavedRoutesResponse = await response.json();
+      const result: RoutesResponse = await response.json();
 
       if (result.success && result.data) {
         setSavedRoutes(result.data);
         setError(null);
       } else {
-        setError(result.error || 'Error al obtener las rutas guardadas');
+        setError('Error al obtener las rutas guardadas');
       }
 
       return result;
@@ -99,7 +53,8 @@ export function useSavedRoutes(): UseSavedRoutesReturn {
       
       return {
         success: false,
-        error: errorMessage
+        data: [],
+        message: errorMessage
       };
     } finally {
       setIsLoading(false);

@@ -98,7 +98,10 @@ export function OrderCard({ order, onEdit, onView, className = '' }: OrderCardPr
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
             <DollarSign className="w-4 h-4 text-green-600" />
-            Q{typeof order.total_amount === 'number' ? order.total_amount.toFixed(2) : '0.00'}
+            Q{(() => {
+              const amount = parseFloat(order.total_amount?.toString() || '0');
+              return isNaN(amount) ? '0.00' : amount.toFixed(2);
+            })()}
           </div>
           <div className="flex items-center gap-1 text-xs text-gray-500">
             <Clock className="w-3 h-3" />

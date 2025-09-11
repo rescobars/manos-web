@@ -12,8 +12,9 @@ import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 import { useRouteCreation } from '@/hooks/useRouteCreation';
-import { useSavedRoutes, SavedRoute } from '@/hooks/useSavedRoutes';
+import { useSavedRoutes } from '@/hooks/useSavedRoutes';
 import { useToast } from '@/hooks/useToast';
+import { SavedRoute } from '@/types';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import SavedRoutesList from '@/components/ui/SavedRoutesList';
 
@@ -94,6 +95,18 @@ export default function RouteOptimizationPage() {
       fetchSavedRoutes(currentOrganization.uuid);
     }
   }, [viewMode, currentOrganization, fetchSavedRoutes]);
+
+  // Actualizar rutas guardadas automáticamente después de guardar una nueva ruta
+  useEffect(() => {
+    if (viewMode === 'saved' && currentOrganization && !isCreatingRoute) {
+      // Pequeño delay para asegurar que la ruta se haya guardado en el backend
+      const timer = setTimeout(() => {
+        fetchSavedRoutes(currentOrganization.uuid);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isCreatingRoute, viewMode, currentOrganization, fetchSavedRoutes]);
 
   const loadData = async () => {
     if (!currentOrganization) return;
@@ -239,6 +252,13 @@ export default function RouteOptimizationPage() {
           `La ruta optimizada con ${selectedOrders.length} pedidos ha sido guardada en el sistema.`,
           5000
         );
+        
+        // Si estamos en la vista de rutas guardadas, actualizar automáticamente
+        if (viewMode === 'saved') {
+          setTimeout(() => {
+            fetchSavedRoutes(currentOrganization.uuid);
+          }, 500);
+        }
       } else {
         console.error('❌ Error al crear la ruta:', result.error);
         showErrorToast(
@@ -472,34 +492,8 @@ export default function RouteOptimizationPage() {
           )}
 
           {viewMode === 'saved' && (
-            <div>
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-blue-700">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                    <span>Rutas guardadas en el sistema</span>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => fetchSavedRoutes(currentOrganization?.uuid || '')}
-                      disabled={isLoadingSavedRoutes}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2"
-                    >
-                      {isLoadingSavedRoutes ? (
-                        <>
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                          Cargando...
-                        </>
-                      ) : (
-                        <>
-                          🔄 Actualizar
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+            
+
               
               <SavedRoutesList
                 savedRoutes={savedRoutes}
@@ -508,7 +502,7 @@ export default function RouteOptimizationPage() {
                 onViewRoute={handleViewSavedRoute}
                 onStartRoute={handleStartSavedRoute}
               />
-            </div>
+        
           )}
 
           {/* Mostrar error de optimización con tráfico */}

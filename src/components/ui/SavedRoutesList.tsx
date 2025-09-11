@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { SavedRoute } from '@/hooks/useSavedRoutes';
+import React, { useState } from 'react';
+import { SavedRoute } from '@/types';
 import { 
   MapPin, 
   Clock, 
@@ -13,8 +13,12 @@ import {
   MoreVertical,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Package,
+  Truck,
+  DollarSign
 } from 'lucide-react';
+import SavedRouteMap from './SavedRouteMap';
 
 interface SavedRoutesListProps {
   savedRoutes: SavedRoute[];
@@ -31,40 +35,53 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
   onViewRoute,
   onStartRoute
 }) => {
-  const getStatusIcon = (status: string) => {
+  const [selectedRouteForMap, setSelectedRouteForMap] = useState<SavedRoute | null>(null);
+  const getOrderStatusIcon = (status: string) => {
     switch (status) {
-      case 'active':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-blue-500" />;
-      case 'cancelled':
-        return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'PENDING':
+        return <Clock className="w-3 h-3 text-amber-500" />;
+      case 'ASSIGNED':
+        return <Package className="w-3 h-3 text-purple-500" />;
+      case 'IN_ROUTE':
+        return <Truck className="w-3 h-3 text-blue-500" />;
+      case 'COMPLETED':
+        return <CheckCircle className="w-3 h-3 text-green-500" />;
+      case 'CANCELLED':
+        return <XCircle className="w-3 h-3 text-red-500" />;
       default:
-        return <AlertCircle className="w-4 h-4 text-gray-500" />;
+        return <AlertCircle className="w-3 h-3 text-gray-500" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getOrderStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'completed':
+      case 'PENDING':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'ASSIGNED':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'IN_ROUTE':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'cancelled':
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'CANCELLED':
         return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getOrderStatusText = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'Activa';
-      case 'completed':
-        return 'Completada';
-      case 'cancelled':
-        return 'Cancelada';
+      case 'PENDING':
+        return 'Pendiente';
+      case 'ASSIGNED':
+        return 'Asignado';
+      case 'IN_ROUTE':
+        return 'En Camino';
+      case 'COMPLETED':
+        return 'Entregado';
+      case 'CANCELLED':
+        return 'Cancelado';
       default:
         return 'Desconocido';
     }
@@ -79,6 +96,15 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleViewRoute = (route: SavedRoute) => {
+    setSelectedRouteForMap(route);
+    onViewRoute(route);
+  };
+
+  const handleCloseMap = () => {
+    setSelectedRouteForMap(null);
   };
 
   if (isLoading) {
@@ -135,9 +161,9 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h4 className="text-lg font-semibold text-gray-900">{route.route_name}</h4>
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(route.status)}`}>
-                    {getStatusIcon(route.status)}
-                    {getStatusText(route.status)}
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200">
+                    <Route className="w-3 h-3" />
+                    Ruta Guardada
                   </span>
                 </div>
                 
@@ -148,22 +174,20 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
               
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => onViewRoute(route)}
+                  onClick={() => handleViewRoute(route)}
                   className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                   title="Ver detalles de la ruta"
                 >
                   <Eye className="w-5 h-5" />
                 </button>
                 
-                {route.status === 'active' && (
-                  <button
-                    onClick={() => onStartRoute(route)}
-                    className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                    title="Iniciar ruta"
-                  >
-                    <Play className="w-5 h-5" />
-                  </button>
-                )}
+                <button
+                  onClick={() => onStartRoute(route)}
+                  className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                  title="Iniciar ruta"
+                >
+                  <Play className="w-5 h-5" />
+                </button>
                 
                 <button
                   className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
@@ -178,13 +202,13 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <MapPin className="w-4 h-4 text-blue-500" />
                 <span className="font-medium">Origen:</span>
-                <span className="truncate">{route.origin.name}</span>
+                <span className="truncate">{route.origin_name}</span>
               </div>
               
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Route className="w-4 h-4 text-green-500" />
-                <span className="font-medium">Paradas:</span>
-                <span>{route.waypoints.length}</span>
+                <Package className="w-4 h-4 text-green-500" />
+                <span className="font-medium">Pedidos:</span>
+                <span>{route.orders.length}</span>
               </div>
               
               <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -200,36 +224,98 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
               </div>
             </div>
 
+            {/* Lista de pedidos de la ruta */}
+            {route.orders && route.orders.length > 0 && (
+              <div className="mb-4">
+                <h5 className="text-sm font-medium text-gray-700 mb-3">Pedidos en esta ruta:</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {route.orders.slice(0, 4).map((order, index) => (
+                    <div key={order.order_uuid} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-gray-500">#{order.sequence_order}</span>
+                          <span className="text-sm font-medium text-gray-900">{order.order_number}</span>
+                        </div>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getOrderStatusColor(order.status)}`}>
+                          {getOrderStatusIcon(order.status)}
+                          {getOrderStatusText(order.status)}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <MapPin className="w-3 h-3 text-blue-500" />
+                          <span className="truncate">{order.delivery_address}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <DollarSign className="w-3 h-3 text-green-500" />
+                          <span>Q{parseFloat(order.total_amount.toString()).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {route.orders.length > 4 && (
+                    <div className="bg-gray-100 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
+                      <span className="text-xs text-gray-500">
+                        +{route.orders.length - 4} pedidos más
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-4 border-t border-gray-100">
               <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span>ID: {route.id.slice(0, 8)}...</span>
+                <span>ID: {route.uuid.slice(0, 8)}...</span>
                 <span>•</span>
                 <span>Actualizada: {formatDate(route.updated_at)}</span>
               </div>
               
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => onViewRoute(route)}
+                  onClick={() => handleViewRoute(route)}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Eye className="w-4 h-4" />
                   Ver Ruta
                 </button>
                 
-                {route.status === 'active' && (
-                  <button
-                    onClick={() => onStartRoute(route)}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-                  >
-                    <Play className="w-4 h-4" />
-                    Iniciar
-                  </button>
-                )}
+                <button
+                  onClick={() => onStartRoute(route)}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  Iniciar
+                </button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Modal del mapa */}
+      {selectedRouteForMap && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Visualización de Ruta</h3>
+              <button
+                onClick={handleCloseMap}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              <SavedRouteMap 
+                route={selectedRouteForMap} 
+                onClose={handleCloseMap}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
