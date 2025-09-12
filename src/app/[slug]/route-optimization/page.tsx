@@ -1128,72 +1128,8 @@ export default function RouteOptimizationPage() {
                     <p className="text-gray-600">Administra y visualiza las rutas de {currentOrganization?.name}</p>
                   </div>
 
-                  {/* Header con controles */}
-                  <div className="mb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      {/* Título y estado actual */}
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {filterStatus === 'all' ? 'Todas las Rutas' : 
-                             filterStatus === 'PLANNED' ? 'Rutas Planificadas' :
-                             filterStatus === 'ASSIGNED' ? 'Rutas Asignadas' :
-                             filterStatus === 'IN_PROGRESS' ? 'Rutas en Progreso' :
-                             filterStatus === 'COMPLETED' ? 'Rutas Completadas' :
-                             filterStatus === 'CANCELLED' ? 'Rutas Canceladas' :
-                             filterStatus === 'PAUSED' ? 'Rutas Pausadas' : 'Rutas Planificadas'}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {pagination ? (
-                              <>
-                                Mostrando {routes.length} de {pagination.total} ruta{pagination.total !== 1 ? 's' : ''}
-                                {pagination.totalPages > 1 && (
-                                  <span className="ml-2 text-blue-600">
-                                    (Página {pagination.page} de {pagination.totalPages})
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              `${routes.length} ruta${routes.length !== 1 ? 's' : ''} encontrada${routes.length !== 1 ? 's' : ''}`
-                            )}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Controles de vista y acciones */}
-                      <div className="flex items-center gap-3">
-                        {/* Selector de elementos por página */}
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm text-gray-600">Mostrar:</label>
-                          <select
-                            value={itemsPerPage}
-                            onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                            className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                            <option value={100}>100</option>
-                          </select>
-                          <span className="text-sm text-gray-600">por página</span>
-                        </div>
-
-
-                        {/* Botón crear nueva ruta */}
-                        <button
-                          onClick={() => setActiveTab('create')}
-                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Nueva Ruta
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Estadísticas por estado - Clickeables */}
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Filtrar por Estado</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
                       <button
                         onClick={() => handleFilterChange('all')}

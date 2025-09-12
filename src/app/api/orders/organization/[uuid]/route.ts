@@ -54,12 +54,6 @@ export async function GET(
       apiUrl += `?${queryParams.toString()}`;
     }
     
-    console.log('🌐 Obteniendo pedidos del backend:', apiUrl);
-    console.log('🏢 Organization ID:', organizationId);
-    console.log('🔍 Headers que se envían:', {
-      'Content-Type': 'application/json',
-      'organization-id': organizationId
-    });
     
     try {
       // Obtener el token de autorización del header de la request
@@ -74,8 +68,6 @@ export async function GET(
         }
       });
 
-      console.log('📡 Respuesta del backend - Status:', response.status);
-      console.log('📡 Respuesta del backend - Headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -89,7 +81,6 @@ export async function GET(
       }
 
       const backendResponse = await response.json();
-      console.log('✅ Respuesta del backend:', backendResponse);
 
       return NextResponse.json({
         success: true,
