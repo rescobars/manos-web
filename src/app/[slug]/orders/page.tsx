@@ -293,34 +293,6 @@ export default function OrdersPage() {
     );
   }
 
-  const headerActions = (
-    <div className="flex items-center gap-4">
-      {/* Selector de elementos por página */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600">Mostrar</span>
-        <select
-          value={itemsPerPage}
-          onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value={10}>10</option>
-          <option value={25}>25</option>
-          <option value={50}>50</option>
-          <option value={100}>100</option>
-        </select>
-        <span className="text-sm text-gray-600">por página</span>
-      </div>
-
-      {/* Botón crear nuevo pedido */}
-      <Button
-        onClick={handleQuickOrder}
-        className="bg-green-600 hover:bg-green-700 text-white"
-      >
-        <Map className="w-4 h-4 mr-2" />
-        Pedido Rápido
-      </Button>
-    </div>
-  );
 
   return (
     <>
@@ -329,7 +301,7 @@ export default function OrdersPage() {
       <Page
         title="Pedidos"
         subtitle={`Gestiona los pedidos de ${currentOrganization.name}`}
-        headerActions={headerActions}
+       
       >
         {/* Stats Cards - Clickables para filtrar */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
