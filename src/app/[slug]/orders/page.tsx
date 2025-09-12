@@ -307,7 +307,7 @@ export default function OrdersPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div 
             onClick={() => handleFilterChange('all')}
-            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
               filterStatus === 'all' ? 'ring-2 ring-blue-500' : ''
             }`}
           >
@@ -322,7 +322,7 @@ export default function OrdersPage() {
           
           <div 
             onClick={() => handleFilterChange('PENDING')}
-            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
               filterStatus === 'PENDING' ? 'ring-2 ring-amber-500' : ''
             }`}
           >
@@ -337,7 +337,7 @@ export default function OrdersPage() {
           
           <div 
             onClick={() => handleFilterChange('ASSIGNED')}
-            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
               filterStatus === 'ASSIGNED' ? 'ring-2 ring-purple-500' : ''
             }`}
           >
@@ -352,7 +352,7 @@ export default function OrdersPage() {
           
           <div 
             onClick={() => handleFilterChange('IN_ROUTE')}
-            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
               filterStatus === 'IN_ROUTE' ? 'ring-2 ring-blue-500' : ''
             }`}
           >
@@ -367,7 +367,7 @@ export default function OrdersPage() {
           
           <div 
             onClick={() => handleFilterChange('COMPLETED')}
-            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
               filterStatus === 'COMPLETED' ? 'ring-2 ring-green-500' : ''
             }`}
           >
