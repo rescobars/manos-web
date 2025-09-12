@@ -3,13 +3,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Order } from '@/types';
-import { XCircle, Route, AlertCircle, MapPin, Package, Clock, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
+import { XCircle, Route, AlertCircle, MapPin, Package, Clock, ArrowLeft, ArrowRight, CheckCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
 import { useRouteCreation } from '@/hooks/useRouteCreation';
 import { ordersApiService } from '@/lib/api/orders';
 import { BRANCH_LOCATION } from '@/lib/constants';
 import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
+import { IndividualRoutesMap } from '@/components/ui/IndividualRoutesMap';
 
 interface PickupLocation {
   lat: number;
@@ -42,6 +43,10 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
   const [createdRouteUuid, setCreatedRouteUuid] = useState<string>('');
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState<string>('');
+  const [driverNotes, setDriverNotes] = useState<string>('');
+  const [optimizationMode, setOptimizationMode] = useState<'efficiency' | 'order'>('efficiency');
 
   // Hooks
   const { 
@@ -71,6 +76,9 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
         const response = await ordersApiService.getPendingOrders(currentOrganization.uuid);
         if (response.success && response.data) {
           setOrders(response.data);
+          // Seleccionar todos los pedidos por defecto
+          const allOrderIds = response.data.map(order => order.uuid);
+          setSelectedOrders(allOrderIds);
         }
       } catch (error) {
         console.error('Error fetching orders:', error);
@@ -82,10 +90,33 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
     fetchOrders();
   }, [currentOrganization]);
 
+  // Cargar conductores
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      if (!currentOrganization) return;
+      
+      try {
+        // Simular carga de conductores - aquí deberías llamar a tu API real
+        const mockDrivers = [
+          { id: '1', name: 'Juan Pérez', phone: '+502 1234-5678', status: 'available' },
+          { id: '2', name: 'María García', phone: '+502 8765-4321', status: 'available' },
+          { id: '3', name: 'Carlos López', phone: '+502 5555-1234', status: 'busy' },
+          { id: '4', name: 'Ana Martínez', phone: '+502 9999-8888', status: 'available' }
+        ];
+        setDrivers(mockDrivers);
+      } catch (error) {
+        console.error('Error fetching drivers:', error);
+      }
+    };
+
+    fetchDrivers();
+  }, [currentOrganization]);
+
   // Función para obtener pedidos formateados para el mapa
   const getOrdersForMap = useCallback(() => {
     return orders.map(order => ({
       id: order.uuid,
+      orderNumber: order.order_number,
       deliveryLocation: {
         lat: parseFloat(String(order.delivery_lat || '0')),
         lng: parseFloat(String(order.delivery_lng || '0')),
@@ -95,7 +126,10 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
         lat: parseFloat(String(order.pickup_lat || '0')),
         lng: parseFloat(String(order.pickup_lng || '0')),
         address: order.pickup_address
-      }
+      },
+      description: order.description,
+      totalAmount: parseFloat(String(order.total_amount || '0')),
+      createdAt: order.created_at
     }));
   }, [orders]);
 
@@ -129,11 +163,11 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
     },
     {
       key: 'assign',
-      title: 'Asignar Ruta',
-      description: 'Asigna la ruta a un conductor',
+      title: 'Asignar Conductor',
+      description: 'Asigna la ruta a un conductor disponible',
       icon: Clock,
-      canNext: false,
-      nextText: 'Completado'
+      canNext: selectedDriver.length > 0,
+      nextText: 'Asignar y Completar'
     }
   ];
 
@@ -247,8 +281,9 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
     }
 
     console.log('🔍 Waypoints válidos:', waypoints);
+    console.log('⚙️ Modo de optimización:', optimizationMode);
 
-    const result = await optimizeRoute(origin, destination, waypoints, true, queueMode);
+    const result = await optimizeRoute(origin, destination, waypoints, true, queueMode, optimizationMode);
     
     if (result.success) {
       // La optimización se mantiene en el paso de review
@@ -277,17 +312,11 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
         
         success(
           '¡Ruta guardada exitosamente!',
-          `La ruta optimizada con ${selectedOrders.length} pedidos ha sido guardada.`,
+          `La ruta optimizada con ${selectedOrders.length} pedidos ha sido guardada. Ahora puedes asignar un conductor.`,
           5000
         );
         setRouteSaved(true);
         setCurrentStep('assign');
-        
-        // Cerrar el modal y refrescar después de un delay
-        setTimeout(() => {
-          onRouteCreated();
-          onClose();
-        }, 2000);
       } else {
         showError(
           'Error al guardar la ruta',
@@ -305,8 +334,36 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
   };
 
   const handleAssignRoute = async () => {
-    // Esta función se puede implementar más adelante
-    console.log('Assign route functionality to be implemented');
+    if (!selectedDriver || !createdRouteUuid) return;
+    
+    try {
+      // Aquí deberías llamar a tu API para asignar la ruta al conductor
+      console.log('Asignando ruta:', {
+        routeId: createdRouteUuid,
+        driverId: selectedDriver,
+        notes: driverNotes
+      });
+      
+      // Simular asignación exitosa
+      success(
+        '¡Ruta asignada exitosamente!',
+        `La ruta ha sido asignada al conductor ${drivers.find(d => d.id === selectedDriver)?.name}`,
+        5000
+      );
+      
+      // Cerrar el modal después de un delay
+      setTimeout(() => {
+        onRouteCreated();
+        onClose();
+      }, 2000);
+      
+    } catch (error) {
+      showError(
+        'Error al asignar la ruta',
+        'No se pudo asignar la ruta al conductor. Por favor, inténtalo de nuevo.',
+        6000
+      );
+    }
   };
 
   // Funciones de selección de pedidos
@@ -371,7 +428,7 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] flex flex-col">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -417,87 +474,103 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
           </div>
 
           {/* Contenido del paso actual */}
-          <div className="p-6">
+          <div className="p-6 overflow-y-auto flex-1">
             {currentStep === 'select' && (
               <div className="space-y-6">
-                {/* Barra de búsqueda y acciones */}
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 max-w-md">
-                    <input
-                      type="text"
-                      placeholder="Buscar pedidos..."
-                      value={searchTerm}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleSelectAll}
-                      className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                      Seleccionar Todos
-                    </button>
-                    <button
-                      onClick={handleClearAll}
-                      className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
-                    >
-                      Limpiar
-                    </button>
-                  </div>
-                </div>
-
-                {/* Lista de pedidos */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredOrders.map((order) => (
-                    <div
-                      key={order.uuid}
-                      onClick={() => handleOrderSelection(order.uuid)}
-                      className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-                        selectedOrders.includes(order.uuid)
+                {/* Selección del modo de optimización */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Modo de optimización</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Modo Eficiencia */}
+                    <div 
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                        optimizationMode === 'efficiency'
                           ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
                           : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                       }`}
+                      onClick={() => setOptimizationMode('efficiency')}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{order.order_number}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{order.delivery_address}</p>
-                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {order.pickup_address}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Package className="w-3 h-3" />
-                              Q{Number(order.total_amount || 0).toFixed(2)}
-                            </span>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Route className="w-5 h-5 text-blue-600" />
+                            <h4 className="font-semibold text-gray-900">Mejor Eficiencia</h4>
+                            <div className="relative group">
+                              <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                                Optimiza la ruta para minimizar tiempo y distancia total
+                              </div>
+                            </div>
                           </div>
+                          <p className="text-sm text-gray-600">
+                            El algoritmo reorganiza los pedidos para encontrar la ruta más corta y eficiente, reduciendo tiempo de entrega y combustible.
+                          </p>
                         </div>
                         <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          selectedOrders.includes(order.uuid)
+                          optimizationMode === 'efficiency'
                             ? 'bg-blue-600 border-blue-600'
                             : 'border-gray-300'
                         }`}>
-                          {selectedOrders.includes(order.uuid) && (
+                          {optimizationMode === 'efficiency' && (
                             <div className="w-2 h-2 bg-white rounded-full"></div>
                           )}
                         </div>
                       </div>
                     </div>
-                  ))}
+
+                    {/* Modo Orden */}
+                    <div 
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                        optimizationMode === 'order'
+                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                      }`}
+                      onClick={() => setOptimizationMode('order')}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Clock className="w-5 h-5 text-green-600" />
+                            <h4 className="font-semibold text-gray-900">Orden de Llegada</h4>
+                            <div className="relative group">
+                              <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                                Mantiene el orden en que llegaron los pedidos
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Respeta el orden cronológico de los pedidos, entregando primero los que llegaron antes.
+                          </p>
+                        </div>
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          optimizationMode === 'order'
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'border-gray-300'
+                        }`}>
+                          {optimizationMode === 'order' && (
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Resumen de selección */}
-                {selectedOrders.length > 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Package className="w-5 h-5 text-blue-600" />
-                        <span className="font-medium text-blue-900">
-                          {selectedOrders.length} pedido{selectedOrders.length !== 1 ? 's' : ''} seleccionado{selectedOrders.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
+                {/* Mapa básico de pedidos seleccionados */}
+                {selectedOrders.length > 0 && pickupLocation && (
+                  <div className="space-y-4">
+                    <div className="h-[28rem] rounded-lg overflow-hidden shadow-sm">
+                      <IndividualRoutesMap
+                        pickupLocation={pickupLocation}
+                        orders={ordersForMap}
+                        selectedOrders={selectedOrders}
+                        onOrderSelection={handleOrderSelection}
+                        onSelectAll={handleSelectAll}
+                        onClearAll={handleClearAll}
+                        searchTerm={searchTerm}
+                        onSearchChange={handleSearchChange}
+                      />
                     </div>
                   </div>
                 )}
@@ -538,10 +611,90 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
             )}
 
             {currentStep === 'assign' && (
-              <div className="text-center py-12">
-                <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Ruta Creada Exitosamente</h3>
-                <p className="text-gray-600">La ruta ha sido guardada y está lista para ser asignada.</p>
+              <div className="space-y-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="font-medium text-green-900">Ruta creada exitosamente</span>
+                  </div>
+                  <p className="text-sm text-green-700 mt-1">
+                    La ruta con {selectedOrders.length} pedidos ha sido guardada. Ahora asigna un conductor.
+                  </p>
+                </div>
+
+                {/* Selección de conductor */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Seleccionar Conductor</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {drivers.map((driver) => (
+                      <div
+                        key={driver.id}
+                        onClick={() => setSelectedDriver(driver.id)}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedDriver === driver.id
+                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                            : driver.status === 'available'
+                            ? 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                            : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{driver.name}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{driver.phone}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                driver.status === 'available' ? 'bg-green-400' : 'bg-red-400'
+                              }`}></div>
+                              <span className="text-xs text-gray-500">
+                                {driver.status === 'available' ? 'Disponible' : 'Ocupado'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            selectedDriver === driver.id
+                              ? 'bg-blue-600 border-blue-600'
+                              : 'border-gray-300'
+                          }`}>
+                            {selectedDriver === driver.id && (
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notas adicionales */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Notas adicionales (opcional)
+                  </label>
+                  <textarea
+                    value={driverNotes}
+                    onChange={(e) => setDriverNotes(e.target.value)}
+                    placeholder="Instrucciones especiales para el conductor..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Resumen de la asignación */}
+                {selectedDriver && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                      <span className="font-medium text-blue-900">Resumen de asignación</span>
+                    </div>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>Conductor: <strong>{drivers.find(d => d.id === selectedDriver)?.name}</strong></p>
+                      <p>Pedidos: <strong>{selectedOrders.length}</strong></p>
+                      <p>Ruta: <strong>{createdRouteUuid}</strong></p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -566,14 +719,14 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
             <button
               onClick={executeCurrentStepAction}
               disabled={!stepInfo.canNext}
-              className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
+              className={`px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
                 stepInfo.canNext
                   ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {stepInfo.nextText}
-              <ArrowRight className="w-4 h-4" />
+              <span className="truncate">{stepInfo.nextText}</span>
+              <ArrowRight className="w-4 h-4 flex-shrink-0" />
             </button>
           </div>
         </div>
