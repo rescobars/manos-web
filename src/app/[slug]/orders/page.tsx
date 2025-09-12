@@ -301,8 +301,23 @@ export default function OrdersPage() {
       <Page
         title="Pedidos"
         subtitle={`Gestiona los pedidos de ${currentOrganization.name}`}
-       
       >
+        {/* Header con botón de crear pedido */}
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Mis Pedidos</h1>
+              <p className="text-gray-600">Administra y visualiza los pedidos de {currentOrganization.name}</p>
+            </div>
+            <button
+              onClick={handleQuickOrder}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl"
+            >
+              <Plus className="w-5 h-5" />
+              Crear Pedido
+            </button>
+          </div>
+        </div>
         {/* Stats Cards - Clickables para filtrar */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div 
