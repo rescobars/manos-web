@@ -10,70 +10,101 @@ import { useToast } from '@/hooks/useToast';
 import { OrderDetail } from '@/components/ui/OrderDetail';
 import { QuickOrderScreen } from '@/components/ui/QuickOrderScreen';
 import { StatCard } from '@/components/ui/StatCard';
-import { FilterBar } from '@/components/ui/FilterBar';
-import { OrderCard } from '@/components/ui/OrderCard';
-import { OrdersTable } from '@/components/ui/OrdersTable';
+import { DataTable } from '@/components/ui/DataTable';
 import { Page } from '@/components/ui/Page';
+import { useOrders } from '@/hooks/useOrders';
 import { 
   Package, 
   Clock, 
   Truck, 
   CheckCircle,
   Plus,
-  Map
+  Map,
+  MapPin,
+  DollarSign,
+  Calendar,
+  Eye
 } from 'lucide-react';
 
 export default function OrdersPage() {
   const { currentOrganization } = useAuth();
   const { success, error: showError, toasts, removeToast } = useToast();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'ALL'>('ALL');
-  const [searchTerm, setSearchTerm] = useState('');
+  const { 
+    orders, 
+    allOrders, 
+    loading, 
+    error, 
+    pagination, 
+    fetchOrders, 
+    fetchAllOrders 
+  } = useOrders();
+  
+  const [filterStatus, setFilterStatus] = useState<string>('PENDING');
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
   const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
+  // Cargar pedidos cuando se monta el componente
   useEffect(() => {
     if (currentOrganization) {
-      loadOrders();
-      loadPendingOrders();
+      // Cargar todos los pedidos para contadores KPI
+      fetchAllOrders(currentOrganization.uuid);
+      // Cargar pedidos filtrados para visualización
+      fetchOrders(currentOrganization.uuid, {
+        status: filterStatus,
+        page: 1,
+        limit: itemsPerPage
+      });
     }
-  }, [currentOrganization]);
+  }, [currentOrganization, filterStatus, itemsPerPage, fetchOrders, fetchAllOrders]);
 
-  const loadOrders = async () => {
-    if (!currentOrganization) return;
-    
-    try {
-      setLoading(true);
-      const response = await ordersApiService.getOrganizationOrders(currentOrganization.uuid);
-      
-      if (response.success && response.data) {
-        setOrders(response.data);
-      } else {
-        showError('Error loading orders');
-      }
-    } catch (error) {
-      console.error('Error loading orders:', error);
-      showError('Error loading orders');
-    } finally {
-      setLoading(false);
+  // Función para cambiar filtro desde las tarjetas KPI
+  const handleFilterChange = (newStatus: string) => {
+    setFilterStatus(newStatus);
+    if (currentOrganization) {
+      fetchOrders(currentOrganization.uuid, {
+        status: newStatus === 'all' ? undefined : newStatus,
+        page: 1,
+        limit: itemsPerPage
+      });
     }
   };
 
-  const loadPendingOrders = async () => {
-    if (!currentOrganization) return;
-    
-    try {
-      const response = await ordersApiService.getPendingOrders(currentOrganization.uuid);
-      
-      if (response.success && response.data) {
-        setPendingOrders(response.data);
-      }
-    } catch (error) {
-      console.error('Error loading pending orders:', error);
+  // Función para cambiar página
+  const handlePageChange = (page: number) => {
+    if (currentOrganization) {
+      fetchOrders(currentOrganization.uuid, {
+        status: filterStatus === 'all' ? undefined : filterStatus,
+        page,
+        limit: itemsPerPage
+      });
+    }
+  };
+
+  // Función para cambiar elementos por página
+  const handleItemsPerPageChange = (newLimit: number) => {
+    setItemsPerPage(newLimit);
+    if (currentOrganization) {
+      fetchOrders(currentOrganization.uuid, {
+        status: filterStatus === 'all' ? undefined : filterStatus,
+        page: 1,
+        limit: newLimit
+      });
+    }
+  };
+
+  // Función para ordenar
+  const handleSort = (key: keyof Order, direction: 'asc' | 'desc') => {
+    if (currentOrganization) {
+      fetchOrders(currentOrganization.uuid, {
+        status: filterStatus === 'all' ? undefined : filterStatus,
+        page: 1,
+        limit: itemsPerPage,
+        sortBy: key as string,
+        sortOrder: direction
+      });
     }
   };
 
@@ -83,8 +114,15 @@ export default function OrdersPage() {
       
       if (response.success) {
         success('Pedido creado exitosamente');
-        loadOrders();
-        loadPendingOrders();
+        // Recargar pedidos
+        if (currentOrganization) {
+          fetchAllOrders(currentOrganization.uuid);
+          fetchOrders(currentOrganization.uuid, {
+            status: filterStatus === 'all' ? undefined : filterStatus,
+            page: 1,
+            limit: itemsPerPage
+          });
+        }
       } else {
         showError(response.error || 'Error al crear el pedido');
       }
@@ -97,6 +135,29 @@ export default function OrdersPage() {
 
 
 
+
+  // Funciones de utilidad para colores y textos
+  const getOrderStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'ASSIGNED': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'IN_ROUTE': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'COMPLETED': return 'bg-green-100 text-green-800 border-green-200';
+      case 'CANCELLED': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getOrderStatusText = (status: string) => {
+    switch (status) {
+      case 'PENDING': return 'Pendiente';
+      case 'ASSIGNED': return 'Asignado';
+      case 'IN_ROUTE': return 'En Camino';
+      case 'COMPLETED': return 'Completado';
+      case 'CANCELLED': return 'Cancelado';
+      default: return 'Desconocido';
+    }
+  };
 
   const handleViewOrder = (order: Order) => {
     setSelectedOrderForDetail(order);
@@ -116,40 +177,107 @@ export default function OrdersPage() {
     setIsQuickOrderOpen(false);
   };
 
-  const filteredOrders = orders.filter(order => {
-    // Handle status filtering - if selectedStatus is empty, undefined, or 'ALL', show all
-    const matchesStatus = !selectedStatus || selectedStatus === 'ALL' || order.status === selectedStatus;
-    
-    // Handle search filtering
-    const matchesSearch = !searchTerm || searchTerm === '' || 
-      order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.pickup_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.delivery_address.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Filtering order:', {
-        orderNumber: order.order_number,
-        orderStatus: order.status,
-        selectedStatus,
-        matchesStatus,
-        searchTerm,
-        matchesSearch
-      });
+  // Definir columnas para la tabla
+  const columns = [
+    {
+      key: 'order_number' as keyof Order,
+      label: 'Pedido',
+      sortable: true,
+      className: 'w-1/4',
+      render: (value: string, item: Order) => (
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-gray-900 truncate">{value}</div>
+          <div className="text-xs text-gray-500 truncate">{item.description}</div>
+        </div>
+      )
+    },
+    {
+      key: 'status' as keyof Order,
+      label: 'Estado',
+      sortable: true,
+      className: 'w-20',
+      render: (value: string) => (
+        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getOrderStatusColor(value)}`}>
+          {getOrderStatusText(value)}
+        </span>
+      )
+    },
+    {
+      key: 'total_amount' as keyof Order,
+      label: 'Monto',
+      sortable: true,
+      className: 'w-20',
+      render: (value: any) => (
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <DollarSign className="w-4 h-4 text-green-500" />
+          <span>Q{Number(value || 0).toFixed(2)}</span>
+        </div>
+      )
+    },
+    {
+      key: 'pickup_address' as keyof Order,
+      label: 'Recogida',
+      sortable: true,
+      className: 'w-1/5',
+      render: (value: string) => (
+        <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+          <MapPin className="w-4 h-4 text-blue-500 flex-shrink-0" />
+          <span className="truncate">{value}</span>
+        </div>
+      )
+    },
+    {
+      key: 'delivery_address' as keyof Order,
+      label: 'Entrega',
+      sortable: true,
+      className: 'w-1/5',
+      render: (value: string) => (
+        <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+          <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
+          <span className="truncate">{value}</span>
+        </div>
+      )
+    },
+    {
+      key: 'created_at' as keyof Order,
+      label: 'Creado',
+      sortable: true,
+      className: 'w-20',
+      render: (value: string) => (
+        <span className="text-xs text-gray-500">
+          {new Date(value).toLocaleDateString('es-ES', {
+            month: 'short',
+            day: 'numeric'
+          })}
+        </span>
+      )
+    },
+    {
+      key: 'actions' as keyof Order,
+      label: 'Acciones',
+      sortable: false,
+      className: 'w-20',
+      render: (value: any, item: Order) => (
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => handleViewOrder(item)}
+            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+            title="Ver detalles"
+          >
+            <Eye className="w-3 h-3" />
+            Ver
+          </button>
+        </div>
+      )
     }
-    
-    return matchesStatus && matchesSearch;
-  });
-
-  const filterOptions = [
-    { value: 'ALL', label: 'Todos los estados' },
-    { value: 'PENDING', label: 'Pendientes' },
-    { value: 'ASSIGNED', label: 'Asignados' },
-    { value: 'IN_ROUTE', label: 'En Camino' },
-    { value: 'COMPLETED', label: 'Entregados' },
-    { value: 'CANCELLED', label: 'Cancelados' }
   ];
+
+  // Calcular contadores para las tarjetas KPI
+  const totalOrders = allOrders.length;
+  const pendingOrders = allOrders.filter(order => order.status === 'PENDING').length;
+  const assignedOrders = allOrders.filter(order => order.status === 'ASSIGNED').length;
+  const inRouteOrders = allOrders.filter(order => order.status === 'IN_ROUTE').length;
+  const completedOrders = allOrders.filter(order => order.status === 'COMPLETED').length;
 
   if (!currentOrganization) {
     return (
@@ -166,13 +294,32 @@ export default function OrdersPage() {
   }
 
   const headerActions = (
-    <Button
-      onClick={handleQuickOrder}
-      className="bg-green-600 hover:bg-green-700 text-white"
-    >
-      <Map className="w-4 h-4 mr-2" />
-      Pedido Rápido
-    </Button>
+    <div className="flex items-center gap-4">
+      {/* Selector de elementos por página */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-600">Mostrar</span>
+        <select
+          value={itemsPerPage}
+          onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value={10}>10</option>
+          <option value={25}>25</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+        <span className="text-sm text-gray-600">por página</span>
+      </div>
+
+      {/* Botón crear nuevo pedido */}
+      <Button
+        onClick={handleQuickOrder}
+        className="bg-green-600 hover:bg-green-700 text-white"
+      >
+        <Map className="w-4 h-4 mr-2" />
+        Pedido Rápido
+      </Button>
+    </div>
   );
 
   return (
@@ -184,107 +331,167 @@ export default function OrdersPage() {
         subtitle={`Gestiona los pedidos de ${currentOrganization.name}`}
         headerActions={headerActions}
       >
-        {/* Stats Cards */}
+        {/* Stats Cards - Clickables para filtrar */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          <StatCard
-            title="Total Pedidos"
-            value={orders.length}
-            icon={Package}
-            iconColor="text-blue-600"
-            iconBgColor="bg-blue-100"
-          />
+          <div 
+            onClick={() => handleFilterChange('all')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+              filterStatus === 'all' ? 'ring-2 ring-blue-500' : ''
+            }`}
+          >
+            <StatCard
+              title="Total Pedidos"
+              value={totalOrders}
+              icon={Package}
+              iconColor="text-blue-600"
+              iconBgColor="bg-blue-100"
+            />
+          </div>
           
-          <StatCard
-            title="Pendientes"
-            value={pendingOrders.length}
-            icon={Clock}
-            iconColor="text-amber-600"
-            iconBgColor="bg-amber-100"
-          />
+          <div 
+            onClick={() => handleFilterChange('PENDING')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+              filterStatus === 'PENDING' ? 'ring-2 ring-amber-500' : ''
+            }`}
+          >
+            <StatCard
+              title="Pendientes"
+              value={pendingOrders}
+              icon={Clock}
+              iconColor="text-amber-600"
+              iconBgColor="bg-amber-100"
+            />
+          </div>
           
-          <StatCard
-            title="Asignados"
-            value={orders.filter(o => o.status === 'ASSIGNED').length}
-            icon={Package}
-            iconColor="text-purple-600"
-            iconBgColor="bg-purple-100"
-          />
+          <div 
+            onClick={() => handleFilterChange('ASSIGNED')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+              filterStatus === 'ASSIGNED' ? 'ring-2 ring-purple-500' : ''
+            }`}
+          >
+            <StatCard
+              title="Asignados"
+              value={assignedOrders}
+              icon={Package}
+              iconColor="text-purple-600"
+              iconBgColor="bg-purple-100"
+            />
+          </div>
           
-          <StatCard
-            title="En Camino"
-            value={orders.filter(o => o.status === 'IN_ROUTE').length}
-            icon={Truck}
-            iconColor="text-blue-600"
-            iconBgColor="bg-blue-100"
-          />
+          <div 
+            onClick={() => handleFilterChange('IN_ROUTE')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+              filterStatus === 'IN_ROUTE' ? 'ring-2 ring-blue-500' : ''
+            }`}
+          >
+            <StatCard
+              title="En Camino"
+              value={inRouteOrders}
+              icon={Truck}
+              iconColor="text-blue-600"
+              iconBgColor="bg-blue-100"
+            />
+          </div>
           
-          <StatCard
-            title="Entregados"
-            value={orders.filter(o => o.status === 'COMPLETED').length}
-            icon={CheckCircle}
-            iconColor="text-green-600"
-            iconBgColor="bg-green-100"
-          />
+          <div 
+            onClick={() => handleFilterChange('COMPLETED')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+              filterStatus === 'COMPLETED' ? 'ring-2 ring-green-500' : ''
+            }`}
+          >
+            <StatCard
+              title="Entregados"
+              value={completedOrders}
+              icon={CheckCircle}
+              iconColor="text-green-600"
+              iconBgColor="bg-green-100"
+            />
+          </div>
         </div>
 
-        {/* Filters and Search */}
-        <FilterBar
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          searchPlaceholder="Buscar por número, descripción o dirección..."
-          filterValue={selectedStatus}
-          onFilterChange={(value) => {
-            // Ensure we handle empty values properly
-            const newStatus = value === '' ? 'ALL' : (value as OrderStatus | 'ALL');
-            setSelectedStatus(newStatus);
-          }}
-          filterOptions={filterOptions}
-          filterPlaceholder="Todos los estados"
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          showViewToggle={true}
-        />
-
-        {/* Orders List */}
-        {loading ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">Cargando pedidos...</p>
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Package className="w-12 h-12 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay pedidos</h3>
-            <p className="text-gray-600 max-w-md mx-auto">
-              {searchTerm || selectedStatus !== 'ALL' 
-                ? 'No se encontraron pedidos con los filtros aplicados'
-                : 'Comienza creando tu primer pedido para gestionar las entregas'
-              }
-            </p>
-          </div>
-        ) : viewMode === 'cards' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredOrders.map((order) => (
-              <OrderCard
-                key={order.uuid}
-                order={order}
-                onEdit={() => {}} // Función vacía ya que no hay modal de edición
-                onView={handleViewOrder}
-              />
-            ))}
+        {/* DataTable con paginación */}
+        {error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <div className="text-red-600 mb-2">Error al cargar pedidos</div>
+            <p className="text-red-700">{error}</p>
           </div>
         ) : (
-          <OrdersTable
-            orders={filteredOrders}
-            onEdit={() => {}} // Función vacía ya que no hay modal de edición
-            onView={handleViewOrder}
+          <DataTable
+            data={orders}
+            columns={columns}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSort={handleSort}
+            loading={loading}
+            emptyMessage="No hay pedidos disponibles"
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            gridColumns={3}
+            gridItemRender={(order, index) => (
+              <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                {/* Header con número de pedido y estado */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold text-gray-900 truncate mb-1">{order.order_number}</h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getOrderStatusColor(order.status)}`}>
+                        {getOrderStatusText(order.status)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 ml-2">
+                    <button
+                      onClick={() => handleViewOrder(order)}
+                      className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                      title="Ver detalles"
+                    >
+                      <Eye className="w-3 h-3" />
+                      Ver
+                    </button>
+                  </div>
+                </div>
+
+                {/* Información básica compacta */}
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <DollarSign className="w-3 h-3 text-green-500 flex-shrink-0" />
+                    <span>Q{Number(order.total_amount || 0).toFixed(2)}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <MapPin className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                    <span className="truncate">{order.pickup_address}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <MapPin className="w-3 h-3 text-red-500 flex-shrink-0" />
+                    <span className="truncate">{order.delivery_address}</span>
+                  </div>
+                </div>
+
+                {/* Fecha de creación */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <span className="text-xs text-gray-500">
+                    {new Date(order.created_at).toLocaleDateString('es-ES', {
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                  
+                  <button
+                    onClick={() => handleViewOrder(order)}
+                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                  >
+                    <Eye className="w-3 h-3" />
+                    Ver
+                  </button>
+                </div>
+              </div>
+            )}
           />
         )}
       </Page>
-
-
 
       {/* Order Detail Modal */}
       <OrderDetail
