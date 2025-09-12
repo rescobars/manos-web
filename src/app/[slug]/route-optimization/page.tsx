@@ -1178,31 +1178,6 @@ export default function RouteOptimizationPage() {
                           <span className="text-sm text-gray-600">por página</span>
                         </div>
 
-                        {/* Toggle de vista */}
-                        <div className="flex bg-gray-100 rounded-lg p-1">
-                          <button
-                            onClick={() => setViewMode('table')}
-                            className={`p-2 rounded-md transition-colors ${
-                              viewMode === 'table'
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-600 hover:text-gray-800'
-                            }`}
-                            title="Vista de tabla"
-                          >
-                            <List className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-md transition-colors ${
-                              viewMode === 'grid'
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-600 hover:text-gray-800'
-                            }`}
-                            title="Vista de cuadrícula"
-                          >
-                            <Grid className="w-4 h-4" />
-                          </button>
-                        </div>
 
                         {/* Botón crear nueva ruta */}
                         <button
@@ -1377,7 +1352,7 @@ export default function RouteOptimizationPage() {
                         <h3 className="text-lg font-semibold text-red-800 mb-2">Error al cargar rutas</h3>
                         <p className="text-red-700">{routesError}</p>
                       </div>
-                    ) : viewMode === 'table' ? (
+                    ) : (
                       <DataTable
                         data={filteredRoutes}
                         columns={columns}
@@ -1386,112 +1361,97 @@ export default function RouteOptimizationPage() {
                         onSort={handleSort}
                         loading={routesLoading}
                         emptyMessage="No hay rutas disponibles"
-                      />
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-                        {routesLoading ? (
-                          <div className="col-span-full flex items-center justify-center py-12">
-                            <div className="text-center">
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                              <p className="text-gray-600">Cargando rutas...</p>
+                        viewMode={viewMode}
+                        onViewModeChange={setViewMode}
+                        gridColumns={3}
+                        gridItemRender={(route, index) => (
+                          <div
+                            key={route.id}
+                            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+                          >
+                            {/* Header con título y estado */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-semibold text-gray-900 truncate mb-1">{route.route_name}</h4>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(route.status)}`}>
+                                    {getRouteStatusText(route.status)}
+                                  </span>
+                                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(route.priority)}`}>
+                                    {getPriorityText(route.priority)}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-1 ml-2">
+                                <button
+                                  onClick={() => handleViewRoute(route)}
+                                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                                  title="Ver detalles"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  Ver
+                                </button>
+                                
+                                {route.status === 'PLANNED' && (
+                                  <button
+                                    onClick={() => handleAssignRouteFromTable(route)}
+                                    className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                                    title="Asignar ruta"
+                                  >
+                                    <UserPlus className="w-3 h-3" />
+                                    Asignar
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ) : filteredRoutes.length === 0 ? (
-                          <div className="col-span-full bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                            <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold text-gray-800 mb-2">No hay rutas disponibles</h3>
-                            <p className="text-gray-600">No se encontraron rutas con los filtros seleccionados.</p>
-                          </div>
-                        ) : (
-                          filteredRoutes.map((route) => (
-                            <div
-                              key={route.id}
-                              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
-                            >
-                              {/* Header con título y estado */}
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="text-sm font-semibold text-gray-900 truncate mb-1">{route.route_name}</h4>
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(route.status)}`}>
-                                      {getRouteStatusText(route.status)}
-                                    </span>
-                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(route.priority)}`}>
-                                      {getPriorityText(route.priority)}
-                                    </span>
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center gap-1 ml-2">
-                                  <button
-                                    onClick={() => handleViewRoute(route)}
-                                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                                    title="Ver detalles"
-                                  >
-                                    <Eye className="w-3 h-3" />
-                                    Ver
-                                  </button>
-                                  
-                                  {route.status === 'PLANNED' && (
-                                    <button
-                                      onClick={() => handleAssignRouteFromTable(route)}
-                                      className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                                      title="Asignar ruta"
-                                    >
-                                      <UserPlus className="w-3 h-3" />
-                                      Asignar
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
 
-                              {/* Información básica compacta */}
-                              <div className="space-y-2 mb-3">
-                                <div className="flex items-center gap-2 text-xs text-gray-600">
-                                  <MapPin className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                                  <span className="truncate">{route.origin_name}</span>
-                                </div>
-                                
-                                <div className="flex items-center justify-between text-xs text-gray-600">
-                                  <div className="flex items-center gap-2">
-                                    <Package className="w-3 h-3 text-green-500" />
-                                    <span>{route.orders.length} pedidos</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Clock className="w-3 h-3 text-orange-500" />
-                                    <span>{Math.round(route.traffic_delay / 60)}min</span>
-                                  </div>
-                                </div>
+                            {/* Información básica compacta */}
+                            <div className="space-y-2 mb-3">
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <MapPin className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                                <span className="truncate">{route.origin_name}</span>
                               </div>
-
-                              {/* Acciones compactas */}
-                              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                <span className="text-xs text-gray-500">ID: {route.uuid.slice(0, 8)}</span>
-                                
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => handleViewRoute(route)}
-                                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                                  >
-                                    <Eye className="w-3 h-3" />
-                                    Ver
-                                  </button>
-                                  
-                                  {route.status === 'PLANNED' && (
-                                    <button
-                                      onClick={() => handleAssignRouteFromTable(route)}
-                                      className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                                    >
-                                      <UserPlus className="w-3 h-3" />
-                                      Asignar
-                                    </button>
-                                  )}
+                              
+                              <div className="flex items-center justify-between text-xs text-gray-600">
+                                <div className="flex items-center gap-2">
+                                  <Package className="w-3 h-3 text-green-500" />
+                                  <span>{route.orders.length} pedidos</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-3 h-3 text-orange-500" />
+                                  <span>{Math.round(route.traffic_delay / 60)}min</span>
                                 </div>
                               </div>
                             </div>
-                          ))
+
+                            {/* Acciones compactas */}
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                              <span className="text-xs text-gray-500">ID: {route.uuid.slice(0, 8)}</span>
+                              
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleViewRoute(route)}
+                                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  Ver
+                                </button>
+                                
+                                {route.status === 'PLANNED' && (
+                                  <button
+                                    onClick={() => handleAssignRouteFromTable(route)}
+                                    className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                                  >
+                                    <UserPlus className="w-3 h-3" />
+                                    Asignar
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         )}
-                      </div>
+                      />
                     )}
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Grid, List } from 'lucide-react';
 
 interface Column<T> {
   key: keyof T;
@@ -31,6 +31,11 @@ interface DataTableProps<T> {
   loading?: boolean;
   emptyMessage?: string;
   className?: string;
+  // Nuevas props para modo híbrido
+  viewMode?: 'table' | 'grid';
+  onViewModeChange?: (mode: 'table' | 'grid') => void;
+  gridColumns?: number; // Número de columnas en grid (1, 2, 3, etc.)
+  gridItemRender?: (item: T, index: number) => React.ReactNode; // Función personalizada para renderizar items en grid
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -43,7 +48,11 @@ export function DataTable<T extends Record<string, any>>({
   sortOrder,
   loading = false,
   emptyMessage = 'No hay datos disponibles',
-  className = ''
+  className = '',
+  viewMode = 'table',
+  onViewModeChange,
+  gridColumns = 3,
+  gridItemRender
 }: DataTableProps<T>) {
   const handleSort = (key: keyof T) => {
     if (!onSort || !columns.find(col => col.key === key)?.sortable) return;
@@ -81,7 +90,36 @@ export function DataTable<T extends Record<string, any>>({
           </span>
         </div>
         
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center gap-4">
+          {/* Switch de vista */}
+          {onViewModeChange && (
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => onViewModeChange('table')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'table'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+                title="Vista de tabla"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => onViewModeChange('grid')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+                title="Vista de cuadrícula"
+              >
+                <Grid className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          
+          <div className="flex items-center space-x-1">
           {/* Botón Primera página */}
           <button
             onClick={() => onPageChange?.(1)}
@@ -144,6 +182,7 @@ export function DataTable<T extends Record<string, any>>({
           >
             <ChevronsRight className="w-4 h-4" />
           </button>
+          </div>
         </div>
       </div>
     );
@@ -177,54 +216,89 @@ export function DataTable<T extends Record<string, any>>({
     );
   }
 
+  // Función para renderizar el grid
+  const renderGrid = () => {
+    if (!gridItemRender) {
+      return (
+        <div className="p-6 text-center text-gray-500">
+          <p>Función de renderizado de grid no proporcionada</p>
+        </div>
+      );
+    }
+
+    const gridCols = {
+      1: 'grid-cols-1',
+      2: 'grid-cols-1 md:grid-cols-2',
+      3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+      4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+      5: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+      6: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
+    };
+
+    return (
+      <div className={`grid ${gridCols[gridColumns as keyof typeof gridCols] || gridCols[3]} gap-4 p-6`}>
+        {data.map((item, index) => (
+          <div key={index}>
+            {gridItemRender(item, index)}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${className}`}>
       {/* Paginación arriba */}
       {renderPagination()}
       
-      <div className="overflow-x-auto">
-        <table className="w-full divide-y divide-gray-200 table-fixed">
-          <thead className="bg-gray-50">
-            <tr>
-              {columns.map((column) => (
-                <th
-                  key={String(column.key)}
-                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                    column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
-                  } ${column.className || ''}`}
-                  onClick={() => column.sortable && handleSort(column.key)}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>{column.label}</span>
-                    {column.sortable && (
-                      <span className="text-gray-400">
-                        {getSortIcon(column.key)}
-                      </span>
-                    )}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((item, index) => (
-              <tr key={index} className="hover:bg-gray-50">
+      {/* Contenido según el modo de vista */}
+      {viewMode === 'table' ? (
+        <div className="overflow-x-auto">
+          <table className="w-full divide-y divide-gray-200 table-fixed">
+            <thead className="bg-gray-50">
+              <tr>
                 {columns.map((column) => (
-                  <td
+                  <th
                     key={String(column.key)}
-                    className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}
+                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                      column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
+                    } ${column.className || ''}`}
+                    onClick={() => column.sortable && handleSort(column.key)}
                   >
-                    {column.render 
-                      ? column.render(item[column.key], item)
-                      : String(item[column.key] || '')
-                    }
-                  </td>
+                    <div className="flex items-center space-x-1">
+                      <span>{column.label}</span>
+                      {column.sortable && (
+                        <span className="text-gray-400">
+                          {getSortIcon(column.key)}
+                        </span>
+                      )}
+                    </div>
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data.map((item, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  {columns.map((column) => (
+                    <td
+                      key={String(column.key)}
+                      className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}
+                    >
+                      {column.render 
+                        ? column.render(item[column.key], item)
+                        : String(item[column.key] || '')
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        renderGrid()
+      )}
     </div>
   );
 }
