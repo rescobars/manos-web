@@ -521,6 +521,8 @@ export default function RoutesPage() {
           route={selectedRoute}
           onClose={handleCloseAssignModal}
           onRouteAssigned={handleRouteCreated}
+          onSuccess={success}
+          onError={showError}
         />
       )}
 

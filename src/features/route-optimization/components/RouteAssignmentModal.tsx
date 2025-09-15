@@ -11,17 +11,25 @@ interface RouteAssignmentModalProps {
   route: SavedRoute;
   onClose: () => void;
   onRouteAssigned: () => void;
+  onSuccess?: (title: string, message?: string, duration?: number) => void;
+  onError?: (title: string, message?: string, duration?: number) => void;
 }
 
-export function RouteAssignmentModal({ route, onClose, onRouteAssigned }: RouteAssignmentModalProps) {
-  const { currentOrganization } = useAuth();
-  const { success, error: showError } = useToast();
+export function RouteAssignmentModal({ route, onClose, onRouteAssigned, onSuccess, onError }: RouteAssignmentModalProps) {
+  const { currentOrganization, accessToken } = useAuth();
+  const { success: fallbackSuccess, error: fallbackError } = useToast();
+  
+  // Usar las funciones pasadas desde el padre si están disponibles, sino usar las locales
+  const success = onSuccess || fallbackSuccess;
+  const showError = onError || fallbackError;
+  
   
   // Estados del modal
   const [selectedPilot, setSelectedPilot] = useState<string>('');
   const [pilotNotes, setPilotNotes] = useState<string>('');
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
+  const [isAssigning, setIsAssigning] = useState<boolean>(false);
 
   // Hook para drivers
   const { drivers, isLoading: driversLoading, error: driversError, fetchDrivers } = useDrivers();
@@ -53,29 +61,59 @@ export function RouteAssignmentModal({ route, onClose, onRouteAssigned }: RouteA
     }
 
     const driverName = selectedDriver.name;
+    setIsAssigning(true);
 
     try {
       // Calcular tiempos por defecto si no están establecidos
       const now = new Date();
-      const defaultStartTime = startTime || new Date(now.getTime() + 30 * 60000).toISOString(); // 30 min desde ahora
-      const defaultEndTime = endTime || new Date(now.getTime() + 2 * 60 * 60000).toISOString(); // 2 horas desde ahora
+      
+      // Si hay valores de startTime/endTime del input datetime-local, convertirlos a ISO
+      let processedStartTime: string;
+      let processedEndTime: string;
+      
+      if (startTime) {
+        // datetime-local da formato "YYYY-MM-DDTHH:mm", lo convertimos a ISO
+        processedStartTime = new Date(startTime).toISOString();
+      } else {
+        processedStartTime = new Date(now.getTime() + 30 * 60000).toISOString(); // 30 min desde ahora
+      }
+      
+      if (endTime) {
+        processedEndTime = new Date(endTime).toISOString();
+      } else {
+        processedEndTime = new Date(now.getTime() + 2 * 60 * 60000).toISOString(); // 2 horas desde ahora
+      }
+      
 
       const assignmentData = {
-        start_time: defaultStartTime,
-        end_time: defaultEndTime,
+        start_time: processedStartTime,
+        end_time: processedEndTime,
         driver_notes: pilotNotes || `Ruta asignada el ${new Date().toLocaleString()}`,
         driver_instructions: {
+          priority: "medium",
+          special_handling: false,
+          contact_customer: true,
+          delivery_window: "08:00-18:00",
+          special_requirements: [],
           special_instructions: pilotNotes || '',
           contact_info: selectedDriver.phone || 'No disponible'
         }
       };
 
-      const response = await fetch(`/api/route-drivers/assign/${route.uuid}/${selectedDriver.membership_uuid}`, {
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'organization-id': currentOrganization.uuid,
+      };
+      
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+      }
+      
+
+      const response = await fetch(`/api/route-drivers/assign/${route.uuid}/${selectedDriver.organization_membership_uuid}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'organization-id': currentOrganization.uuid,
-        },
+        headers,
         body: JSON.stringify(assignmentData)
       });
 
@@ -84,8 +122,8 @@ export function RouteAssignmentModal({ route, onClose, onRouteAssigned }: RouteA
       if (result.success) {
         success(
           '¡Ruta asignada exitosamente!',
-          `La ruta ha sido asignada a ${driverName}.`,
-          5000
+          `La ruta "${route.route_name}" ha sido asignada a ${driverName}.`,
+          4000
         );
         
         // Cerrar modal y refrescar datos
@@ -105,11 +143,16 @@ export function RouteAssignmentModal({ route, onClose, onRouteAssigned }: RouteA
         'Ocurrió un error inesperado al asignar la ruta. Por favor, inténtalo de nuevo.',
         6000
       );
+    } finally {
+      setIsAssigning(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         onClick={(e) => {
+           if (e.target === e.currentTarget) onClose();
+         }}>
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -119,7 +162,12 @@ export function RouteAssignmentModal({ route, onClose, onRouteAssigned }: RouteA
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={isAssigning}
+              className={`p-2 rounded-lg transition-colors ${
+                isAssigning 
+                  ? 'text-gray-300 cursor-not-allowed' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
             >
               <XCircle className="w-5 h-5" />
             </button>
@@ -231,20 +279,28 @@ export function RouteAssignmentModal({ route, onClose, onRouteAssigned }: RouteA
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={isAssigning}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                isAssigning
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+              }`}
             >
               Cancelar
             </button>
             <button
               onClick={handleAssignRoute}
-              disabled={!selectedPilot || driversLoading || drivers.length === 0}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                selectedPilot && !driversLoading && drivers.length > 0
+              disabled={!selectedPilot || driversLoading || drivers.length === 0 || isAssigning}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                selectedPilot && !driversLoading && drivers.length > 0 && !isAssigning
                   ? 'bg-purple-600 hover:bg-purple-700 text-white'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {driversLoading ? 'Cargando...' : 'Asignar Ruta'}
+              {isAssigning && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              )}
+              {driversLoading ? 'Cargando conductores...' : isAssigning ? 'Asignando...' : 'Asignar Ruta'}
             </button>
           </div>
         </div>
