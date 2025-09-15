@@ -45,6 +45,21 @@ export function LocationSelector({
     setMapboxError('');
   }, []);
 
+  // Cleanup al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (pickupMarkerRef.current) {
+        pickupMarkerRef.current.remove();
+      }
+      if (deliveryMarkerRef.current) {
+        deliveryMarkerRef.current.remove();
+      }
+      if (mapRef.current) {
+        mapRef.current.remove();
+      }
+    };
+  }, []);
+
   // Inicializar mapa cuando el componente se monta
   useEffect(() => {
     if (!mapContainerRef.current || !isMapboxConfigured()) return;
@@ -196,12 +211,20 @@ export function LocationSelector({
       `);
     deliveryMarker.setPopup(deliveryPopup);
 
+    // Asegurar que el marcador de pickup esté en su posición correcta
+    if (pickupMarkerRef.current) {
+      pickupMarkerRef.current.setLngLat([pickupLocation.lng, pickupLocation.lat]);
+    }
+
     // Centrar mapa en ambos puntos
     const bounds = new window.mapboxgl.LngLatBounds()
       .extend([pickupLocation.lng, pickupLocation.lat])
       .extend([location.lng, location.lat]);
     
-    mapRef.current.fitBounds(bounds, { padding: 50 });
+    mapRef.current.fitBounds(bounds, { 
+      padding: 50,
+      duration: 1000 // Animación más suave
+    });
   };
 
   const handleSearchAddress = async () => {
