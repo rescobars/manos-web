@@ -383,14 +383,6 @@ const SavedRouteMap: React.FC<SavedRouteMapProps> = ({
             <h2 className="text-xl font-bold text-gray-900 mb-1">{route.route_name}</h2>
             <p className="text-gray-600">{route.description}</p>
           </div>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <XCircle className="w-5 h-5" />
-            </button>
-          )}
         </div>
 
         {/* Estadísticas de la ruta */}
