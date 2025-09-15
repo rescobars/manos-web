@@ -363,27 +363,6 @@ export default function RoutesPage() {
           </div>
         </div>
         
-        <div className="flex items-center gap-1 ml-2">
-          <button
-            onClick={() => handleViewRoute(route)}
-            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-            title="Ver detalles"
-          >
-            <Eye className="w-3 h-3" />
-            Ver
-          </button>
-          
-          {route.status === 'PLANNED' && (
-            <button
-              onClick={() => handleAssignRoute(route)}
-              className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-              title="Asignar ruta"
-            >
-              <UserPlus className="w-3 h-3" />
-              Asignar
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Información básica compacta */}
