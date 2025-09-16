@@ -71,21 +71,31 @@ export function BaseMap({
         minZoom: 8
       });
 
+      // Add zoom controls
+      mapInstance.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
+      
+      // Add fullscreen control
+      mapInstance.addControl(new window.mapboxgl.FullscreenControl(), 'top-right');
+
       mapInstance.on('load', () => {
         setMap(mapInstance);
         setIsMapReady(true);
+        
+        // Forzar resize del mapa para que ocupe todo el contenedor
+        setTimeout(() => {
+          mapInstance.resize();
+        }, 100);
+        
         if (onMapReady) {
           onMapReady(mapInstance);
         }
       });
 
-      mapInstance.on('error', (e: any) => {
-        console.error('Map error:', e);
+      mapInstance.on('error', () => {
         setError('Error en el mapa');
       });
 
     } catch (error) {
-      console.error('Error initializing map:', error);
       setError('Error inicializando el mapa');
     }
   }, [center, zoom, style, onMapReady]);
@@ -120,12 +130,13 @@ export function BaseMap({
   }
 
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       <div 
         ref={mapContainerRef} 
-        className={`${className} ${
+        className={`w-full h-full ${
           !isMapReady ? 'opacity-50' : 'opacity-100'
         } transition-opacity duration-300`}
+        style={{ minHeight: '100%' }}
       />
       
       {/* Loading overlay */}

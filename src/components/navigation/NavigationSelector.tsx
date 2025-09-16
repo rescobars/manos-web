@@ -12,7 +12,8 @@ import {
   Globe,
   Shield,
   Crown,
-  Route
+  Route,
+  MapPin
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -96,6 +97,15 @@ export function getNavigationItems(slug: string, userRole: string, isOwner: bool
         label: 'Optimización de Rutas',
         icon: Route,
         href: `/${slug}/route-optimization`,
+        roles: ['OWNER', 'ADMIN'],
+        showForOwner: true,
+        showForAdmin: true,
+        showForDriver: false
+      },
+      {
+        label: 'Seguimiento en Vivo',
+        icon: MapPin,
+        href: `/${slug}/live-tracking`,
         roles: ['OWNER', 'ADMIN'],
         showForOwner: true,
         showForAdmin: true,

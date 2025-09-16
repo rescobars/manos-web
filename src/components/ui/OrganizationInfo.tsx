@@ -3,7 +3,6 @@ import { Organization } from '@/types';
 import { Card, CardContent } from './Card';
 import { Building2, Crown, Calendar, Globe, Mail, Phone, MapPin } from 'lucide-react';
 import { RoleBadges } from './RoleBadge';
-import { PermissionsDisplay } from './PermissionsDisplay';
 
 interface OrganizationInfoProps {
   organization: Organization;
@@ -64,17 +63,12 @@ export function OrganizationInfo({ organization, showDetails = false }: Organiza
               </p>
             )}
 
-            {/* Roles y Permisos */}
-            <div className="mb-3 space-y-2">
+            {/* Roles */}
+            <div className="mb-3">
               <RoleBadges 
                 roles={organization.roles.map(role => role.name)} 
                 size="sm" 
                 showIcon={false}
-              />
-              <PermissionsDisplay 
-                permissions={organization.permissions} 
-                showDetails={false}
-                className="text-xs"
               />
             </div>
 
