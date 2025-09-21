@@ -12,17 +12,51 @@ interface DriverMarkersProps {
   onDriverClick?: (driver: CombinedDriverPosition) => void;
 }
 
+// Constante para determinar si un conductor está offline
+const OFFLINE_THRESHOLD_MINUTES = 70; // 1 hora 10 minutos = 70 minutos
+
 export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMarkersProps) {
   const markersRef = useRef<Map<string, any>>(new Map());
 
-  const getStatusColor = (status: CombinedDriverPosition['status']) => {
-    switch (status) {
+  // Función para determinar si un conductor está offline basado en el tiempo
+  const isDriverOffline = (driver: CombinedDriverPosition): boolean => {
+    if (!driver.timestamp) return true;
+    
+    const lastTransmissionTime = new Date(driver.timestamp).getTime();
+    const currentTime = new Date().getTime();
+    const timeDifferenceMinutes = (currentTime - lastTransmissionTime) / (1000 * 60);
+    
+    return timeDifferenceMinutes > OFFLINE_THRESHOLD_MINUTES;
+  };
+
+  // Función para obtener el status real del conductor (considerando offline)
+  const getRealStatus = (driver: CombinedDriverPosition): CombinedDriverPosition['status'] => {
+    const isOffline = isDriverOffline(driver);
+    
+    // Debug logs
+    console.log(`🔍 DRIVER STATUS DEBUG - ${driver.driverId}:`, {
+      originalStatus: driver.status,
+      timestamp: driver.timestamp,
+      isOffline: isOffline,
+      finalStatus: isOffline ? 'OFFLINE' : (driver.status || 'IDLE')
+    });
+    
+    if (isOffline) {
+      return 'OFFLINE';
+    }
+    return driver.status || 'IDLE';
+  };
+
+  const getStatusColor = (driver: CombinedDriverPosition, isRouteDriver: boolean = false) => {
+    const realStatus = getRealStatus(driver);
+    
+    switch (realStatus) {
       case 'DRIVING':
-        return '#10B981'; // Green
+        return isRouteDriver ? '#059669' : '#10B981'; // Verde oscuro para en ruta, verde claro para manejando
       case 'IDLE':
       case 'STOPPED':
         return '#F59E0B'; // Yellow
-      case 'ON_BREAK':
+      case 'BREAK':
         return '#8B5CF6'; // Purple
       case 'OFFLINE':
         return '#6B7280'; // Gray
@@ -32,7 +66,7 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
   };
 
   // Componentes de iconos para cada estado
-  const DrivingIcon = () => `
+  const DrivingIcon = (isRouteDriver: boolean = false) => `
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
       <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
       <path d="M7 13h2v2H7z" fill="white" opacity="0.9"/>
@@ -40,6 +74,10 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
       <path d="M12 8h-1v2h2V8z" fill="white" opacity="0.7"/>
       <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.8"/>
       <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.8"/>
+      ${isRouteDriver ? `
+        <path d="M12 2l2 4h-4l2-4z" fill="white" opacity="0.9"/>
+        <path d="M12 6h-1v2h2V6z" fill="white" opacity="0.7"/>
+      ` : ''}
     </svg>
   `;
 
@@ -88,14 +126,16 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
     </svg>
   `;
 
-  const getStatusIcon = (status: CombinedDriverPosition['status']) => {
-    switch (status) {
+  const getStatusIcon = (driver: CombinedDriverPosition, isRouteDriver: boolean = false) => {
+    const realStatus = getRealStatus(driver);
+    
+    switch (realStatus) {
       case 'DRIVING':
-        return DrivingIcon();
+        return DrivingIcon(isRouteDriver);
       case 'IDLE':
       case 'STOPPED':
         return IdleIcon();
-      case 'ON_BREAK':
+      case 'BREAK':
         return OnBreakIcon();
       case 'OFFLINE':
         return OfflineIcon();
@@ -108,9 +148,10 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
     const el = document.createElement('div');
     el.className = 'driver-marker';
     
-    const statusColor = getStatusColor(driver.status);
-    const statusIcon = getStatusIcon(driver.status);
     const isRouteDriver = 'routeName' in driver;
+    const realStatus = getRealStatus(driver);
+    const statusColor = getStatusColor(driver, isRouteDriver);
+    const statusIcon = getStatusIcon(driver, isRouteDriver);
     
     el.innerHTML = `
       <div class="relative group">
@@ -118,10 +159,10 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
              style="background: linear-gradient(135deg, ${statusColor}, ${statusColor}dd);">
           ${statusIcon}
         </div>
-        ${driver.status === 'DRIVING' ? `
+        ${realStatus === 'DRIVING' ? `
           <div class="absolute inset-0 rounded-full animate-ping" style="background-color: ${statusColor}; opacity: 0.3;"></div>
         ` : ''}
-        ${isRouteDriver ? `
+        ${isRouteDriver && realStatus === 'DRIVING' ? `
           <div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
             <span class="text-xs text-white font-bold">R</span>
           </div>
@@ -167,6 +208,10 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
 
     // Create popup with mobile-optimized driver information
     const isRouteDriver = 'routeName' in driver;
+    const realStatus = getRealStatus(driver);
+    const statusColor = getStatusColor(driver, isRouteDriver);
+    const statusIcon = getStatusIcon(driver, isRouteDriver);
+    
     const popup = new window.mapboxgl.Popup({ 
       offset: 15,
       closeButton: true,
@@ -178,18 +223,19 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
         <!-- Header - Compact -->
         <div class="flex items-center space-x-2 mb-3">
           <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg" 
-               style="background: linear-gradient(135deg, ${getStatusColor(driver.status)}, ${getStatusColor(driver.status)}dd);">
-            ${getStatusIcon(driver.status)}
+               style="background: linear-gradient(135deg, ${statusColor}, ${statusColor}dd);">
+            ${statusIcon}
           </div>
           <div class="flex-1 min-w-0">
             <h3 class="font-bold text-gray-900 text-sm truncate">${driver.driverName}</h3>
             <p class="text-xs text-gray-600 truncate">${'vehicleId' in driver ? (driver.vehicleId || 'N/A') : 'N/A'}</p>
           </div>
           <div class="text-right">
-            <div class="text-xs font-semibold" style="color: ${getStatusColor(driver.status)};">
-              ${driver.status === 'DRIVING' ? 'Conduciendo' : 
-                driver.status === 'IDLE' || driver.status === 'STOPPED' ? 'Inactivo' :
-                driver.status === 'ON_BREAK' ? 'En descanso' : 'Desconectado'}
+            <div class="text-xs font-semibold" style="color: ${statusColor};">
+              ${realStatus === 'DRIVING' ? 
+                (isRouteDriver ? 'En ruta' : 'Manejando') : 
+                realStatus === 'IDLE' || realStatus === 'STOPPED' ? 'Detenido' :
+                realStatus === 'BREAK' ? 'En descanso' : 'Desconectado'}
             </div>
           </div>
         </div>
@@ -240,7 +286,15 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
         <!-- Footer - Compact -->
         <div class="border-t pt-2">
           <div class="text-xs text-gray-500 text-center">
-            ${new Date(driver.timestamp).toLocaleTimeString()}
+            <div class="font-medium">Última transmisión:</div>
+            <div>${new Date(driver.timestamp).toLocaleString('es-ES', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            })}</div>
           </div>
         </div>
       </div>

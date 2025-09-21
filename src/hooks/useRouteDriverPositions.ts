@@ -15,7 +15,7 @@ export interface RouteDriverPosition {
     speed: number;
     heading: number;
   };
-  status: 'DRIVING' | 'STOPPED' | 'IDLE' | 'OFFLINE' | 'ON_BREAK';
+  status: 'DRIVING' | 'STOPPED' | 'IDLE' | 'OFFLINE' | 'BREAK';
   timestamp: string;
 }
 

@@ -17,7 +17,7 @@ export interface DriverPosition {
     speed: number;
     heading: number;
   };
-  status: 'DRIVING' | 'IDLE' | 'OFFLINE' | 'ON_BREAK';
+  status: 'DRIVING' | 'IDLE' | 'OFFLINE' | 'BREAK';
   batteryLevel: number;
   signalStrength: number;
   networkType: string;

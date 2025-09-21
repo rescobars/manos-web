@@ -11,7 +11,7 @@ export interface DriverTransmissionData {
     speed: number;
     heading: number;
   };
-  status: 'DRIVING' | 'IDLE' | 'ON_BREAK' | 'OFFLINE';
+  status: 'DRIVING' | 'IDLE' | 'BREAK' | 'OFFLINE';
   timestamp: string;
   batteryLevel: number;
   signalStrength: number;
@@ -34,7 +34,7 @@ export interface RouteDriverUpdateData {
     speed: number;
     heading: number;
   };
-  status: 'DRIVING' | 'IDLE' | 'ON_BREAK' | 'OFFLINE';
+  status: 'DRIVING' | 'IDLE' | 'BREAK' | 'OFFLINE';
   timestamp: string;
 }
 
@@ -49,7 +49,7 @@ export interface OrganizationDriverUpdateData {
     speed: number;
     heading: number;
   };
-  status: 'DRIVING' | 'IDLE' | 'ON_BREAK' | 'OFFLINE';
+  status: 'DRIVING' | 'IDLE' | 'BREAK' | 'OFFLINE';
   timestamp: string;
   vehicleId: string;
   signalStrength: number;
@@ -59,7 +59,7 @@ export interface OrganizationDriverUpdateData {
 
 export interface DriverStatusUpdateData {
   driverId: string;
-  status: 'DRIVING' | 'IDLE' | 'ON_BREAK' | 'OFFLINE';
+  status: 'DRIVING' | 'IDLE' | 'BREAK' | 'OFFLINE';
   timestamp: string;
 }
 
