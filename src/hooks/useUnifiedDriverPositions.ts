@@ -101,32 +101,27 @@ export function useUnifiedDriverPositions() {
 
   // Update selected routes and fetch accordingly
   const updateSelectedRoutes = useCallback((routeIds: string[]) => {
-    console.log('Updating selected routes:', routeIds);
     setSelectedRouteIds(routeIds);
     
     if (routeIds.length > 0) {
-      // Fetch drivers for specific routes
-      console.log('Fetching route drivers for:', routeIds);
       fetchRouteDrivers(routeIds);
     } else {
-      // Fetch all drivers
-      console.log('Fetching all drivers');
       fetchAllDrivers();
     }
   }, [fetchRouteDrivers, fetchAllDrivers]);
 
-  // Auto-refresh every 30 seconds
+  // Initial load and auto-refresh
   useEffect(() => {
     if (authLoading || !currentOrganization?.uuid) return;
 
-    // Initial fetch based on current selection
+    // Initial fetch
     if (selectedRouteIds.length > 0) {
       fetchRouteDrivers(selectedRouteIds);
     } else {
       fetchAllDrivers();
     }
 
-    // Set up interval for auto-refresh
+    // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       if (selectedRouteIds.length > 0) {
         fetchRouteDrivers(selectedRouteIds);
@@ -144,6 +139,5 @@ export function useUnifiedDriverPositions() {
     loading: loading || authLoading,
     error,
     updateSelectedRoutes,
-    refetch: () => selectedRouteIds.length > 0 ? fetchRouteDrivers(selectedRouteIds) : fetchAllDrivers(),
   };
 }
