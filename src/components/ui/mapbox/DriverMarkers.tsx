@@ -31,39 +31,76 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
     }
   };
 
+  // Componentes de iconos para cada estado
+  const DrivingIcon = () => `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+      <path d="M7 13h2v2H7z" fill="white" opacity="0.9"/>
+      <path d="M15 13h2v2h-2z" fill="white" opacity="0.9"/>
+      <path d="M12 8h-1v2h2V8z" fill="white" opacity="0.7"/>
+      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.8"/>
+      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.8"/>
+    </svg>
+  `;
+
+  const IdleIcon = () => `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+      <path d="M7 13h2v2H7z" fill="white" opacity="0.6"/>
+      <path d="M15 13h2v2h-2z" fill="white" opacity="0.6"/>
+      <path d="M12 8h-1v2h2V8z" fill="white" opacity="0.4"/>
+      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
+      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
+    </svg>
+  `;
+
+  const OnBreakIcon = () => `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+      <path d="M7 13h2v2H7z" fill="white" opacity="0.6"/>
+      <path d="M15 13h2v2h-2z" fill="white" opacity="0.6"/>
+      <path d="M12 8h-1v2h2V8z" fill="white" opacity="0.4"/>
+      <path d="M8 4h8v2H8z" fill="white" opacity="0.7"/>
+      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
+      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
+    </svg>
+  `;
+
+  const OfflineIcon = () => `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+      <path d="M7 13h2v2H7z" fill="white" opacity="0.3"/>
+      <path d="M15 13h2v2h-2z" fill="white" opacity="0.3"/>
+      <path d="M12 8h-1v2h2V8z" fill="white" opacity="0.2"/>
+      <path d="M8 4l8 8M16 4l-8 8" stroke="white" stroke-width="2" fill="none" opacity="0.9"/>
+      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.3"/>
+      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.3"/>
+    </svg>
+  `;
+
+  const DefaultIcon = () => `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+      <path d="M7 13h2v2H7z" fill="white" opacity="0.6"/>
+      <path d="M15 13h2v2h-2z" fill="white" opacity="0.6"/>
+      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
+      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
+    </svg>
+  `;
+
   const getStatusIcon = (status: CombinedDriverPosition['status']) => {
     switch (status) {
       case 'DRIVING':
-        return `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-          </svg>
-        `;
+        return DrivingIcon();
       case 'IDLE':
       case 'STOPPED':
-        return `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        `;
+        return IdleIcon();
       case 'ON_BREAK':
-        return `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-          </svg>
-        `;
+        return OnBreakIcon();
       case 'OFFLINE':
-        return `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-          </svg>
-        `;
+        return OfflineIcon();
       default:
-        return `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-          </svg>
-        `;
+        return DefaultIcon();
     }
   };
 
