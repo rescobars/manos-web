@@ -230,19 +230,18 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
     markersRef.current.clear();
   };
 
-  // Update markers when driver positions change
+  // PUNTO 3: Crear markers solo cuando cambie el mapa o la cantidad de drivers
   useEffect(() => {
     if (!map || !window.mapboxgl) {
-      console.log('⚠️ MARKERS - Map o mapboxgl no disponible');
       return;
     }
 
-    console.log('🔄 MARKERS - Actualizando markers, total drivers:', driverPositions.length);
+    console.log('🔄 MARKERS - Creando/actualizando markers, total drivers:', driverPositions.length);
     
     // Clear all existing markers
     clearAllMarkers();
 
-    // Add new markers immediately
+    // Add new markers
     if (driverPositions.length > 0) {
       driverPositions.forEach((driver, index) => {
         if (driver.location && driver.location.latitude && driver.location.longitude) {
@@ -252,10 +251,37 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
           console.log(`⚠️ MARKER ${index + 1} - Driver sin ubicación válida:`, driver.driverId);
         }
       });
-    } else {
-      console.log('📭 MARKERS - No hay drivers para mostrar');
     }
-  }, [map, driverPositions]);
+  }, [map, driverPositions.length]); // Solo cuando cambie el mapa o la cantidad de drivers
+
+  // Actualizar posiciones de markers existentes cuando cambien las coordenadas
+  useEffect(() => {
+    if (!map || !window.mapboxgl || driverPositions.length === 0) {
+      return;
+    }
+
+    console.log('🔄 POSICIONES - Actualizando posiciones de markers existentes');
+    console.log('🔄 POSICIONES - Drivers a actualizar:', driverPositions.map(d => ({
+      id: d.driverId,
+      lat: d.location?.latitude,
+      lng: d.location?.longitude
+    })));
+    
+    driverPositions.forEach((driver) => {
+      if (driver.location && driver.location.latitude && driver.location.longitude) {
+        const markerId = `driver-${driver.driverId}`;
+        const marker = markersRef.current.get(markerId);
+        if (marker) {
+          console.log(`📍 MOVIENDO - Marker ${driver.driverId} a:`, driver.location.latitude, driver.location.longitude);
+          // Actualizar posición del marker existente
+          marker.setLngLat([driver.location.longitude, driver.location.latitude]);
+        } else {
+          console.log(`⚠️ MARKER NO ENCONTRADO - Para driver:`, driver.driverId, 'con markerId:', markerId);
+          console.log(`🔍 MARKERS DISPONIBLES - IDs:`, Array.from(markersRef.current.keys()));
+        }
+      }
+    });
+  }, [driverPositions.map(d => `${d.location?.latitude}-${d.location?.longitude}`).join(',')]); // Solo cuando cambien las coordenadas
 
   // Cleanup on unmount
   useEffect(() => {

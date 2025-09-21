@@ -265,6 +265,15 @@ class WebSocketService {
       WebSocketService.instance = null;
     }
   }
+
+  // Método para resetear la instancia singleton
+  static reset() {
+    if (WebSocketService.instance) {
+      console.log('🔄 RESETEANDO - Instancia singleton de WebSocketService');
+      WebSocketService.instance.disconnect();
+      WebSocketService.instance = null;
+    }
+  }
 }
 
 // Exportar la instancia singleton

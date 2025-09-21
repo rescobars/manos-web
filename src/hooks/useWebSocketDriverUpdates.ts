@@ -23,6 +23,13 @@ export function useWebSocketDriverUpdates({
   const { user: currentUser, currentOrganization } = useAuth();
   const isAuthenticated = useRef(false);
 
+  // Resetear WebSocket al montar el componente
+  useEffect(() => {
+    console.log('🔄 RESET - Reseteando WebSocket al montar componente');
+    wsService.disconnect();
+    isAuthenticated.current = false;
+  }, []);
+
   // Conectar y autenticar con WebSocket solo después de que el mapa se centre
   useEffect(() => {
     if (!isInitialLoadComplete) {
@@ -168,6 +175,8 @@ export function useWebSocketDriverUpdates({
     // El driverId está en data.data.data.driverId según el mensaje recibido
     const transmissionData = data.data?.data || data.data;
     console.log('🔍 EXTRACCIÓN - DriverId extraído:', transmissionData?.driverId);
+    console.log('🔍 EXTRACCIÓN - Ubicación extraída:', transmissionData?.location);
+    console.log('🔍 EXTRACCIÓN - Estado extraído:', transmissionData?.status);
     
     if (!transmissionData || !transmissionData.driverId || !transmissionData.location) {
       console.log('⚠️ DATOS INVÁLIDOS - Transmisión sin datos válidos');
@@ -260,10 +269,12 @@ export function useWebSocketDriverUpdates({
   useEffect(() => {
     return () => {
       console.log('🧹 CLEANUP - Desconectando WebSocket al desmontar componente');
-      // No desconectar completamente, solo limpiar listeners
+      // Limpiar listeners
       wsService.off('organization_driver_update', handleOrganizationDriverUpdate);
       wsService.off('route_driver_update', handleRouteDriverUpdate);
       wsService.off('driver_transmission', handleDriverTransmission);
+      // Desconectar completamente
+      wsService.disconnect();
     };
   }, [handleOrganizationDriverUpdate, handleRouteDriverUpdate, handleDriverTransmission]);
 

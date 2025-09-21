@@ -23,15 +23,17 @@ export function useUnifiedDriverPositions() {
   const [selectedRouteIds, setSelectedRouteIds] = useState<string[]>([]);
   const { currentOrganization, isLoading: authLoading } = useAuth();
 
-  // Estado para controlar cuando el mapa ya se centró
+  // PUNTO 4: Conectar WebSocket después del centrado del mapa
   const [mapCentered, setMapCentered] = useState(false);
+  const [mapCenteringComplete, setMapCenteringComplete] = useState(false);
+  const [wsReady, setWsReady] = useState(false);
 
   // Integrar WebSocket para actualizaciones en tiempo real
   const { isConnected: wsConnected } = useWebSocketDriverUpdates({
     driverPositions,
     setDriverPositions,
     selectedRouteIds,
-    isInitialLoadComplete: !loading && !authLoading && mapCentered
+    isInitialLoadComplete: !loading && !authLoading && mapCenteringComplete && wsReady
   });
 
   // Fetch all drivers (GET endpoint)
@@ -134,6 +136,19 @@ export function useUnifiedDriverPositions() {
     }
   }, [selectedRouteIds, fetchRouteDrivers, fetchAllDrivers, authLoading, currentOrganization?.uuid]);
 
+  // PUNTO 4: Activar WebSocket después del centrado del mapa
+  useEffect(() => {
+    if (!loading && !authLoading && mapCenteringComplete && !wsReady) {
+      console.log('⏰ PUNTO 4 - Esperando 1 segundo después del centrado del mapa');
+      const timer = setTimeout(() => {
+        console.log('✅ PUNTO 4 - Activando WebSocket después del centrado');
+        setWsReady(true);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [loading, authLoading, mapCenteringComplete, wsReady]);
+
   return {
     driverPositions,
     selectedRouteIds,
@@ -142,5 +157,7 @@ export function useUnifiedDriverPositions() {
     updateSelectedRoutes,
     wsConnected,
     setMapCentered,
+    setMapCenteringComplete,
+    wsReady,
   };
 }

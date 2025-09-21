@@ -61,6 +61,8 @@ export function BaseMap({
   const initializeMap = useCallback(() => {
     if (!mapContainerRef.current) return;
 
+    console.log('🗺️ INITIALIZE - Inicializando mapa, contenedor:', mapContainerRef.current);
+
     try {
       const mapInstance = new window.mapboxgl.Map({
         container: mapContainerRef.current,
@@ -78,6 +80,7 @@ export function BaseMap({
       mapInstance.addControl(new window.mapboxgl.FullscreenControl(), 'top-right');
 
       mapInstance.on('load', () => {
+        console.log('🗺️ LOAD - Mapa cargado completamente, instancia:', mapInstance);
         setMap(mapInstance);
         setIsMapReady(true);
         
@@ -87,6 +90,7 @@ export function BaseMap({
         }, 100);
         
         if (onMapReady) {
+          console.log('🗺️ READY - Llamando onMapReady callback');
           onMapReady(mapInstance);
         }
       });

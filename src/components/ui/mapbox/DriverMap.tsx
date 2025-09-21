@@ -25,7 +25,9 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     error,
     updateSelectedRoutes,
     wsConnected,
-    setMapCentered
+    setMapCentered,
+    setMapCenteringComplete,
+    wsReady
   } = useUnifiedDriverPositions();
   const { currentOrganization, isLoading: authLoading } = useAuth();
 
@@ -40,10 +42,18 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
   // Calculate bounds for all drivers
   const driversBounds = useMemo(() => {
-    if (driverPositions.length === 0) return null;
+    console.log('📍 CALCULANDO BOUNDS - Drivers disponibles:', driverPositions.length);
+    
+    if (driverPositions.length === 0) {
+      console.log('⚠️ BOUNDS - No hay drivers para calcular bounds');
+      return null;
+    }
 
     const lats = driverPositions.map(driver => driver.location.latitude);
     const lngs = driverPositions.map(driver => driver.location.longitude);
+
+    console.log('📍 BOUNDS - Latitudes:', lats);
+    console.log('📍 BOUNDS - Longitudes:', lngs);
 
     const minLat = Math.min(...lats);
     const maxLat = Math.max(...lats);
@@ -54,39 +64,115 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     const latPadding = (maxLat - minLat) * 0.1;
     const lngPadding = (maxLng - minLng) * 0.1;
 
-    return {
+    const bounds = {
       north: maxLat + latPadding,
       south: minLat - latPadding,
       east: maxLng + lngPadding,
       west: minLng - lngPadding
     };
+
+    console.log('📍 BOUNDS CALCULADOS:', bounds);
+    return bounds;
   }, [driverPositions]);
 
-  // Center map on drivers only on initial load
+  // Calcular el centro inicial basado en las posiciones de los drivers
+  const initialCenter = useMemo(() => {
+    if (driverPositions.length > 0 && driversBounds) {
+      const centerLng = (driversBounds.west + driversBounds.east) / 2;
+      const centerLat = (driversBounds.south + driversBounds.north) / 2;
+      console.log('📍 CENTRO INICIAL - Calculado desde drivers:', [centerLng, centerLat]);
+      return [centerLng, centerLat] as [number, number];
+    }
+    console.log('📍 CENTRO INICIAL - Usando centro por defecto:', defaultCenter);
+    return defaultCenter;
+  }, [driverPositions.length, driversBounds]);
+
+  // PUNTO 3: Centrar el mapa con las posiciones (solo si es necesario)
   const [hasCentered, setHasCentered] = useState(false);
   
   useEffect(() => {
+    console.log('🔍 PUNTO 3 - Verificando condiciones para centrar:', {
+      map: !!map,
+      isMapReady,
+      driversBounds: !!driversBounds,
+      driverPositionsLength: driverPositions.length,
+      hasCentered,
+      mapStyleLoaded: map?.isStyleLoaded?.()
+    });
+
     if (map && isMapReady && driversBounds && driverPositions.length > 0 && !hasCentered) {
-      if (map.isStyleLoaded()) {
-        console.log('🎯 CENTRANDO - Mapa en drivers (solo una vez)');
-        map.fitBounds([
-          [driversBounds.west, driversBounds.south],
-          [driversBounds.east, driversBounds.north]
-        ], {
-          padding: 50,
-          maxZoom: 16,
-          duration: 1000
-        });
+      // Verificar si el mapa ya está en la posición correcta
+      const currentCenter = map.getCenter();
+      const expectedCenter = {
+        lng: (driversBounds.west + driversBounds.east) / 2,
+        lat: (driversBounds.south + driversBounds.north) / 2
+      };
+      
+      const distance = Math.sqrt(
+        Math.pow(currentCenter.lng - expectedCenter.lng, 2) + 
+        Math.pow(currentCenter.lat - expectedCenter.lat, 2)
+      );
+      
+      console.log('📍 POSICIÓN ACTUAL - Centro actual:', currentCenter);
+      console.log('📍 POSICIÓN ESPERADA - Centro esperado:', expectedCenter);
+      console.log('📍 DISTANCIA - Distancia entre centros:', distance);
+      
+      // Solo centrar si la distancia es significativa (más de 0.01 grados)
+      if (distance > 0.01) {
+        if (map.isStyleLoaded()) {
+          console.log('🎯 PUNTO 3 - Centrando mapa en drivers (distancia significativa)');
+          console.log('🎯 PUNTO 3 - Bounds:', driversBounds);
+          
+          map.fitBounds([
+            [driversBounds.west, driversBounds.south],
+            [driversBounds.east, driversBounds.north]
+          ], {
+            padding: 50,
+            maxZoom: 16,
+            duration: 2000
+          });
+          
+          setHasCentered(true);
+          
+          // Notificar que el mapa se centró
+          setTimeout(() => {
+            console.log('✅ PUNTO 3 - Mapa centrado correctamente');
+            setMapCentered(true);
+            setMapCenteringComplete(true);
+          }, 2500);
+        } else {
+          console.log('⚠️ PUNTO 3 - Mapa no está listo, esperando...');
+          // Esperar a que el mapa esté completamente listo
+          const timer = setTimeout(() => {
+            if (map.isStyleLoaded() && !hasCentered) {
+              console.log('🎯 PUNTO 3 - Centrando mapa en drivers (retry)');
+              map.fitBounds([
+                [driversBounds.west, driversBounds.south],
+                [driversBounds.east, driversBounds.north]
+              ], {
+                padding: 50,
+                maxZoom: 16,
+                duration: 2000
+              });
+              setHasCentered(true);
+              setTimeout(() => {
+                console.log('✅ PUNTO 3 - Mapa centrado correctamente (retry)');
+                setMapCentered(true);
+                setMapCenteringComplete(true);
+              }, 2500);
+            }
+          }, 1000);
+          
+          return () => clearTimeout(timer);
+        }
+      } else {
+        console.log('✅ PUNTO 3 - Mapa ya está en la posición correcta, no es necesario centrar');
         setHasCentered(true);
-        
-        // Notificar que el mapa se centró después de la animación
-        setTimeout(() => {
-          console.log('✅ MAPA CENTRADO - Notificando que el centrado se completó');
-          setMapCentered(true);
-        }, 1200); // Un poco más que la duración de la animación (1000ms)
+        setMapCentered(true);
+        setMapCenteringComplete(true);
       }
     }
-  }, [map, isMapReady, driversBounds, driverPositions.length, hasCentered, setMapCentered]);
+  }, [map, isMapReady, driversBounds, driverPositions.length, hasCentered, setMapCentered, setMapCenteringComplete]);
 
   // Show loading state while auth is loading
   if (authLoading) {
@@ -115,21 +201,31 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
   return (
     <div className={`relative ${className}`}>
-      <BaseMap
-        center={defaultCenter}
-        zoom={12}
-        onMapReady={handleMapReady}
-        className={className}
-      >
-        {/* Driver markers - only render when map is fully ready and we have driver data */}
-        {isMapReady && map && driverPositions.length > 0 && (
-          <DriverMarkers
-            map={map}
-            driverPositions={driverPositions}
-            onDriverClick={handleDriverClick}
-          />
-        )}
-      </BaseMap>
+      {/* PUNTO 2: Cargar el mapa - solo cuando tengamos posiciones de drivers */}
+      {driverPositions.length > 0 ? (
+        <BaseMap
+          center={initialCenter}
+          zoom={12}
+          onMapReady={handleMapReady}
+          className={className}
+        >
+          {/* Driver markers - render when map is ready and we have driver data */}
+          {isMapReady && map && driverPositions.length > 0 && (
+            <DriverMarkers
+              map={map}
+              driverPositions={driverPositions}
+              onDriverClick={handleDriverClick}
+            />
+          )}
+        </BaseMap>
+      ) : (
+        <div className={`${className} flex items-center justify-center bg-gray-50`}>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando posiciones de conductores...</p>
+          </div>
+        </div>
+      )}
 
       {/* Error state */}
       {error && (
@@ -183,8 +279,14 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                   )}
                 </div>
                 <div className="text-xs mt-1">
-                  <span className={`font-medium ${wsConnected ? 'text-green-600' : 'text-red-600'}`}>
-                    {wsConnected ? '🟢 Tiempo real' : '🔴 Sin conexión'}
+                  <span className={`font-medium ${
+                    wsConnected ? 'text-green-600' : 
+                    wsReady ? 'text-yellow-600' : 
+                    'text-gray-500'
+                  }`}>
+                    {wsConnected ? '🟢 Tiempo real' : 
+                     wsReady ? '🟡 Conectando...' : 
+                     '⏳ Esperando...'}
                   </span>
                 </div>
               </div>
