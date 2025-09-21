@@ -32,15 +32,35 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
   const getStatusIcon = (status: DriverPosition['status']) => {
     switch (status) {
       case 'DRIVING':
-        return '🚗';
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+          </svg>
+        `;
       case 'IDLE':
-        return '⏸️';
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        `;
       case 'ON_BREAK':
-        return '☕';
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+        `;
       case 'OFFLINE':
-        return '📴';
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+          </svg>
+        `;
       default:
-        return '🚗';
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+          </svg>
+        `;
     }
   };
 
@@ -50,17 +70,20 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
     
     const statusColor = getStatusColor(driver.status);
     const statusIcon = getStatusIcon(driver.status);
+    const batteryColor = driver.batteryLevel > 20 ? '#10B981' : driver.batteryLevel > 10 ? '#F59E0B' : '#EF4444';
     
     el.innerHTML = `
-      <div class="relative">
-        <div class="w-12 h-12 rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-110 transition-transform duration-200" 
-             style="background-color: ${statusColor};">
+      <div class="relative group">
+        <!-- Main marker -->
+        <div class="w-14 h-14 rounded-full border-4 border-white shadow-xl flex items-center justify-center text-white font-bold text-xl cursor-pointer hover:scale-110 transition-all duration-300 transform hover:shadow-2xl" 
+             style="background: linear-gradient(135deg, ${statusColor}, ${statusColor}dd);">
           ${statusIcon}
         </div>
-        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold" 
-             style="background-color: ${driver.batteryLevel > 20 ? '#10B981' : '#EF4444'};">
-          ${Math.round(driver.batteryLevel)}%
-        </div>
+                
+        <!-- Pulse animation for active drivers -->
+        ${driver.status === 'DRIVING' ? `
+          <div class="absolute inset-0 rounded-full animate-ping" style="background-color: ${statusColor}; opacity: 0.3;"></div>
+        ` : ''}
       </div>
     `;
     
@@ -107,61 +130,65 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
 
       // Create popup
       const popup = new window.mapboxgl.Popup({ 
-        offset: 25,
+        offset: 30,
         closeButton: true,
-        closeOnClick: false
+        closeOnClick: false,
+        maxWidth: '320px'
       }).setHTML(`
-        <div class="p-2 min-w-[200px]">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" 
-                 style="background-color: ${getStatusColor(driver.status)};">
+        <div class="p-4 min-w-[280px] bg-white rounded-lg shadow-xl">
+          <!-- Header -->
+          <div class="flex items-center space-x-3 mb-4">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg" 
+                 style="background: linear-gradient(135deg, ${getStatusColor(driver.status)}, ${getStatusColor(driver.status)}dd);">
               ${getStatusIcon(driver.status)}
             </div>
-            <div>
-              <h3 class="font-semibold text-gray-900">${driver.driverName}</h3>
-              <p class="text-xs text-gray-600">${driver?.vehicleId || 'N/A'}</p>
+            <div class="flex-1">
+              <h3 class="font-bold text-gray-900 text-lg">${driver.driverName}</h3>
+              <p class="text-sm text-gray-600 font-medium">${driver?.vehicleId || 'N/A'}</p>
             </div>
-          </div>
-          
-          <div class="space-y-1 text-xs">
-            <div class="flex justify-between">
-              <span class="text-gray-600">Estado:</span>
-              <span class="font-medium" style="color: ${getStatusColor(driver.status)};">
+            <div class="text-right">
+              <div class="text-xs text-gray-500">Estado</div>
+              <div class="font-semibold text-sm" style="color: ${getStatusColor(driver.status)};">
                 ${driver.status === 'DRIVING' ? 'Conduciendo' : 
                   driver.status === 'IDLE' ? 'Inactivo' :
                   driver.status === 'ON_BREAK' ? 'En descanso' : 'Desconectado'}
+              </div>
+            </div>
+          </div>
+          
+          <!-- Route Info -->
+          <div class="bg-gray-50 rounded-lg p-3 mb-4">
+            <div class="flex items-center space-x-2 mb-2">
+              <div class="w-2 h-2 ${driver.routeId ? 'bg-blue-500' : 'bg-gray-400'} rounded-full"></div>
+              <span class="text-sm font-medium text-gray-700">
+                ${driver.routeId ? 'Ruta Asignada' : 'Sin Ruta Asignada'}
               </span>
             </div>
-            
-            <div class="flex justify-between">
-              <span class="text-gray-600">Ruta:</span>
-              <span class="font-medium">${driver.routeName}</span>
+            <p class="text-sm text-gray-600 font-medium">
+              ${driver.routeName || 'No hay ruta asignada'}
+            </p>
+            ${!driver.routeId ? `
+              <div class="mt-2 text-xs text-gray-500 italic">
+                El conductor está disponible para asignación
+              </div>
+            ` : ''}
+          </div>
+          
+          
+          <!-- Signal & Network -->
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 ${driver.signalStrength > 70 ? 'bg-green-500' : driver.signalStrength > 40 ? 'bg-yellow-500' : 'bg-red-500'} rounded-full"></div>
+              <span class="text-sm text-gray-600">Señal: ${Math.round(driver.signalStrength)}%</span>
             </div>
-            
-            <div class="flex justify-between">
-              <span class="text-gray-600">Velocidad:</span>
-              <span class="font-medium">${Math.round(driver.location.speed)} km/h</span>
-            </div>
-            
-            <div class="flex justify-between">
-              <span class="text-gray-600">Batería:</span>
-              <span class="font-medium ${driver.batteryLevel > 20 ? 'text-green-600' : 'text-red-600'}">
-                ${Math.round(driver.batteryLevel)}%
-              </span>
-            </div>
-            
-            <div class="flex justify-between">
-              <span class="text-gray-600">Señal:</span>
-              <span class="font-medium">${Math.round(driver.signalStrength)}%</span>
-            </div>
-            
-            <div class="flex justify-between">
-              <span class="text-gray-600">Red:</span>
-              <span class="font-medium">${driver.networkType}</span>
-            </div>
-            
-            <div class="text-gray-500 text-xs mt-2 pt-2 border-t">
-              Última actualización: ${new Date(driver.timestamp).toLocaleTimeString()}
+            <div class="text-sm text-gray-600 font-medium">${driver.networkType}</div>
+          </div>
+          
+          <!-- Footer -->
+          <div class="border-t pt-3">
+            <div class="flex items-center justify-between text-xs text-gray-500">
+              <span>Última actualización</span>
+              <span class="font-medium">${new Date(driver.timestamp).toLocaleTimeString()}</span>
             </div>
           </div>
         </div>

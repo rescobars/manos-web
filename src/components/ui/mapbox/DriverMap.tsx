@@ -133,12 +133,51 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
       {/* Driver count indicator */}
       {isMapReady && driverPositions.length > 0 && (
-        <div className="absolute bottom-4 left-4 z-10 bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-gray-700">
-              {driverPositions.length} conductor{driverPositions.length !== 1 ? 'es' : ''} en línea
-            </span>
+        <div className="absolute bottom-4 left-4 z-10 bg-white border border-gray-200 rounded-xl p-4 shadow-xl">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="absolute inset-0 w-4 h-4 bg-green-500 rounded-full animate-ping opacity-30"></div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-gray-900">
+                {driverPositions.length}
+              </div>
+              <div className="text-xs text-gray-600 font-medium">
+                conductor{driverPositions.length !== 1 ? 'es' : ''} en línea
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-500">Activos</div>
+              <div className="text-sm font-semibold text-green-600">
+                {driverPositions.filter(d => d.status === 'DRIVING').length}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legend */}
+      {isMapReady && driverPositions.length > 0 && (
+        <div className="absolute bottom-4 right-4 z-10 bg-white border border-gray-200 rounded-xl p-4 shadow-xl max-w-xs">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3">Leyenda</h4>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-gray-600">Conduciendo</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <span className="text-gray-600">Inactivo</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <span className="text-gray-600">En descanso</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+              <span className="text-gray-600">Desconectado</span>
+            </div>
           </div>
         </div>
       )}
