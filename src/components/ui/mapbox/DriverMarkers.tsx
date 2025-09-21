@@ -97,12 +97,16 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
 
   const addMarker = (driver: CombinedDriverPosition) => {
     if (!map || !driver.location || !driver.location.latitude || !driver.location.longitude) {
+      console.log('⚠️ ADD_MARKER - Datos inválidos para driver:', driver.driverId);
       return;
     }
 
     if (!window.mapboxgl || !window.mapboxgl.Marker) {
+      console.log('⚠️ ADD_MARKER - MapboxGL no disponible');
       return;
     }
+
+    console.log('➕ ADD_MARKER - Creando marker para driver:', driver.driverId, 'en:', driver.location.latitude, driver.location.longitude);
 
     const markerId = `driver-${driver.driverId}`;
     
@@ -121,6 +125,8 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
     })
       .setLngLat([driver.location.longitude, driver.location.latitude])
       .addTo(map);
+
+    console.log('✅ MARKER_ADDED - Marker agregado al mapa para driver:', driver.driverId);
 
     // Create popup with mobile-optimized driver information
     const isRouteDriver = 'routeName' in driver;
@@ -227,19 +233,27 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
   // Update markers when driver positions change
   useEffect(() => {
     if (!map || !window.mapboxgl) {
+      console.log('⚠️ MARKERS - Map o mapboxgl no disponible');
       return;
     }
 
+    console.log('🔄 MARKERS - Actualizando markers, total drivers:', driverPositions.length);
+    
     // Clear all existing markers
     clearAllMarkers();
 
     // Add new markers immediately
     if (driverPositions.length > 0) {
-      driverPositions.forEach((driver) => {
+      driverPositions.forEach((driver, index) => {
         if (driver.location && driver.location.latitude && driver.location.longitude) {
+          console.log(`📍 MARKER ${index + 1} - Agregando driver:`, driver.driverId, 'en:', driver.location.latitude, driver.location.longitude);
           addMarker(driver);
+        } else {
+          console.log(`⚠️ MARKER ${index + 1} - Driver sin ubicación válida:`, driver.driverId);
         }
       });
+    } else {
+      console.log('📭 MARKERS - No hay drivers para mostrar');
     }
   }, [map, driverPositions]);
 

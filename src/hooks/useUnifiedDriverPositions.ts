@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DriverPosition } from './useDriverPositions';
 import { RouteDriverPosition } from './useRouteDriverPositions';
+import { useWebSocketDriverUpdates } from './useWebSocketDriverUpdates';
 
 type UnifiedDriverPosition = DriverPosition | RouteDriverPosition;
 
@@ -21,6 +22,17 @@ export function useUnifiedDriverPositions() {
   const [error, setError] = useState<string | null>(null);
   const [selectedRouteIds, setSelectedRouteIds] = useState<string[]>([]);
   const { currentOrganization, isLoading: authLoading } = useAuth();
+
+  // Estado para controlar cuando el mapa ya se centró
+  const [mapCentered, setMapCentered] = useState(false);
+
+  // Integrar WebSocket para actualizaciones en tiempo real
+  const { isConnected: wsConnected } = useWebSocketDriverUpdates({
+    driverPositions,
+    setDriverPositions,
+    selectedRouteIds,
+    isInitialLoadComplete: !loading && !authLoading && mapCentered
+  });
 
   // Fetch all drivers (GET endpoint)
   const fetchAllDrivers = useCallback(async () => {
@@ -128,5 +140,7 @@ export function useUnifiedDriverPositions() {
     loading: loading || authLoading,
     error,
     updateSelectedRoutes,
+    wsConnected,
+    setMapCentered,
   };
 }

@@ -23,7 +23,9 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     selectedRouteIds, 
     loading, 
     error,
-    updateSelectedRoutes 
+    updateSelectedRoutes,
+    wsConnected,
+    setMapCentered
   } = useUnifiedDriverPositions();
   const { currentOrganization, isLoading: authLoading } = useAuth();
 
@@ -60,10 +62,13 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     };
   }, [driverPositions]);
 
-  // Center map on drivers when drivers are loaded and map is ready
+  // Center map on drivers only on initial load
+  const [hasCentered, setHasCentered] = useState(false);
+  
   useEffect(() => {
-    if (map && isMapReady && driversBounds && driverPositions.length > 0) {
+    if (map && isMapReady && driversBounds && driverPositions.length > 0 && !hasCentered) {
       if (map.isStyleLoaded()) {
+        console.log('🎯 CENTRANDO - Mapa en drivers (solo una vez)');
         map.fitBounds([
           [driversBounds.west, driversBounds.south],
           [driversBounds.east, driversBounds.north]
@@ -72,9 +77,16 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
           maxZoom: 16,
           duration: 1000
         });
+        setHasCentered(true);
+        
+        // Notificar que el mapa se centró después de la animación
+        setTimeout(() => {
+          console.log('✅ MAPA CENTRADO - Notificando que el centrado se completó');
+          setMapCentered(true);
+        }, 1200); // Un poco más que la duración de la animación (1000ms)
       }
     }
-  }, [map, isMapReady, driversBounds, driverPositions.length]);
+  }, [map, isMapReady, driversBounds, driverPositions.length, hasCentered, setMapCentered]);
 
   // Show loading state while auth is loading
   if (authLoading) {
@@ -148,8 +160,10 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
         <div className="absolute top-16 left-4 z-10 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping opacity-30"></div>
+              <div className={`w-3 h-3 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              {wsConnected && (
+                <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping opacity-30"></div>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <div>
@@ -167,6 +181,11 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                       (Todos los conductores)
                     </span>
                   )}
+                </div>
+                <div className="text-xs mt-1">
+                  <span className={`font-medium ${wsConnected ? 'text-green-600' : 'text-red-600'}`}>
+                    {wsConnected ? '🟢 Tiempo real' : '🔴 Sin conexión'}
+                  </span>
                 </div>
               </div>
             </div>
