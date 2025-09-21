@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { BaseMap, useMap } from './BaseMap';
 import { DriverMarkers } from './DriverMarkers';
 import { useDriverPositions } from '@/hooks/useDriverPositions';
@@ -25,6 +25,55 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
   // Default center to Guatemala City
   const defaultCenter: [number, number] = [-90.5069, 14.6349];
+
+  // Calculate bounds for all drivers
+  const driversBounds = useMemo(() => {
+    if (driverPositions.length === 0) return null;
+
+    const lats = driverPositions.map(driver => driver.location.latitude);
+    const lngs = driverPositions.map(driver => driver.location.longitude);
+
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+
+    // Add some padding to the bounds
+    const latPadding = (maxLat - minLat) * 0.1;
+    const lngPadding = (maxLng - minLng) * 0.1;
+
+    return {
+      north: maxLat + latPadding,
+      south: minLat - latPadding,
+      east: maxLng + lngPadding,
+      west: minLng - lngPadding
+    };
+  }, [driverPositions]);
+
+  // Center map on drivers when drivers are loaded and map is ready
+  useEffect(() => {
+    if (map && isMapReady && driversBounds && driverPositions.length > 0) {
+      // Add a small delay to ensure markers are rendered first
+      const centerMap = () => {
+        if (map && map.isStyleLoaded()) {
+          // Use fitBounds to center and zoom the map to show all drivers
+          map.fitBounds([
+            [driversBounds.west, driversBounds.south], // Southwest corner
+            [driversBounds.east, driversBounds.north]  // Northeast corner
+          ], {
+            padding: 50, // Add padding around the bounds
+            maxZoom: 16, // Don't zoom in too much
+            duration: 1000 // Smooth animation
+          });
+        }
+      };
+
+      // Try immediately, then with delays if needed
+      centerMap();
+      setTimeout(centerMap, 500);
+      setTimeout(centerMap, 1000);
+    }
+  }, [map, isMapReady, driversBounds, driverPositions.length]);
 
   // Show loading state while auth is loading
   if (authLoading) {

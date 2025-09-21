@@ -96,10 +96,22 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
       return;
     }
 
+    // Check if mapboxgl is available
+    if (!window.mapboxgl || !window.mapboxgl.Marker) {
+      console.log('MapboxGL not available');
+      return;
+    }
+
     // Additional check to ensure map container is ready
     const container = map.getContainer();
     if (!container || !container.parentNode) {
       console.log('Map container not ready');
+      return;
+    }
+
+    // Check if map is fully loaded and ready
+    if (!map.loaded() || !map.getStyle()) {
+      console.log('Map not fully loaded');
       return;
     }
 
@@ -220,56 +232,61 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
 
   // Update markers when driver positions change
   useEffect(() => {
-    if (!map || !map.isStyleLoaded || driverPositions.length === 0) {
+    // More robust validation
+    if (!map || !map.isStyleLoaded || !map.loaded() || !map.getStyle()) {
+      console.log('Map not ready for markers update');
       return;
     }
 
-    // Add a small delay to ensure map is completely ready
-    const addMarkersWithDelay = () => {
+    // Check if mapboxgl is available
+    if (!window.mapboxgl || !window.mapboxgl.Marker) {
+      console.log('MapboxGL not available for markers');
+      return;
+    }
+
+    if (driverPositions.length === 0) {
+      clearAllMarkers();
+      return;
+    }
+
+    const addMarkers = () => {
       setMarkersLoading(true);
       
       // Clear existing markers
       clearAllMarkers();
 
-      // Add new markers with a small delay between each
+      // Add new markers immediately
       let markersAdded = 0;
       const totalMarkers = driverPositions.filter(driver => 
         driver.location && driver.location.latitude && driver.location.longitude
       ).length;
 
-      driverPositions.forEach((driver, index) => {
+      driverPositions.forEach((driver) => {
         if (driver.location && driver.location.latitude && driver.location.longitude) {
-          setTimeout(() => {
+          try {
             addDriverMarker(driver);
             markersAdded++;
-            
-            // Notify when all markers are loaded
-            if (markersAdded === totalMarkers) {
-              setMarkersLoading(false);
-              if (onMarkersLoaded) {
-                onMarkersLoaded();
-              }
-            }
-          }, index * 100); // 100ms delay between each marker
+          } catch (error) {
+            console.error('Error adding marker:', error);
+            markersAdded++;
+          }
         }
       });
 
-      // If no markers to add, stop loading immediately
-      if (totalMarkers === 0) {
-        setMarkersLoading(false);
-        if (onMarkersLoaded) {
-          onMarkersLoaded();
-        }
+      // Notify when all markers are processed
+      setMarkersLoading(false);
+      if (onMarkersLoaded) {
+        onMarkersLoaded();
       }
     };
 
     // Wait for map to be completely ready
     if (map.isStyleLoaded()) {
-      addMarkersWithDelay();
+      addMarkers();
     } else {
       // Wait for the 'idle' event which indicates the map is fully loaded
       const handleMapIdle = () => {
-        addMarkersWithDelay();
+        addMarkers();
         map.off('idle', handleMapIdle);
       };
       
@@ -278,7 +295,7 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
       // Fallback timeout
       setTimeout(() => {
         map.off('idle', handleMapIdle);
-        addMarkersWithDelay();
+        addMarkers();
       }, 2000);
     }
   }, [map, driverPositions]);
