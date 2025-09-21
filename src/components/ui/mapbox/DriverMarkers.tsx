@@ -10,9 +10,10 @@ interface DriverMarkersProps {
   map: any;
   driverPositions: CombinedDriverPosition[];
   onDriverClick?: (driver: CombinedDriverPosition) => void;
+  isCentering?: boolean;
 }
 
-export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMarkersProps) {
+export function DriverMarkers({ map, driverPositions, onDriverClick, isCentering = false }: DriverMarkersProps) {
   const markersRef = useRef<Map<string, any>>(new Map());
 
   const getStatusColor = (status: CombinedDriverPosition['status']) => {
@@ -244,18 +245,33 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
       return;
     }
 
-    // Clear all existing markers
-    clearAllMarkers();
+    // Wait for map to be fully ready before adding markers
+    const addMarkersWithDelay = () => {
+      // Clear all existing markers
+      clearAllMarkers();
 
-    // Add new markers
-    if (driverPositions.length > 0) {
-      driverPositions.forEach((driver) => {
-        if (driver.location && driver.location.latitude && driver.location.longitude) {
-          addMarker(driver);
-        }
-      });
+      // Add new markers with a small delay to ensure map is ready
+      if (driverPositions.length > 0) {
+        const addMarkersTimeout = setTimeout(() => {
+          driverPositions.forEach((driver) => {
+            if (driver.location && driver.location.latitude && driver.location.longitude) {
+              addMarker(driver);
+            }
+          });
+        }, isCentering ? 200 : 50); // Longer delay if centering
+
+        return () => clearTimeout(addMarkersTimeout);
+      }
+    };
+
+    // If map is not ready, wait for it
+    if (!map.isStyleLoaded()) {
+      map.on('styledata', addMarkersWithDelay);
+      return () => map.off('styledata', addMarkersWithDelay);
+    } else {
+      return addMarkersWithDelay();
     }
-  }, [map, driverPositions]);
+  }, [map, driverPositions, isCentering]);
 
   // Cleanup on unmount
   useEffect(() => {

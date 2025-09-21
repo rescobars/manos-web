@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseMap, useMap } from './BaseMap';
 import { DriverMarkers } from './DriverMarkers';
 import { useUnifiedDriverPositions } from '@/hooks/useUnifiedDriverPositions';
@@ -26,6 +26,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     updateSelectedRoutes 
   } = useUnifiedDriverPositions();
   const { currentOrganization, isLoading: authLoading } = useAuth();
+  const [isCentering, setIsCentering] = useState(false);
 
   const handleDriverClick = useCallback((driver: DriverPosition | RouteDriverPosition) => {
     if (onDriverClick) {
@@ -64,14 +65,30 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   useEffect(() => {
     if (map && isMapReady && driversBounds && driverPositions.length > 0) {
       if (map.isStyleLoaded()) {
-        map.fitBounds([
-          [driversBounds.west, driversBounds.south],
-          [driversBounds.east, driversBounds.north]
-        ], {
-          padding: 50,
-          maxZoom: 16,
-          duration: 0
-        });
+        setIsCentering(true);
+        
+        // Add a small delay to ensure markers are rendered before centering
+        const centerTimeout = setTimeout(() => {
+          map.fitBounds([
+            [driversBounds.west, driversBounds.south],
+            [driversBounds.east, driversBounds.north]
+          ], {
+            padding: 50,
+            maxZoom: 16,
+            duration: 1500, // Smooth transition
+            essential: true
+          });
+
+          // Reset centering state after animation completes
+          setTimeout(() => {
+            setIsCentering(false);
+          }, 1600);
+        }, 100);
+
+        return () => {
+          clearTimeout(centerTimeout);
+          setIsCentering(false);
+        };
       }
     }
   }, [map, isMapReady, driversBounds, driverPositions.length]);
@@ -115,6 +132,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
             map={map}
             driverPositions={driverPositions}
             onDriverClick={handleDriverClick}
+            isCentering={isCentering}
           />
         )}
       </BaseMap>
@@ -138,6 +156,16 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
           <div className="flex items-center space-x-2">
             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
             <span className="text-xs text-blue-800">Actualizando...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Centering overlay */}
+      {isCentering && (
+        <div className="absolute top-28 left-4 z-10 bg-green-50/95 backdrop-blur-sm border border-green-200 rounded-lg p-3">
+          <div className="flex items-center space-x-2">
+            <div className="animate-pulse rounded-full h-3 w-3 bg-green-600"></div>
+            <span className="text-xs text-green-800">Centrando en conductores...</span>
           </div>
         </div>
       )}
