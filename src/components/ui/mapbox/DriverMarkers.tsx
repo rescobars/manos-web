@@ -222,39 +222,94 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
   };
 
   const clearAllMarkers = () => {
-    console.log('🧹 CLEARING - Markers antes de limpiar:', markersRef.current.size);
     markersRef.current.forEach((marker) => {
       if (marker && typeof marker.remove === 'function') {
         marker.remove();
       }
     });
     markersRef.current.clear();
-    console.log('✅ CLEARED - Todos los markers eliminados');
   };
 
-  // PUNTO 3: Crear markers solo cuando cambie el mapa o la cantidad de drivers
+  // Función para animar el movimiento suave del marker
+  const animateMarkerToPosition = (marker: any, newLngLat: [number, number], duration: number = 2000) => {
+    const startLngLat = marker.getLngLat();
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing suave para movimiento natural
+      const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+      const easedProgress = easeOutCubic(progress);
+      
+      // Interpolar entre posición actual y nueva
+      const currentLng = startLngLat.lng + (newLngLat[0] - startLngLat.lng) * easedProgress;
+      const currentLat = startLngLat.lat + (newLngLat[1] - startLngLat.lat) * easedProgress;
+      
+      // Actualizar posición del marker
+      marker.setLngLat([currentLng, currentLat]);
+      
+      // Continuar animación si no ha terminado
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  };
+
+  // Crear markers iniciales cuando cambie el mapa
   useEffect(() => {
     if (!map || !window.mapboxgl) {
       return;
     }
-
-    console.log('🔄 MARKERS - Iniciando recreación, drivers:', driverPositions.length);
 
     // Clear all existing markers
     clearAllMarkers();
 
     // Add new markers
     if (driverPositions.length > 0) {
-      driverPositions.forEach((driver, index) => {
+      driverPositions.forEach((driver) => {
         if (driver.location && driver.location.latitude && driver.location.longitude) {
-          console.log(`📍 MARKER ${index + 1} - Creando:`, driver.driverId);
           addMarker(driver);
         }
       });
     }
+  }, [map]); // Solo cuando cambie el mapa
 
-    console.log('✅ MARKERS - Recreación completada, total markers:', markersRef.current.size);
-  }, [map, driverPositions]); // Cuando cambien los drivers o el mapa
+  // Actualizar posiciones de markers existentes con animación suave
+  useEffect(() => {
+    if (!map || !window.mapboxgl || driverPositions.length === 0) {
+      return;
+    }
+
+    driverPositions.forEach((driver) => {
+      if (driver.location && driver.location.latitude && driver.location.longitude) {
+        const markerId = `driver-${driver.driverId}`;
+        const marker = markersRef.current.get(markerId);
+        
+        if (marker) {
+          // Obtener posición actual del marker
+          const currentLngLat = marker.getLngLat();
+          const newLngLat = [driver.location.longitude, driver.location.latitude];
+          
+          // Solo animar si la posición cambió significativamente
+          const distance = Math.sqrt(
+            Math.pow(currentLngLat.lng - newLngLat[0], 2) + 
+            Math.pow(currentLngLat.lat - newLngLat[1], 2)
+          );
+          
+          if (distance > 0.0001) { // Solo animar si hay movimiento significativo
+            animateMarkerToPosition(marker, newLngLat as [number, number]);
+          }
+        } else {
+          // Si no existe el marker, crearlo
+          addMarker(driver);
+        }
+      }
+    });
+  }, [driverPositions]); // Cuando cambien las posiciones
 
 
   // Cleanup on unmount
