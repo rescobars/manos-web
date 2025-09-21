@@ -94,15 +94,24 @@ export function RouteSelector({
           </div>
           <div className="flex items-center space-x-2">
             {selectedRouteIds.length > 0 && (
-              <button
+              <div
                 onClick={(e) => {
                   e.stopPropagation();
                   handleClearAll();
                 }}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleClearAll();
+                  }
+                }}
               >
                 <X className="w-3 h-3 text-gray-500" />
-              </button>
+              </div>
             )}
             <ChevronDown 
               className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${

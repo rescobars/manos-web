@@ -272,54 +272,63 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
     }
 
     const addMarkers = () => {
+      console.log('Updating markers, count:', driverPositions.length);
       setMarkersLoading(true);
       
-      // Clear existing markers
-      clearAllMarkers();
+      // Get current driver IDs
+      const currentDriverIds = new Set(driverPositions.map(d => d.driverId));
+      
+      // Remove markers that are no longer in the list
+      const markersToRemove: string[] = [];
+      markersRef.current.forEach((marker, markerId) => {
+        if (!currentDriverIds.has(markerId)) {
+          markersToRemove.push(markerId);
+        }
+      });
+      
+      console.log('Removing markers:', markersToRemove.length);
+      
+      // Remove outdated markers
+      markersToRemove.forEach(markerId => {
+        const marker = markersRef.current.get(markerId);
+        if (marker && typeof marker.remove === 'function') {
+          marker.remove();
+        }
+        markersRef.current.delete(markerId);
+      });
 
-      // Add new markers immediately
-      let markersAdded = 0;
-      const totalMarkers = driverPositions.filter(driver => 
-        driver.location && driver.location.latitude && driver.location.longitude
-      ).length;
-
+      // Add or update markers for current drivers
+      let addedCount = 0;
       driverPositions.forEach((driver) => {
         if (driver.location && driver.location.latitude && driver.location.longitude) {
+          const markerId = driver.driverId;
+          
+          // Remove existing marker if it exists
+          const existingMarker = markersRef.current.get(markerId);
+          if (existingMarker && typeof existingMarker.remove === 'function') {
+            existingMarker.remove();
+          }
+          
+          // Add new marker
           try {
             addDriverMarker(driver);
-            markersAdded++;
+            addedCount++;
           } catch (error) {
             console.error('Error adding marker:', error);
-            markersAdded++;
           }
         }
       });
 
-      // Notify when all markers are processed
+      console.log('Added markers:', addedCount);
+
       setMarkersLoading(false);
       if (onMarkersLoaded) {
         onMarkersLoaded();
       }
     };
 
-    // Wait for map to be completely ready
-    if (map.isStyleLoaded()) {
-      addMarkers();
-    } else {
-      // Wait for the 'idle' event which indicates the map is fully loaded
-      const handleMapIdle = () => {
-        addMarkers();
-        map.off('idle', handleMapIdle);
-      };
-      
-      map.on('idle', handleMapIdle);
-      
-      // Fallback timeout
-      setTimeout(() => {
-        map.off('idle', handleMapIdle);
-        addMarkers();
-      }, 2000);
-    }
+    // Execute immediately - no delays
+    addMarkers();
   }, [map, driverPositions]);
 
   // Cleanup on unmount
