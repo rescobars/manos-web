@@ -139,11 +139,9 @@ export function useUnifiedDriverPositions() {
   // PUNTO 4: Activar WebSocket después del centrado del mapa
   useEffect(() => {
     if (!loading && !authLoading && mapCenteringComplete && !wsReady) {
-      console.log('⏰ PUNTO 4 - Esperando 1 segundo después del centrado del mapa');
       const timer = setTimeout(() => {
-        console.log('✅ PUNTO 4 - Activando WebSocket después del centrado');
         setWsReady(true);
-      }, 1000);
+      }, 500); // Reducido de 1000ms a 500ms
 
       return () => clearTimeout(timer);
     }

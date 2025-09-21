@@ -103,17 +103,21 @@ class WebSocketService {
     console.log('🔌 CONECTANDO - A WebSocket en:', wsUrl, `(intento ${this.connectionAttempts + 1}/${this.maxConnectionAttempts})`);
     
     this.socket = io(wsUrl, {
-      transports: ['websocket', 'polling'],
-      autoConnect: true,
-      timeout: 10000,
-      forceNew: false, // No forzar nueva conexión
+      transports: ['websocket'],
+      autoConnect: false, // Conectar manualmente
+      timeout: 5000,
+      forceNew: false,
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionAttempts: 3,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000
     });
 
     this.setupEventListeners();
     this.connectionAttempts++;
+    
+    // Conectar manualmente
+    this.socket.connect();
   }
 
   private setupEventListeners() {
@@ -248,7 +252,8 @@ class WebSocketService {
 
   disconnect() {
     if (this.socket) {
-      console.log('🔌 DESCONECTANDO - WebSocket');
+      // Limpiar todos los event listeners
+      this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;

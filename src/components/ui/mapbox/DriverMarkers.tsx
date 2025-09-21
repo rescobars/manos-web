@@ -224,6 +224,12 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
   const clearAllMarkers = () => {
     markersRef.current.forEach((marker) => {
       if (marker && typeof marker.remove === 'function') {
+        // Limpiar event listeners antes de remover
+        const element = marker.getElement();
+        if (element) {
+          const newElement = element.cloneNode(true);
+          element.parentNode?.replaceChild(newElement, element);
+        }
         marker.remove();
       }
     });

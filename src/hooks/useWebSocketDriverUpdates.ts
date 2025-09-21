@@ -25,33 +25,26 @@ export function useWebSocketDriverUpdates({
 
   // Resetear WebSocket al montar el componente
   useEffect(() => {
-    console.log('🔄 RESET - Reseteando WebSocket al montar componente');
-    wsService.disconnect();
+    // Solo desconectar si ya está conectado
+    if (wsService.getConnectionStatus()) {
+      wsService.disconnect();
+    }
     isAuthenticated.current = false;
   }, []);
 
   // Conectar y autenticar con WebSocket solo después de que el mapa se centre
   useEffect(() => {
     if (!isInitialLoadComplete) {
-      console.log('⏳ ESPERANDO - Mapa no centrado, no conectando WebSocket');
       return;
     }
 
     if (currentUser?.uuid && currentOrganization?.uuid && !isAuthenticated.current) {
-      console.log('🔌 CONECTANDO - WebSocket (después del centrado del mapa)');
-      wsService.connect();
-      
-      console.log('🔐 AUTENTICANDO - Con WebSocket:', { 
-        userId: currentUser.uuid, 
-        orgId: currentOrganization.uuid,
-        orgName: currentOrganization.name 
-      });
+      // Solo conectar si no está ya conectado
+      if (!wsService.getConnectionStatus()) {
+        wsService.connect();
+      }
       wsService.authenticate(currentUser.uuid, currentOrganization.uuid);
       isAuthenticated.current = true;
-    } else if (!currentUser?.uuid) {
-      console.log('⚠️ SIN USUARIO - No se puede conectar WebSocket');
-    } else if (!currentOrganization?.uuid) {
-      console.log('⚠️ SIN ORGANIZACIÓN - No se puede conectar WebSocket');
     }
   }, [currentUser?.uuid, currentOrganization?.uuid, isInitialLoadComplete]);
 
@@ -268,13 +261,13 @@ export function useWebSocketDriverUpdates({
   // Cleanup: desconectar WebSocket cuando el componente se desmonte
   useEffect(() => {
     return () => {
-      console.log('🧹 CLEANUP - Desconectando WebSocket al desmontar componente');
       // Limpiar listeners
       wsService.off('organization_driver_update', handleOrganizationDriverUpdate);
       wsService.off('route_driver_update', handleRouteDriverUpdate);
       wsService.off('driver_transmission', handleDriverTransmission);
       // Desconectar completamente
       wsService.disconnect();
+      isAuthenticated.current = false;
     };
   }, [handleOrganizationDriverUpdate, handleRouteDriverUpdate, handleDriverTransmission]);
 
