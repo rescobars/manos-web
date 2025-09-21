@@ -4,20 +4,38 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { BaseMap, useMap } from './BaseMap';
 import { DriverMarkers } from './DriverMarkers';
 import { useDriverPositions } from '@/hooks/useDriverPositions';
+import { useRouteDriverPositions } from '@/hooks/useRouteDriverPositions';
+import { useInProgressRoutes } from '@/hooks/useInProgressRoutes';
+import { RouteSelector } from '@/components/ui/RouteSelector';
 import { DriverPosition } from '@/hooks/useDriverPositions';
+import { RouteDriverPosition } from '@/hooks/useRouteDriverPositions';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DriverMapProps {
   className?: string;
-  onDriverClick?: (driver: DriverPosition) => void;
+  onDriverClick?: (driver: DriverPosition | RouteDriverPosition) => void;
 }
 
 export function DriverMap({ className = 'w-full h-full', onDriverClick }: DriverMapProps) {
   const { map, isMapReady, handleMapReady } = useMap();
   const { driverPositions, loading, error } = useDriverPositions();
+  const { inProgressRoutes, loading: routesLoading, error: routesError } = useInProgressRoutes();
+  const { 
+    routeDriverPositions, 
+    selectedRouteIds, 
+    loading: routeDriversLoading, 
+    error: routeDriversError,
+    updateSelectedRoutes 
+  } = useRouteDriverPositions();
   const { currentOrganization, isLoading: authLoading } = useAuth();
 
-  const handleDriverClick = useCallback((driver: DriverPosition) => {
+  const handleDriverClick = useCallback((driver: DriverPosition | RouteDriverPosition) => {
+    if (onDriverClick) {
+      onDriverClick(driver);
+    }
+  }, [onDriverClick]);
+
+  const handleRouteDriverClick = useCallback((driver: RouteDriverPosition) => {
     if (onDriverClick) {
       onDriverClick(driver);
     }
@@ -26,12 +44,24 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   // Default center to Guatemala City
   const defaultCenter: [number, number] = [-90.5069, 14.6349];
 
+  // Combine all driver positions (both general and route-specific)
+  const allDriverPositions = useMemo(() => {
+    const combined: (DriverPosition | RouteDriverPosition)[] = [...driverPositions];
+    
+    // Add route-specific drivers if any routes are selected
+    if (selectedRouteIds.length > 0) {
+      combined.push(...routeDriverPositions);
+    }
+    
+    return combined;
+  }, [driverPositions, routeDriverPositions, selectedRouteIds]);
+
   // Calculate bounds for all drivers
   const driversBounds = useMemo(() => {
-    if (driverPositions.length === 0) return null;
+    if (allDriverPositions.length === 0) return null;
 
-    const lats = driverPositions.map(driver => driver.location.latitude);
-    const lngs = driverPositions.map(driver => driver.location.longitude);
+    const lats = allDriverPositions.map(driver => driver.location.latitude);
+    const lngs = allDriverPositions.map(driver => driver.location.longitude);
 
     const minLat = Math.min(...lats);
     const maxLat = Math.max(...lats);
@@ -48,11 +78,11 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
       east: maxLng + lngPadding,
       west: minLng - lngPadding
     };
-  }, [driverPositions]);
+  }, [allDriverPositions]);
 
   // Center map on drivers when drivers are loaded and map is ready
   useEffect(() => {
-    if (map && isMapReady && driversBounds && driverPositions.length > 0) {
+    if (map && isMapReady && driversBounds && allDriverPositions.length > 0) {
       // Add a small delay to ensure markers are rendered first
       const centerMap = () => {
         if (map && map.isStyleLoaded()) {
@@ -73,7 +103,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
       setTimeout(centerMap, 500);
       setTimeout(centerMap, 1000);
     }
-  }, [map, isMapReady, driversBounds, driverPositions.length]);
+  }, [map, isMapReady, driversBounds, allDriverPositions.length]);
 
   // Show loading state while auth is loading
   if (authLoading) {
@@ -109,31 +139,42 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
         className={className}
       >
         {/* Driver markers - only render when map is fully ready and we have driver data */}
-        {isMapReady && map && driverPositions.length > 0 && (
+        {isMapReady && map && allDriverPositions.length > 0 && (
           <DriverMarkers
             map={map}
-            driverPositions={driverPositions}
+            driverPositions={allDriverPositions}
             onDriverClick={handleDriverClick}
           />
         )}
       </BaseMap>
 
+      {/* Route Selector Dropdown */}
+      <div className="absolute top-4 right-4 z-30">
+        <RouteSelector
+          routes={inProgressRoutes}
+          selectedRouteIds={selectedRouteIds}
+          onSelectionChange={updateSelectedRoutes}
+          loading={routesLoading}
+          error={routesError}
+        />
+      </div>
+
 
       {/* Error state */}
-      {error && (
+      {(error || routeDriversError) && (
         <div className="absolute top-28 left-4 z-10 bg-red-50/95 backdrop-blur-sm border border-red-200 rounded-lg p-3 max-w-sm">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 text-red-600">⚠️</div>
             <div>
               <h3 className="text-xs font-semibold text-red-800">Error</h3>
-              <p className="text-xs text-red-700">{error}</p>
+              <p className="text-xs text-red-700">{error || routeDriversError}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Loading overlay */}
-      {loading && !authLoading && (
+      {(loading || routeDriversLoading) && !authLoading && (
         <div className="absolute top-28 left-4 z-10 bg-blue-50/95 backdrop-blur-sm border border-blue-200 rounded-lg p-3">
           <div className="flex items-center space-x-2">
             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
@@ -153,10 +194,15 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
             <div className="flex items-center space-x-4">
               <div>
                 <div className="text-sm font-bold text-gray-900">
-                  {driverPositions.length} conductor{driverPositions.length !== 1 ? 'es' : ''}
+                  {allDriverPositions.length} conductor{allDriverPositions.length !== 1 ? 'es' : ''}
                 </div>
                 <div className="text-xs text-gray-600">
-                  {driverPositions.filter(d => d.status === 'DRIVING').length} activos
+                  {allDriverPositions.filter(d => d.status === 'DRIVING').length} activos
+                  {selectedRouteIds.length > 0 && (
+                    <span className="ml-2 text-blue-600">
+                      ({selectedRouteIds.length} ruta{selectedRouteIds.length !== 1 ? 's' : ''} seleccionada{selectedRouteIds.length !== 1 ? 's' : ''})
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -165,7 +211,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
       )}
 
       {/* Legend - more compact */}
-      {isMapReady && driverPositions.length > 0 && (
+      {isMapReady && allDriverPositions.length > 0 && (
         <div className="absolute bottom-4 right-4 z-10 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">
           <h4 className="text-xs font-semibold text-gray-900 mb-2">Leyenda</h4>
           <div className="grid grid-cols-2 gap-1 text-xs">

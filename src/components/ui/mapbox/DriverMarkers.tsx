@@ -2,11 +2,14 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { DriverPosition } from '@/hooks/useDriverPositions';
+import { RouteDriverPosition } from '@/hooks/useRouteDriverPositions';
+
+type CombinedDriverPosition = DriverPosition | RouteDriverPosition;
 
 interface DriverMarkersProps {
   map: any;
-  driverPositions: DriverPosition[];
-  onDriverClick?: (driver: DriverPosition) => void;
+  driverPositions: CombinedDriverPosition[];
+  onDriverClick?: (driver: CombinedDriverPosition) => void;
   onMarkersLoaded?: () => void;
 }
 
@@ -14,11 +17,12 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
   const markersRef = useRef<Map<string, any>>(new Map());
   const [markersLoading, setMarkersLoading] = useState(false);
 
-  const getStatusColor = (status: DriverPosition['status']) => {
+  const getStatusColor = (status: CombinedDriverPosition['status']) => {
     switch (status) {
       case 'DRIVING':
         return '#10B981'; // Green
       case 'IDLE':
+      case 'STOPPED':
         return '#F59E0B'; // Yellow
       case 'ON_BREAK':
         return '#8B5CF6'; // Purple
@@ -29,7 +33,7 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
     }
   };
 
-  const getStatusIcon = (status: DriverPosition['status']) => {
+  const getStatusIcon = (status: CombinedDriverPosition['status']) => {
     switch (status) {
       case 'DRIVING':
         return `
@@ -64,13 +68,17 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
     }
   };
 
-  const createDriverMarker = (driver: DriverPosition) => {
+  const createDriverMarker = (driver: CombinedDriverPosition) => {
     const el = document.createElement('div');
     el.className = 'driver-marker';
     
     const statusColor = getStatusColor(driver.status);
     const statusIcon = getStatusIcon(driver.status);
-    const batteryColor = driver.batteryLevel > 20 ? '#10B981' : driver.batteryLevel > 10 ? '#F59E0B' : '#EF4444';
+    
+    // Check if it's a RouteDriverPosition (has different structure)
+    const isRouteDriver = 'routeName' in driver;
+    const batteryLevel = 'batteryLevel' in driver ? driver.batteryLevel : 100;
+    const batteryColor = batteryLevel > 20 ? '#10B981' : batteryLevel > 10 ? '#F59E0B' : '#EF4444';
     
     el.innerHTML = `
       <div class="relative group">
@@ -84,13 +92,20 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
         ${driver.status === 'DRIVING' ? `
           <div class="absolute inset-0 rounded-full animate-ping" style="background-color: ${statusColor}; opacity: 0.3;"></div>
         ` : ''}
+        
+        <!-- Route indicator for route drivers -->
+        ${isRouteDriver ? `
+          <div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
+            <span class="text-xs text-white font-bold">R</span>
+          </div>
+        ` : ''}
       </div>
     `;
     
     return el;
   };
 
-  const addDriverMarker = (driver: DriverPosition) => {
+  const addDriverMarker = (driver: CombinedDriverPosition) => {
     if (!map || !map.isStyleLoaded || !driver.location) {
       console.log('Map not ready for marker:', { map: !!map, styleLoaded: map?.isStyleLoaded, location: !!driver.location });
       return;
@@ -141,6 +156,7 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
       });
 
       // Create popup
+      const isRouteDriver = 'routeName' in driver;
       const popup = new window.mapboxgl.Popup({ 
         offset: 30,
         closeButton: true,
@@ -156,13 +172,13 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
             </div>
             <div class="flex-1">
               <h3 class="font-bold text-gray-900 text-lg">${driver.driverName}</h3>
-              <p class="text-sm text-gray-600 font-medium">${driver?.vehicleId || 'N/A'}</p>
+              <p class="text-sm text-gray-600 font-medium">${'vehicleId' in driver ? (driver.vehicleId || 'N/A') : 'N/A'}</p>
             </div>
             <div class="text-right">
               <div class="text-xs text-gray-500">Estado</div>
               <div class="font-semibold text-sm" style="color: ${getStatusColor(driver.status)};">
                 ${driver.status === 'DRIVING' ? 'Conduciendo' : 
-                  driver.status === 'IDLE' ? 'Inactivo' :
+                  driver.status === 'IDLE' || driver.status === 'STOPPED' ? 'Inactivo' :
                   driver.status === 'ON_BREAK' ? 'En descanso' : 'Desconectado'}
               </div>
             </div>
@@ -173,28 +189,34 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, onMarkersLo
             <div class="flex items-center space-x-2 mb-2">
               <div class="w-2 h-2 ${driver.routeId ? 'bg-blue-500' : 'bg-gray-400'} rounded-full"></div>
               <span class="text-sm font-medium text-gray-700">
-                ${driver.routeId ? 'Ruta Asignada' : 'Sin Ruta Asignada'}
+                ${driver.routeId ? (isRouteDriver ? 'Ruta Específica' : 'Ruta Asignada') : 'Sin Ruta Asignada'}
               </span>
             </div>
             <p class="text-sm text-gray-600 font-medium">
               ${driver.routeName || 'No hay ruta asignada'}
             </p>
-            ${!driver.routeId ? `
+            ${isRouteDriver ? `
+              <div class="mt-2 text-xs text-blue-600 font-medium">
+                📍 Posición específica de ruta
+              </div>
+            ` : `
               <div class="mt-2 text-xs text-gray-500 italic">
                 El conductor está disponible para asignación
               </div>
-            ` : ''}
+            `}
           </div>
           
           
-          <!-- Signal & Network -->
-          <div class="flex justify-between items-center mb-4">
-            <div class="flex items-center space-x-2">
-              <div class="w-2 h-2 ${driver.signalStrength > 70 ? 'bg-green-500' : driver.signalStrength > 40 ? 'bg-yellow-500' : 'bg-red-500'} rounded-full"></div>
-              <span class="text-sm text-gray-600">Señal: ${Math.round(driver.signalStrength)}%</span>
+          <!-- Signal & Network (only for regular drivers) -->
+          ${'signalStrength' in driver ? `
+            <div class="flex justify-between items-center mb-4">
+              <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 ${driver.signalStrength > 70 ? 'bg-green-500' : driver.signalStrength > 40 ? 'bg-yellow-500' : 'bg-red-500'} rounded-full"></div>
+                <span class="text-sm text-gray-600">Señal: ${Math.round(driver.signalStrength)}%</span>
+              </div>
+              <div class="text-sm text-gray-600 font-medium">${driver.networkType}</div>
             </div>
-            <div class="text-sm text-gray-600 font-medium">${driver.networkType}</div>
-          </div>
+          ` : ''}
           
           <!-- Footer -->
           <div class="border-t pt-3">
