@@ -162,15 +162,6 @@ export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMar
           <p class="text-sm text-gray-600 font-medium">
             ${driver.routeName || 'No hay ruta asignada'}
           </p>
-          ${isRouteDriver ? `
-            <div class="mt-2 text-xs text-blue-600 font-medium">
-              📍 Posición específica de ruta
-            </div>
-          ` : `
-            <div class="mt-2 text-xs text-gray-500 italic">
-              El conductor está disponible para asignación
-            </div>
-          `}
         </div>
         
         <!-- Location Info -->
