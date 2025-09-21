@@ -10,10 +10,9 @@ interface DriverMarkersProps {
   map: any;
   driverPositions: CombinedDriverPosition[];
   onDriverClick?: (driver: CombinedDriverPosition) => void;
-  isCentering?: boolean;
 }
 
-export function DriverMarkers({ map, driverPositions, onDriverClick, isCentering = false }: DriverMarkersProps) {
+export function DriverMarkers({ map, driverPositions, onDriverClick }: DriverMarkersProps) {
   const markersRef = useRef<Map<string, any>>(new Map());
 
   const getStatusColor = (status: CombinedDriverPosition['status']) => {
@@ -123,28 +122,28 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, isCentering
       .setLngLat([driver.location.longitude, driver.location.latitude])
       .addTo(map);
 
-    // Create popup with full driver information
+    // Create popup with mobile-optimized driver information
     const isRouteDriver = 'routeName' in driver;
     const popup = new window.mapboxgl.Popup({ 
-      offset: 30,
+      offset: 15,
       closeButton: true,
       closeOnClick: false,
-      maxWidth: '320px'
+      maxWidth: '280px',
+      className: 'mobile-popup'
     }).setHTML(`
-      <div class="p-4 min-w-[280px] bg-white rounded-lg shadow-xl">
-        <!-- Header -->
-        <div class="flex items-center space-x-3 mb-4">
-          <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg" 
+      <div class="p-3 bg-white rounded-lg shadow-xl max-w-[260px]">
+        <!-- Header - Compact -->
+        <div class="flex items-center space-x-2 mb-3">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg" 
                style="background: linear-gradient(135deg, ${getStatusColor(driver.status)}, ${getStatusColor(driver.status)}dd);">
             ${getStatusIcon(driver.status)}
           </div>
-          <div class="flex-1">
-            <h3 class="font-bold text-gray-900 text-lg">${driver.driverName}</h3>
-            <p class="text-sm text-gray-600 font-medium">${'vehicleId' in driver ? (driver.vehicleId || 'N/A') : 'N/A'}</p>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-gray-900 text-sm truncate">${driver.driverName}</h3>
+            <p class="text-xs text-gray-600 truncate">${'vehicleId' in driver ? (driver.vehicleId || 'N/A') : 'N/A'}</p>
           </div>
           <div class="text-right">
-            <div class="text-xs text-gray-500">Estado</div>
-            <div class="font-semibold text-sm" style="color: ${getStatusColor(driver.status)};">
+            <div class="text-xs font-semibold" style="color: ${getStatusColor(driver.status)};">
               ${driver.status === 'DRIVING' ? 'Conduciendo' : 
                 driver.status === 'IDLE' || driver.status === 'STOPPED' ? 'Inactivo' :
                 driver.status === 'ON_BREAK' ? 'En descanso' : 'Desconectado'}
@@ -152,67 +151,53 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, isCentering
           </div>
         </div>
         
-        <!-- Route Info -->
-        <div class="bg-gray-50 rounded-lg p-3 mb-4">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-2 h-2 ${driver.routeId ? 'bg-blue-500' : 'bg-gray-400'} rounded-full"></div>
-            <span class="text-sm font-medium text-gray-700">
-              ${driver.routeId ? (isRouteDriver ? 'Ruta Específica' : 'Ruta Asignada') : 'Sin Ruta Asignada'}
+        <!-- Route Info - Compact -->
+        <div class="bg-gray-50 rounded p-2 mb-2">
+          <div class="flex items-center space-x-1 mb-1">
+            <div class="w-1.5 h-1.5 ${driver.routeId ? 'bg-blue-500' : 'bg-gray-400'} rounded-full"></div>
+            <span class="text-xs font-medium text-gray-700">
+              ${driver.routeId ? (isRouteDriver ? 'Ruta Específica' : 'Ruta Asignada') : 'Sin Ruta'}
             </span>
           </div>
-          <p class="text-sm text-gray-600 font-medium">
+          <p class="text-xs text-gray-600 truncate">
             ${driver.routeName || 'No hay ruta asignada'}
           </p>
         </div>
         
-        <!-- Location Info -->
-        <div class="bg-blue-50 rounded-lg p-3 mb-4">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span class="text-sm font-medium text-gray-700">Ubicación</span>
+        <!-- Location & Speed - Inline -->
+        <div class="flex items-center justify-between text-xs text-gray-600 mb-2">
+          <div class="flex items-center space-x-1">
+            <span class="text-blue-600">📍</span>
+            <span>${driver.location.latitude.toFixed(1)}, ${driver.location.longitude.toFixed(1)}</span>
           </div>
-          <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
-            <div class="flex items-center space-x-1">
-              <span class="text-blue-600">📍</span>
-              <span>${driver.location.latitude.toFixed(2)}, ${driver.location.longitude.toFixed(2)}</span>
-            </div>
-            <div class="flex items-center space-x-1">
-              <span class="text-green-600">⚡</span>
-              <span>${Math.round(driver.location.speed || 0)} km/h</span>
-            </div>
+          <div class="flex items-center space-x-1">
+            <span class="text-green-600">⚡</span>
+            <span>${Math.round(driver.location.speed || 0)} km/h</span>
           </div>
         </div>
 
-        <!-- Signal & Network (only for regular drivers) -->
-        ${'signalStrength' in driver ? `
-          <div class="flex justify-between items-center mb-4">
-            <div class="flex items-center space-x-2">
-              <div class="w-2 h-2 ${driver.signalStrength > 70 ? 'bg-green-500' : driver.signalStrength > 40 ? 'bg-yellow-500' : 'bg-red-500'} rounded-full"></div>
-              <span class="text-sm text-gray-600">Señal: ${Math.round(driver.signalStrength)}%</span>
-            </div>
-            <div class="text-sm text-gray-600 font-medium">${driver.networkType}</div>
-          </div>
-        ` : ''}
-
-        <!-- Battery (only for regular drivers) -->
-        ${'batteryLevel' in driver ? `
-          <div class="mb-4">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-sm text-gray-600">Batería</span>
-              <span class="text-sm font-medium text-gray-900">${Math.round(driver.batteryLevel)}%</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-              <div class="h-2 rounded-full ${driver.batteryLevel > 20 ? 'bg-green-500' : driver.batteryLevel > 10 ? 'bg-yellow-500' : 'bg-red-500'}" 
-                   style="width: ${driver.batteryLevel}%"></div>
-            </div>
+        <!-- Signal & Battery - Compact Row -->
+        ${'signalStrength' in driver || 'batteryLevel' in driver ? `
+          <div class="flex items-center justify-between text-xs text-gray-600 mb-2">
+            ${'signalStrength' in driver ? `
+              <div class="flex items-center space-x-1">
+                <div class="w-1.5 h-1.5 ${(driver as any).signalStrength > 70 ? 'bg-green-500' : (driver as any).signalStrength > 40 ? 'bg-yellow-500' : 'bg-red-500'} rounded-full"></div>
+                <span>Señal: ${Math.round((driver as any).signalStrength)}%</span>
+              </div>
+            ` : ''}
+            ${'batteryLevel' in driver ? `
+              <div class="flex items-center space-x-1">
+                <span>🔋</span>
+                <span>${Math.round((driver as any).batteryLevel)}%</span>
+              </div>
+            ` : ''}
           </div>
         ` : ''}
         
-        <!-- Footer -->
-        <div class="border-t pt-3">
-          <div class="flex items-center justify-between text-xs text-gray-500">
-            <span>Última actualización</span>
-            <span class="font-medium">${new Date(driver.timestamp).toLocaleTimeString()}</span>
+        <!-- Footer - Compact -->
+        <div class="border-t pt-2">
+          <div class="text-xs text-gray-500 text-center">
+            ${new Date(driver.timestamp).toLocaleTimeString()}
           </div>
         </div>
       </div>
@@ -245,33 +230,18 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, isCentering
       return;
     }
 
-    // Wait for map to be fully ready before adding markers
-    const addMarkersWithDelay = () => {
-      // Clear all existing markers
-      clearAllMarkers();
+    // Clear all existing markers
+    clearAllMarkers();
 
-      // Add new markers with a small delay to ensure map is ready
-      if (driverPositions.length > 0) {
-        const addMarkersTimeout = setTimeout(() => {
-          driverPositions.forEach((driver) => {
-            if (driver.location && driver.location.latitude && driver.location.longitude) {
-              addMarker(driver);
-            }
-          });
-        }, isCentering ? 200 : 50); // Longer delay if centering
-
-        return () => clearTimeout(addMarkersTimeout);
-      }
-    };
-
-    // If map is not ready, wait for it
-    if (!map.isStyleLoaded()) {
-      map.on('styledata', addMarkersWithDelay);
-      return () => map.off('styledata', addMarkersWithDelay);
-    } else {
-      return addMarkersWithDelay();
+    // Add new markers immediately
+    if (driverPositions.length > 0) {
+      driverPositions.forEach((driver) => {
+        if (driver.location && driver.location.latitude && driver.location.longitude) {
+          addMarker(driver);
+        }
+      });
     }
-  }, [map, driverPositions, isCentering]);
+  }, [map, driverPositions]);
 
   // Cleanup on unmount
   useEffect(() => {

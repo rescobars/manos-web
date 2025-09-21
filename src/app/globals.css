@@ -44,6 +44,32 @@
     transform: scale(1.1);
     z-index: 1000;
   }
+  
+  /* Mobile-optimized popup styles */
+  .mobile-popup .mapboxgl-popup-content {
+    padding: 0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  .mobile-popup .mapboxgl-popup-tip {
+    border-top-color: white !important;
+  }
+  
+  /* Responsive popup adjustments */
+  @media (max-width: 640px) {
+    .mobile-popup .mapboxgl-popup-content {
+      max-width: 260px !important;
+      width: 260px !important;
+    }
+    
+    .mobile-popup .mapboxgl-popup-close-button {
+      font-size: 18px !important;
+      padding: 4px !important;
+      right: 8px !important;
+      top: 8px !important;
+    }
+  }
 }
 
 /* Estilos personalizados para Leaflet */

@@ -110,27 +110,16 @@ export function useUnifiedDriverPositions() {
     }
   }, [fetchRouteDrivers, fetchAllDrivers]);
 
-  // Initial load and auto-refresh
+  // Initial load only - no auto-refresh
   useEffect(() => {
     if (authLoading || !currentOrganization?.uuid) return;
 
-    // Initial fetch
+    // Initial fetch only
     if (selectedRouteIds.length > 0) {
       fetchRouteDrivers(selectedRouteIds);
     } else {
       fetchAllDrivers();
     }
-
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(() => {
-      if (selectedRouteIds.length > 0) {
-        fetchRouteDrivers(selectedRouteIds);
-      } else {
-        fetchAllDrivers();
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
   }, [selectedRouteIds, fetchRouteDrivers, fetchAllDrivers, authLoading, currentOrganization?.uuid]);
 
   return {

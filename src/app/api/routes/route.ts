@@ -62,9 +62,6 @@ export async function GET(request: NextRequest) {
       apiUrl += `?${queryParams.toString()}`;
     }
     
-    console.log('🌐 Obteniendo rutas del backend:', apiUrl);
-    console.log('🏢 Organization ID:', organizationId);
-    
     try {
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -86,7 +83,6 @@ export async function GET(request: NextRequest) {
       }
 
       const backendResponse = await response.json();
-      console.log('✅ Respuesta del backend:', backendResponse);
 
       return NextResponse.json({
         success: true,
