@@ -69,8 +69,11 @@ export default function OrganizationLayout({
     );
   }
 
+  // Detectar si estamos en el dashboard para usar pantalla completa
+  const isDashboard = typeof window !== 'undefined' && window.location.pathname.includes('/dashboard');
+  
   return (
-    <DashboardLayout user={user} onLogout={logout} currentSlug={slug}>
+    <DashboardLayout user={user} onLogout={logout} currentSlug={slug} isFullScreen={isDashboard}>
       {children}
     </DashboardLayout>
   );

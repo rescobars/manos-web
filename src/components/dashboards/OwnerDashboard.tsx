@@ -23,7 +23,7 @@ export default function OwnerDashboard() {
   const isPlatformAdmin = currentOrganization.roles.some(role => role.name === 'PLATFORM_ADMIN');
 
   return (
-    <div className="w-full h-full relative overflow-hidden">
+    <div className="absolute inset-0 w-full h-full relative overflow-hidden">
       {/* Mapa ocupa toda el área disponible */}
       <DriverMap 
         className="w-full h-full"

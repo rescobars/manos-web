@@ -9,9 +9,10 @@ interface DashboardLayoutProps {
   user: any;
   onLogout: () => void;
   currentSlug?: string;
+  isFullScreen?: boolean;
 }
 
-export function DashboardLayout({ children, user, onLogout, currentSlug }: DashboardLayoutProps) {
+export function DashboardLayout({ children, user, onLogout, currentSlug, isFullScreen = false }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -34,7 +35,7 @@ export function DashboardLayout({ children, user, onLogout, currentSlug }: Dashb
         />
 
         {/* Page Content - Scrollable */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto h-[calc(100vh-3rem)]">
+        <main className={`flex-1 overflow-y-auto h-[calc(100vh-3rem)] ${isFullScreen ? 'p-0' : 'p-4 sm:p-6 lg:p-8'}`}>
           {children}
         </main>
       </div>
