@@ -350,12 +350,16 @@ export default function RoutesPage() {
   const gridItemRender = (route: SavedRoute, index: number) => (
     <div
       key={route.id}
-      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+      className="rounded-lg p-4 hover:shadow-md transition-shadow duration-200 theme-bg-3 border"
+      style={{
+        backgroundColor: colors.background3,
+        borderColor: colors.border
+      }}
     >
       {/* Header con título y estado */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-gray-900 truncate mb-1">{route.route_name}</h4>
+          <h4 className="text-sm font-semibold theme-text-primary truncate mb-1">{route.route_name}</h4>
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(route.status)}`}>
               {getRouteStatusText(route.status)}
@@ -370,26 +374,26 @@ export default function RoutesPage() {
 
       {/* Información básica compacta */}
       <div className="space-y-2 mb-3">
-        <div className="flex items-center gap-2 text-xs text-gray-600">
-          <MapPin className="w-3 h-3 text-blue-500 flex-shrink-0" />
+        <div className="flex items-center gap-2 text-xs theme-text-secondary">
+          <MapPin className="w-3 h-3 theme-info flex-shrink-0" />
           <span className="truncate">{route.origin_name}</span>
         </div>
         
-        <div className="flex items-center justify-between text-xs text-gray-600">
+        <div className="flex items-center justify-between text-xs theme-text-secondary">
           <div className="flex items-center gap-2">
-            <Package className="w-3 h-3 text-green-500" />
+            <Package className="w-3 h-3 theme-success" />
             <span>{route.orders.length} pedidos</span>
           </div>
           <div className="flex items-center gap-2">
-            <Clock className="w-3 h-3 text-orange-500" />
+            <Clock className="w-3 h-3 theme-warning" />
             <span>{Math.round(route.traffic_delay / 60)}min</span>
           </div>
         </div>
       </div>
 
       {/* Acciones compactas */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-        <span className="text-xs text-gray-500">ID: {route.uuid.slice(0, 8)}</span>
+      <div className="flex items-center justify-between pt-2 border-t theme-divider">
+        <span className="text-xs theme-text-muted">ID: {route.uuid.slice(0, 8)}</span>
         
         <div className="flex items-center gap-1">
           <button
