@@ -52,8 +52,8 @@ export function StatCard({
           <div 
             className="p-3 rounded-xl"
             style={{ 
-              backgroundColor: colors.background2,
-              color: colors.buttonPrimary1 
+              backgroundColor: iconBgColor,
+              color: iconColor
             }}
           >
             <Icon className="w-6 h-6" />

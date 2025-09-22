@@ -150,6 +150,41 @@ export default function OrdersPage() {
     }
   };
 
+  const getOrderStatusStyle = (status: string) => {
+    switch (status) {
+      case 'PENDING': return {
+        backgroundColor: colors.warning + '20',
+        color: colors.warning,
+        borderColor: colors.warning + '40'
+      };
+      case 'ASSIGNED': return {
+        backgroundColor: '#f9731620',
+        color: '#f97316',
+        borderColor: '#f9731640'
+      };
+      case 'IN_ROUTE': return {
+        backgroundColor: colors.info + '20',
+        color: colors.info,
+        borderColor: colors.info + '40'
+      };
+      case 'COMPLETED': return {
+        backgroundColor: colors.success + '20',
+        color: colors.success,
+        borderColor: colors.success + '40'
+      };
+      case 'CANCELLED': return {
+        backgroundColor: colors.error + '20',
+        color: colors.error,
+        borderColor: colors.error + '40'
+      };
+      default: return {
+        backgroundColor: colors.textMuted + '20',
+        color: colors.textMuted,
+        borderColor: colors.textMuted + '40'
+      };
+    }
+  };
+
   const getOrderStatusText = (status: string) => {
     switch (status) {
       case 'PENDING': return 'Pendiente';
@@ -199,7 +234,10 @@ export default function OrdersPage() {
       sortable: true,
       className: 'w-20',
       render: (value: string) => (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getOrderStatusColor(value)}`}>
+        <span 
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border"
+          style={getOrderStatusStyle(value)}
+        >
           {getOrderStatusText(value)}
         </span>
       )
@@ -355,6 +393,8 @@ export default function OrdersPage() {
               title="Total Pedidos"
               value={totalOrders}
               icon={Package}
+              iconColor={colors.textPrimary}
+              iconBgColor={colors.background2}
             />
           </div>
           
@@ -371,6 +411,8 @@ export default function OrdersPage() {
               title="Pendientes"
               value={pendingOrders}
               icon={Clock}
+              iconColor={colors.warning}
+              iconBgColor={colors.warning + '20'}
             />
           </div>
           
@@ -380,13 +422,15 @@ export default function OrdersPage() {
               filterStatus === 'ASSIGNED' ? 'ring-2' : ''
             }`}
             style={{
-              '--tw-ring-color': filterStatus === 'ASSIGNED' ? colors.info : 'transparent'
+              '--tw-ring-color': filterStatus === 'ASSIGNED' ? '#f97316' : 'transparent'
             } as React.CSSProperties}
           >
             <StatCard
               title="Asignados"
               value={assignedOrders}
               icon={Package}
+              iconColor="#f97316"
+              iconBgColor="#f9731620"
             />
           </div>
           
@@ -396,13 +440,15 @@ export default function OrdersPage() {
               filterStatus === 'IN_ROUTE' ? 'ring-2' : ''
             }`}
             style={{
-              '--tw-ring-color': filterStatus === 'IN_ROUTE' ? colors.buttonPrimary1 : 'transparent'
+              '--tw-ring-color': filterStatus === 'IN_ROUTE' ? colors.info : 'transparent'
             } as React.CSSProperties}
           >
             <StatCard
               title="En Camino"
               value={inRouteOrders}
               icon={Truck}
+              iconColor={colors.info}
+              iconBgColor={colors.info + '20'}
             />
           </div>
           
@@ -419,6 +465,8 @@ export default function OrdersPage() {
               title="Entregados"
               value={completedOrders}
               icon={CheckCircle}
+              iconColor={colors.success}
+              iconBgColor={colors.success + '20'}
             />
           </div>
         </div>
@@ -449,7 +497,10 @@ export default function OrdersPage() {
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-semibold text-gray-900 truncate mb-1">{order.order_number}</h4>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getOrderStatusColor(order.status)}`}>
+                      <span 
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border"
+                        style={getOrderStatusStyle(order.status)}
+                      >
                         {getOrderStatusText(order.status)}
                       </span>
                     </div>
