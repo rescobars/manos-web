@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '@/lib/leaflet/styles.css';
+import { MapTileType, getTileConfig } from '@/components/ui/leaflet';
 
 // Fix para iconos de Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -20,6 +21,7 @@ interface BaseMapProps {
   className?: string;
   children?: React.ReactNode;
   onMapReady?: (map: L.Map) => void;
+  tileType?: MapTileType;
 }
 
 // Componente interno para manejar el mapa
@@ -40,7 +42,8 @@ export function BaseMap({
   zoom = 12, 
   className = 'w-full h-full',
   children,
-  onMapReady 
+  onMapReady,
+  tileType = 'streets'
 }: BaseMapProps) {
   const [isClient, setIsClient] = useState(false);
 
@@ -59,6 +62,8 @@ export function BaseMap({
     );
   }
 
+  const tileConfig = getTileConfig(tileType);
+
   return (
     <div className={className}>
       <MapContainer
@@ -72,8 +77,8 @@ export function BaseMap({
         attributionControl={true}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution={tileConfig.attribution}
+          url={tileConfig.url}
         />
         <MapController onMapReady={onMapReady} />
         {children}

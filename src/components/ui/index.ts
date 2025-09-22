@@ -28,3 +28,6 @@ export { IndividualRoutesMap } from './IndividualRoutesMap';
 
 // Exportar componentes de Mapbox
 export * from './mapbox';
+
+// Exportar componentes de Leaflet
+export * from './leaflet';

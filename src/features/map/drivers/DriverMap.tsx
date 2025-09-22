@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseMap } from '@/components/map/leaflet/base/BaseMap';
 import { DriverMarkers } from '@/components/map/leaflet/markers/DriverMarkers';
 import { DriverDetailsModal } from '@/components/ui/DriverDetailsModal';
+import { MapTileSelector, MapTileType } from '@/components/ui/leaflet';
 import { useUnifiedDriverPositions } from '@/hooks/useUnifiedDriverPositions';
 import { useInProgressRoutes } from '@/hooks/useInProgressRoutes';
 import { RouteSelector } from '@/components/ui/RouteSelector';
@@ -53,6 +54,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [hasInitiallyCentered, setHasInitiallyCentered] = useState(false);
   const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set(['DRIVING', 'IDLE', 'STOPPED', 'BREAK', 'OFFLINE']));
+  const [tileType, setTileType] = useState<MapTileType>('streets');
 
   const handleDriverClick = useCallback((driver: CombinedDriverPosition) => {
     setSelectedDriver(driver);
@@ -146,6 +148,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
           zoom={12}
           onMapReady={handleMapReady}
           className={className}
+          tileType={tileType}
         >
           {/* Marcadores de conductores */}
           <DriverMarkers
@@ -187,7 +190,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
         </div>
       )}
 
-      {/* Controles unificados - Selector de rutas y conteo de conductores */}
+      {/* Controles unificados - Selector de rutas, conteo de conductores y cartografía */}
       <div className="absolute top-4 right-4 z-[1000] w-80">
         <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg">
           {/* Route Selector - Top */}
@@ -228,39 +231,54 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
             </div>
           </div>
 
-          {/* Status Filters */}
-          <div className="px-4 pb-4">
-            <div className="space-y-2">
-              {[
-                { status: 'DRIVING', label: 'Manejando', color: 'bg-green-500' },
-                { status: 'IDLE', label: 'Inactivo', color: 'bg-yellow-500' },
-                { status: 'STOPPED', label: 'Detenido', color: 'bg-orange-500' },
-                { status: 'BREAK', label: 'En Parada', color: 'bg-purple-500' },
-                { status: 'OFFLINE', label: 'Offline', color: 'bg-red-500' }
-              ].map(({ status, label, color }) => (
-                <label key={status} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={statusFilters.has(status)}
-                    onChange={(e) => {
-                      const newFilters = new Set(statusFilters);
-                      if (e.target.checked) {
-                        newFilters.add(status);
-                      } else {
-                        newFilters.delete(status);
-                      }
-                      setStatusFilters(newFilters);
-                    }}
-                    className="sr-only"
-                  />
-                  <div className={`w-3 h-3 rounded-full ${color} ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}></div>
-                  <span className="text-xs text-gray-600">
-                    {label} ({statusCounts[status] || 0})
-                  </span>
-                </label>
-              ))}
+            {/* Status Filters */}
+            <div className="px-4 pb-4 border-b border-gray-200">
+              <div className="space-y-2">
+                {[
+                  { status: 'DRIVING', label: 'Manejando', color: 'bg-green-500' },
+                  { status: 'IDLE', label: 'Inactivo', color: 'bg-yellow-500' },
+                  { status: 'STOPPED', label: 'Detenido', color: 'bg-orange-500' },
+                  { status: 'BREAK', label: 'En Parada', color: 'bg-purple-500' },
+                  { status: 'OFFLINE', label: 'Offline', color: 'bg-red-500' }
+                ].map(({ status, label, color }) => (
+                  <label key={status} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={statusFilters.has(status)}
+                      onChange={(e) => {
+                        const newFilters = new Set(statusFilters);
+                        if (e.target.checked) {
+                          newFilters.add(status);
+                        } else {
+                          newFilters.delete(status);
+                        }
+                        setStatusFilters(newFilters);
+                      }}
+                      className="sr-only"
+                    />
+                    <div className={`w-3 h-3 rounded-full ${color} ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}></div>
+                    <span className="text-xs text-gray-600">
+                      {label} ({statusCounts[status] || 0})
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+
+            {/* Selector de cartografía */}
+            <div className="p-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-700 block">
+                  Tipo de Mapa
+                </label>
+                <div className="w-full">
+                  <MapTileSelector
+                    onTileChange={setTileType}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
         </div>
       </div>
 
