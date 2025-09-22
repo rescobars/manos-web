@@ -69,6 +69,8 @@ export function BaseMap({
       <MapContainer
         center={center}
         zoom={zoom}
+        minZoom={1}
+        maxZoom={18}
         style={{ height: '100%', width: '100%' }}
         zoomControl={true}
         scrollWheelZoom={true}

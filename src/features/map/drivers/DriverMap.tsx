@@ -109,7 +109,10 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   useEffect(() => {
     if (mapInstance && driversBounds && !hasInitiallyCentered) {
       console.log('🎯 CENTRANDO MAPA INICIAL - Una sola vez');
-      mapInstance.fitBounds(driversBounds, { padding: [20, 20] });
+      mapInstance.fitBounds(driversBounds, { 
+        padding: [20, 20],
+        maxZoom: 16
+      });
       setHasInitiallyCentered(true);
     }
   }, [mapInstance, driversBounds, hasInitiallyCentered]);
@@ -145,7 +148,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
       {driverPositions.length > 0 ? (
         <BaseMap
           center={defaultCenter}
-          zoom={12}
+          zoom={15}
           onMapReady={handleMapReady}
           className={className}
           tileType={tileType}
