@@ -303,7 +303,7 @@ export function DataTable<T extends Record<string, any>>({
     };
 
     return (
-      <div className={`grid ${gridCols[gridColumns as keyof typeof gridCols] || gridCols[3]} gap-4 p-6`}>
+      <div className={`grid ${gridCols[gridColumns as keyof typeof gridCols] || gridCols[3]} gap-6 p-6`}>
         {data.map((item, index) => (
           <div key={index}>
             {gridItemRender(item, index)}

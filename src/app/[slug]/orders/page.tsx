@@ -491,11 +491,18 @@ export default function OrdersPage() {
             onViewModeChange={setViewMode}
             gridColumns={3}
             gridItemRender={(order, index) => (
-              <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+              <div 
+                className="grid-card"
+                style={{
+                  backgroundColor: colors.background3,
+                  borderColor: colors.divider
+                }}
+                onClick={() => handleViewOrder(order)}
+              >
                 {/* Header con número de pedido y estado */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-gray-900 truncate mb-1">{order.order_number}</h4>
+                    <h4 className="text-sm font-semibold theme-text-primary truncate mb-1">{order.order_number}</h4>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span 
                         className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border"
@@ -505,53 +512,34 @@ export default function OrdersPage() {
                       </span>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-1 ml-2">
-                    <button
-                      onClick={() => handleViewOrder(order)}
-                      className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                      title="Ver detalles"
-                    >
-                      <Eye className="w-3 h-3" />
-                      Ver
-                    </button>
-                  </div>
                 </div>
 
                 {/* Información básica compacta */}
                 <div className="space-y-2 mb-3">
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <DollarSign className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  <div className="flex items-center gap-2 text-xs theme-text-secondary">
+                    <DollarSign className="w-3 h-3 flex-shrink-0" style={{ color: colors.success }} />
                     <span>Q{Number(order.total_amount || 0).toFixed(2)}</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <MapPin className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                  <div className="flex items-center gap-2 text-xs theme-text-secondary">
+                    <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
                     <span className="truncate">{order.pickup_address}</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <MapPin className="w-3 h-3 text-red-500 flex-shrink-0" />
+                  <div className="flex items-center gap-2 text-xs theme-text-secondary">
+                    <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: colors.error }} />
                     <span className="truncate">{order.delivery_address}</span>
                   </div>
                 </div>
 
                 {/* Fecha de creación */}
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                  <span className="text-xs text-gray-500">
+                <div className="flex items-center justify-between pt-2 theme-divider" style={{ borderColor: colors.divider }}>
+                  <span className="text-xs theme-text-muted">
                     {new Date(order.created_at).toLocaleDateString('es-ES', {
                       month: 'short',
                       day: 'numeric'
                     })}
                   </span>
-                  
-                  <button
-                    onClick={() => handleViewOrder(order)}
-                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                  >
-                    <Eye className="w-3 h-3" />
-                    Ver
-                  </button>
                 </div>
               </div>
             )}
