@@ -54,6 +54,8 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [hasInitiallyCentered, setHasInitiallyCentered] = useState(false);
   const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set(['DRIVING', 'IDLE', 'STOPPED', 'BREAK', 'OFFLINE']));
+  const [previousStatusFilters, setPreviousStatusFilters] = useState<Set<string>>(new Set(['DRIVING', 'IDLE', 'STOPPED', 'BREAK', 'OFFLINE']));
+  const [previousSelectedRoutes, setPreviousSelectedRoutes] = useState<string[]>([]);
   const [tileType, setTileType] = useState<MapTileType>('streets');
 
   const handleDriverClick = useCallback((driver: CombinedDriverPosition) => {
@@ -117,10 +119,10 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     }
   }, [mapInstance, driversBounds, hasInitiallyCentered]);
 
-  // Centrar el mapa cuando cambien los filtros de conductores
-  useEffect(() => {
+  // Función para centrar el mapa
+  const centerMapToFilteredDrivers = useCallback(() => {
     if (mapInstance && filteredDrivers.length > 0) {
-      console.log('🎯 CENTRANDO MAPA POR FILTROS -', filteredDrivers.length, 'conductores');
+      console.log('🎯 CENTRANDO MAPA -', filteredDrivers.length, 'conductores');
       const locations = filteredDrivers.map(driver => ({
         latitude: driver.location.latitude,
         longitude: driver.location.longitude
@@ -134,6 +136,32 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
       }
     }
   }, [mapInstance, filteredDrivers]);
+
+  // Detectar cambios en filtros de status y centrar el mapa
+  useEffect(() => {
+    // Comparar si los filtros de status han cambiado
+    const statusFiltersChanged = !Array.from(statusFilters).every(status => previousStatusFilters.has(status)) ||
+                                !Array.from(previousStatusFilters).every(status => statusFilters.has(status));
+    
+    if (statusFiltersChanged && hasInitiallyCentered) {
+      console.log('🎯 FILTROS DE STATUS CAMBIARON - Centrando mapa');
+      centerMapToFilteredDrivers();
+      setPreviousStatusFilters(new Set(statusFilters));
+    }
+  }, [statusFilters, previousStatusFilters, hasInitiallyCentered, centerMapToFilteredDrivers]);
+
+  // Detectar cambios en rutas seleccionadas y centrar el mapa
+  useEffect(() => {
+    // Comparar si las rutas seleccionadas han cambiado
+    const routesChanged = selectedRouteIds.length !== previousSelectedRoutes.length ||
+                          !selectedRouteIds.every(routeId => previousSelectedRoutes.includes(routeId));
+    
+    if (routesChanged && hasInitiallyCentered) {
+      console.log('🎯 RUTAS SELECCIONADAS CAMBIARON - Centrando mapa');
+      centerMapToFilteredDrivers();
+      setPreviousSelectedRoutes([...selectedRouteIds]);
+    }
+  }, [selectedRouteIds, previousSelectedRoutes, hasInitiallyCentered, centerMapToFilteredDrivers]);
 
   // Loading state
   if (authLoading) {
@@ -256,11 +284,11 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
             <div className="px-4 pb-4 border-b border-gray-200">
               <div className="space-y-2">
                 {[
-                  { status: 'DRIVING', label: 'Manejando', color: 'bg-green-500' },
-                  { status: 'IDLE', label: 'Inactivo', color: 'bg-yellow-500' },
-                  { status: 'STOPPED', label: 'Detenido', color: 'bg-orange-500' },
-                  { status: 'BREAK', label: 'En Parada', color: 'bg-purple-500' },
-                  { status: 'OFFLINE', label: 'Offline', color: 'bg-red-500' }
+                  { status: 'DRIVING', label: 'Manejando', color: '#10B981' },
+                  { status: 'IDLE', label: 'Inactivo', color: '#F59E0B' },
+                  { status: 'STOPPED', label: 'Detenido', color: '#EF4444' },
+                  { status: 'BREAK', label: 'En Parada', color: '#8B5CF6' },
+                  { status: 'OFFLINE', label: 'Offline', color: '#6B7280' }
                 ].map(({ status, label, color }) => (
                   <label key={status} className="flex items-center space-x-2 cursor-pointer">
                     <input
@@ -277,7 +305,10 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                       }}
                       className="sr-only"
                     />
-                    <div className={`w-3 h-3 rounded-full ${color} ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}></div>
+                    <div 
+                      className={`w-3 h-3 rounded-full ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}
+                      style={{ backgroundColor: color }}
+                    ></div>
                     <span className="text-xs text-gray-600">
                       {label} ({statusCounts[status] || 0})
                     </span>

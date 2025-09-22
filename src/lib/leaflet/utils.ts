@@ -5,14 +5,15 @@ import { CombinedDriverPosition, Location, Order } from './types';
 export const getStatusColor = (status: string): string => {
   switch (status) {
     case 'DRIVING':
-      return '#10B981'; // Verde
+      return '#10B981'; // Verde - En movimiento/activo
     case 'IDLE':
+      return '#F59E0B'; // Ámbar/Naranja - Esperando
     case 'STOPPED':
-      return '#F59E0B'; // Amarillo
+      return '#EF4444'; // Rojo - Detenido
     case 'BREAK':
-      return '#8B5CF6'; // Púrpura
+      return '#8B5CF6'; // Púrpura - En descanso
     case 'OFFLINE':
-      return '#6B7280'; // Gris
+      return '#6B7280'; // Gris - Sin conexión
     default:
       return '#6B7280';
   }
