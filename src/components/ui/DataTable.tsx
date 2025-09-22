@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Grid, List } from 'lucide-react';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 
 interface Column<T> {
   key: keyof T;
@@ -54,6 +55,7 @@ export function DataTable<T extends Record<string, any>>({
   gridColumns = 3,
   gridItemRender
 }: DataTableProps<T>) {
+  const { colors } = useDynamicTheme();
   const handleSort = (key: keyof T) => {
     if (!onSort || !columns.find(col => col.key === key)?.sortable) return;
     
@@ -83,8 +85,14 @@ export function DataTable<T extends Record<string, any>>({
     }
 
     return (
-      <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-b border-gray-200">
-        <div className="flex items-center text-sm text-gray-600">
+      <div 
+        className="flex items-center justify-between px-6 py-4 theme-bg-2 border-b theme-border"
+        style={{
+          backgroundColor: colors.background2,
+          borderColor: colors.border,
+        }}
+      >
+        <div className="flex items-center text-sm theme-text-secondary">
           <span className="font-medium">
             Mostrando {((page - 1) * pagination.limit) + 1} a {Math.min(page * pagination.limit, pagination.total)} de {pagination.total} resultados
           </span>
@@ -93,14 +101,21 @@ export function DataTable<T extends Record<string, any>>({
         <div className="flex items-center gap-4">
           {/* Switch de vista */}
           {onViewModeChange && (
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div 
+              className="flex rounded-lg p-1"
+              style={{ backgroundColor: colors.background1 }}
+            >
               <button
                 onClick={() => onViewModeChange('table')}
                 className={`p-2 rounded-md transition-colors ${
                   viewMode === 'table'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'shadow-sm'
+                    : 'hover:opacity-80'
                 }`}
+                style={{
+                  backgroundColor: viewMode === 'table' ? colors.background3 : 'transparent',
+                  color: viewMode === 'table' ? colors.buttonPrimary1 : colors.textSecondary,
+                }}
                 title="Vista de tabla"
               >
                 <List className="w-4 h-4" />
@@ -109,9 +124,13 @@ export function DataTable<T extends Record<string, any>>({
                 onClick={() => onViewModeChange('grid')}
                 className={`p-2 rounded-md transition-colors ${
                   viewMode === 'grid'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'shadow-sm'
+                    : 'hover:opacity-80'
                 }`}
+                style={{
+                  backgroundColor: viewMode === 'grid' ? colors.background3 : 'transparent',
+                  color: viewMode === 'grid' ? colors.buttonPrimary1 : colors.textSecondary,
+                }}
                 title="Vista de cuadrícula"
               >
                 <Grid className="w-4 h-4" />
@@ -124,7 +143,11 @@ export function DataTable<T extends Record<string, any>>({
           <button
             onClick={() => onPageChange?.(1)}
             disabled={!hasPrev}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+            className="p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
+            style={{
+              color: colors.textMuted,
+              borderColor: colors.border,
+            }}
             title="Primera página"
           >
             <ChevronsLeft className="w-4 h-4" />
@@ -134,14 +157,21 @@ export function DataTable<T extends Record<string, any>>({
           <button
             onClick={() => onPageChange?.(page - 1)}
             disabled={!hasPrev}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+            className="p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
+            style={{
+              color: colors.textMuted,
+              borderColor: colors.border,
+            }}
             title="Página anterior"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           
           {/* Separador */}
-          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+          <div 
+            className="w-px h-6 mx-2"
+            style={{ backgroundColor: colors.border }}
+          ></div>
           
           {/* Números de página */}
           <div className="flex space-x-1">
@@ -151,9 +181,14 @@ export function DataTable<T extends Record<string, any>>({
                 onClick={() => onPageChange?.(pageNum)}
                 className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   pageNum === page
-                    ? 'bg-blue-600 text-white shadow-md border border-blue-700'
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm border border-transparent hover:border-gray-200'
+                    ? 'shadow-md'
+                    : 'hover:opacity-80 hover:shadow-sm'
                 }`}
+                style={{
+                  backgroundColor: pageNum === page ? colors.buttonPrimary1 : 'transparent',
+                  color: pageNum === page ? 'white' : colors.textSecondary,
+                  borderColor: pageNum === page ? colors.buttonPrimary2 : colors.border,
+                }}
               >
                 {pageNum}
               </button>
@@ -161,13 +196,20 @@ export function DataTable<T extends Record<string, any>>({
           </div>
           
           {/* Separador */}
-          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+          <div 
+            className="w-px h-6 mx-2"
+            style={{ backgroundColor: colors.border }}
+          ></div>
           
           {/* Botón Página siguiente */}
           <button
             onClick={() => onPageChange?.(page + 1)}
             disabled={!hasNext}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+            className="p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
+            style={{
+              color: colors.textMuted,
+              borderColor: colors.border,
+            }}
             title="Página siguiente"
           >
             <ChevronRight className="w-4 h-4" />
@@ -177,7 +219,11 @@ export function DataTable<T extends Record<string, any>>({
           <button
             onClick={() => onPageChange?.(totalPages)}
             disabled={!hasNext}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+            className="p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
+            style={{
+              color: colors.textMuted,
+              borderColor: colors.border,
+            }}
             title="Última página"
           >
             <ChevronsRight className="w-4 h-4" />
@@ -190,11 +236,20 @@ export function DataTable<T extends Record<string, any>>({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div 
+        className="theme-bg-3 rounded-lg border theme-border overflow-hidden"
+        style={{
+          backgroundColor: colors.background3,
+          borderColor: colors.border,
+        }}
+      >
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando datos...</p>
+            <div 
+              className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4"
+              style={{ borderColor: colors.buttonPrimary1 }}
+            ></div>
+            <p className="theme-text-secondary">Cargando datos...</p>
           </div>
         </div>
       </div>
@@ -203,13 +258,25 @@ export function DataTable<T extends Record<string, any>>({
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div 
+        className="theme-bg-3 rounded-lg border theme-border overflow-hidden"
+        style={{
+          backgroundColor: colors.background3,
+          borderColor: colors.border,
+        }}
+      >
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <div className="w-8 h-8 bg-gray-300 rounded"></div>
+            <div 
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: colors.background2 }}
+            >
+              <div 
+                className="w-8 h-8 rounded"
+                style={{ backgroundColor: colors.border }}
+              ></div>
             </div>
-            <p className="text-gray-600">{emptyMessage}</p>
+            <p className="theme-text-secondary">{emptyMessage}</p>
           </div>
         </div>
       </div>
@@ -247,28 +314,43 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${className}`}>
+    <div 
+      className={`theme-bg-3 rounded-lg border theme-border overflow-hidden ${className}`}
+      style={{
+        backgroundColor: colors.background3,
+        borderColor: colors.border,
+      }}
+    >
       {/* Paginación arriba */}
       {renderPagination()}
       
       {/* Contenido según el modo de vista */}
       {viewMode === 'table' ? (
         <div className="overflow-x-auto">
-          <table className="w-full divide-y divide-gray-200 table-fixed">
-            <thead className="bg-gray-50">
+          <table 
+            className="w-full table-fixed"
+            style={{ borderColor: colors.tableBorder }}
+          >
+            <thead 
+              className="theme-table-header"
+              style={{ backgroundColor: colors.tableHeader }}
+            >
               <tr>
                 {columns.map((column) => (
                   <th
                     key={String(column.key)}
-                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                      column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                      column.sortable ? 'cursor-pointer hover:opacity-80' : ''
                     } ${column.className || ''}`}
+                    style={{
+                      color: 'white',
+                    }}
                     onClick={() => column.sortable && handleSort(column.key)}
                   >
                     <div className="flex items-center space-x-1">
                       <span>{column.label}</span>
                       {column.sortable && (
-                        <span className="text-gray-400">
+                        <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                           {getSortIcon(column.key)}
                         </span>
                       )}
@@ -277,13 +359,25 @@ export function DataTable<T extends Record<string, any>>({
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody 
+              className="theme-table-row"
+              style={{ 
+                backgroundColor: colors.tableRow,
+                borderColor: colors.tableBorder,
+              }}
+            >
               {data.map((item, index) => (
-                <tr key={index} className="hover:bg-gray-50">
+                <tr 
+                  key={index} 
+                  className="theme-table-row hover:theme-table-row-hover"
+                  style={{
+                    backgroundColor: colors.tableRow,
+                  }}
+                >
                   {columns.map((column) => (
                     <td
                       key={String(column.key)}
-                      className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}
+                      className={`px-6 py-4 whitespace-nowrap text-sm theme-text-primary ${column.className || ''}`}
                     >
                       {column.render 
                         ? column.render(item[column.key], item)

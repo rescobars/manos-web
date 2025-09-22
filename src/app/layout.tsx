@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
 import { ThemeProvider } from '@/components/ui/theme-provider'
 import { ThemeWrapper } from '@/components/ThemeWrapper'
 
@@ -26,11 +27,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ThemeWrapper>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </ThemeWrapper>
+          <AuthProvider>
+            <DynamicThemeProvider>
+              <ThemeWrapper>
+                {children}
+              </ThemeWrapper>
+            </DynamicThemeProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
