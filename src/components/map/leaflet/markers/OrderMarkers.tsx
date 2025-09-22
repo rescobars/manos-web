@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Order } from '@/lib/leaflet/types';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { 
   createOrderIcon, 
   createPickupIcon,
@@ -26,6 +27,7 @@ export function OrderMarkers({
   onPickupClick 
 }: OrderMarkersProps) {
   const map = useMap();
+  const { colors } = useDynamicTheme();
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
 
   // Crear marcador para un pedido
@@ -48,18 +50,18 @@ export function OrderMarkers({
     
     // Agregar popup
     const popupContent = `
-      <div style="min-width: 200px;">
-        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">Pedido #${order.orderNumber}</h3>
-        <p style="margin: 0 0 4px 0; font-size: 14px; color: #666;">
+      <div style="min-width: 200px; background-color: ${colors.background3}; border: 1px solid ${colors.border}; border-radius: 8px; padding: 12px; font-family: inherit;">
+        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; color: ${colors.textPrimary};">Pedido #${order.orderNumber}</h3>
+        <p style="margin: 0 0 4px 0; font-size: 14px; color: ${colors.textSecondary};">
           ${order.deliveryLocation.address}
         </p>
         ${order.description && (
-          `<p style="margin: 0 0 4px 0; font-size: 12px; color: #888;">
+          `<p style="margin: 0 0 4px 0; font-size: 12px; color: ${colors.textMuted};">
             ${order.description}
           </p>`
         )}
         ${order.totalAmount && (
-          `<p style="margin: 0; font-size: 12px; color: #888;">
+          `<p style="margin: 0; font-size: 12px; color: ${colors.textMuted};">
             Total: $${order.totalAmount}
           </p>`
         )}
@@ -85,9 +87,9 @@ export function OrderMarkers({
     
     // Agregar popup
     const popupContent = `
-      <div style="min-width: 200px;">
-        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">Punto de Recogida</h3>
-        <p style="margin: 0; font-size: 14px; color: #666;">
+      <div style="min-width: 200px; background-color: ${colors.background3}; border: 1px solid ${colors.border}; border-radius: 8px; padding: 12px; font-family: inherit;">
+        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; color: ${colors.textPrimary};">Punto de Recogida</h3>
+        <p style="margin: 0; font-size: 14px; color: ${colors.textSecondary};">
           ${pickupLocation!.address}
         </p>
       </div>

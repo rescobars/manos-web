@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { TextArea } from './TextArea';
 import { Select } from './Select';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { X, Building2, Save, Loader2 } from 'lucide-react';
 
 interface OrganizationModalProps {
@@ -23,7 +24,8 @@ export function OrganizationModal({
   onSubmit,
   loading = false
 }: OrganizationModalProps) {
-    const [formData, setFormData] = useState<CreateOrganizationFormData>({
+  const { colors } = useDynamicTheme();
+  const [formData, setFormData] = useState<CreateOrganizationFormData>({
     name: '',
     slug: '',
     description: '',
@@ -226,11 +228,23 @@ export function OrganizationModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div 
+        className="rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto theme-bg-3 border"
+        style={{
+          backgroundColor: colors.background3,
+          borderColor: colors.border
+        }}
+      >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <Building2 className="w-5 h-5 text-gray-600" />
-            <h2 className="text-xl font-bold">
+            <Building2 
+              className="w-5 h-5" 
+              style={{ color: colors.textSecondary }}
+            />
+            <h2 
+              className="text-xl font-bold theme-text-primary"
+              style={{ color: colors.textPrimary }}
+            >
               {organization ? 'Editar Organización' : 'Crear Organización'}
             </h2>
           </div>
@@ -239,6 +253,8 @@ export function OrganizationModal({
             size="sm"
             onClick={onClose}
             disabled={loading}
+            className="theme-text-secondary hover:opacity-75"
+            style={{ color: colors.textSecondary }}
           >
             <X className="w-4 h-4" />
           </Button>
@@ -394,18 +410,28 @@ export function OrganizationModal({
           />
 
           {/* Botones */}
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t theme-divider" style={{ borderColor: colors.divider }}>
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={loading}
+              className="theme-border theme-text-primary hover:theme-bg-2"
+              style={{
+                borderColor: colors.border,
+                color: colors.textPrimary
+              }}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading}
+              className="theme-btn-primary"
+              style={{
+                backgroundColor: colors.buttonPrimary1,
+                color: colors.buttonText
+              }}
             >
               {loading ? (
                 <>

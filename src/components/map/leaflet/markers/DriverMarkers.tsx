@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { CombinedDriverPosition } from '@/lib/leaflet/types';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { 
   createDriverIcon, 
   toLeafletLatLng, 
@@ -25,6 +26,7 @@ export function DriverMarkers({
   onDriverClick 
 }: DriverMarkersProps) {
   const map = useMap();
+  const { colors } = useDynamicTheme();
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
 
   // Filtrar conductores basado en las rutas seleccionadas
@@ -63,15 +65,15 @@ export function DriverMarkers({
     
     // Agregar popup básico
     const popupContent = `
-      <div style="min-width: 200px;">
-        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">${driver.driverName}</h3>
-        <p style="margin: 0 0 4px 0; font-size: 14px; color: #666;">
+      <div style="min-width: 200px; background-color: ${colors.background3}; border: 1px solid ${colors.border}; border-radius: 8px; padding: 12px; font-family: inherit;">
+        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; color: ${colors.textPrimary};">${driver.driverName}</h3>
+        <p style="margin: 0 0 4px 0; font-size: 14px; color: ${colors.textSecondary};">
           ${'routeName' in driver ? driver.routeName : 'Conductor General'}
         </p>
-        <p style="margin: 0 0 4px 0; font-size: 12px; color: #888;">
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: ${colors.textMuted};">
           Estado: ${realStatus}
         </p>
-        <p style="margin: 0; font-size: 12px; color: #888;">
+        <p style="margin: 0; font-size: 12px; color: ${colors.textMuted};">
           Velocidad: ${Math.round(driver.location.speed || 0)} km/h
         </p>
       </div>
