@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { DriverPosition } from '@/hooks/useDriverPositions';
 import { RouteDriverPosition } from '@/hooks/useRouteDriverPositions';
+import L from 'leaflet';
 
 // Declarar función global para TypeScript
 declare global {
@@ -16,14 +17,15 @@ type CombinedDriverPosition = DriverPosition | RouteDriverPosition;
 interface DriverDetailsModalProps {
   selectedDriver: CombinedDriverPosition | null;
   onClose: () => void;
-  map?: any; // Mapbox map instance
+  map?: L.Map | null; // Leaflet map instance
 }
 
 // Constante para determinar si un conductor está offline
 const OFFLINE_THRESHOLD_MINUTES = 70; // 1 hora 10 minutos = 70 minutos
 
 export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetailsModalProps) {
-  const popupRef = useRef<any>(null);
+  const popupRef = useRef<L.Popup | null>(null);
+
   // Función para determinar si un conductor está offline basado en el tiempo
   const isDriverOffline = (driver: CombinedDriverPosition): boolean => {
     // Usar transmission_timestamp si está disponible, sino timestamp como fallback
@@ -66,86 +68,7 @@ export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetai
     }
   };
 
-  // Componentes de iconos para cada estado
-  const DrivingIcon = (isRouteDriver: boolean = false) => `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-      <path d="M7 13h2v2H7z" fill="white" opacity="0.9"/>
-      <path d="M15 13h2v2h-2z" fill="white" opacity="0.9"/>
-      <path d="M12 8h-1v2h2V8z" fill="white" opacity="0.7"/>
-      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.8"/>
-      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.8"/>
-      ${isRouteDriver ? `
-        <path d="M12 2l2 4h-4l2-4z" fill="white" opacity="0.9"/>
-        <path d="M12 6h-1v2h2V6z" fill="white" opacity="0.7"/>
-      ` : ''}
-    </svg>
-  `;
-
-  const IdleIcon = () => `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-      <path d="M7 13h2v2H7z" fill="white" opacity="0.6"/>
-      <path d="M15 13h2v2h-2z" fill="white" opacity="0.6"/>
-      <path d="M12 8h-1v2h2V8z" fill="white" opacity="0.4"/>
-      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
-      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
-    </svg>
-  `;
-
-  const OnBreakIcon = () => `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-      <path d="M7 13h2v2H7z" fill="white" opacity="0.6"/>
-      <path d="M15 13h2v2h-2z" fill="white" opacity="0.6"/>
-      <path d="M12 8h-1v2h2V8z" fill="white" opacity="0.4"/>
-      <path d="M8 4h8v2H8z" fill="white" opacity="0.7"/>
-      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
-      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
-    </svg>
-  `;
-
-  const OfflineIcon = () => `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-      <path d="M7 13h2v2H7z" fill="white" opacity="0.3"/>
-      <path d="M15 13h2v2h-2z" fill="white" opacity="0.3"/>
-      <path d="M12 8h-1v2h2V8z" fill="white" opacity="0.2"/>
-      <path d="M8 4l8 8M16 4l-8 8" stroke="white" stroke-width="2" fill="none" opacity="0.9"/>
-      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.3"/>
-      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.3"/>
-    </svg>
-  `;
-
-  const DefaultIcon = () => `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-      <path d="M7 13h2v2H7z" fill="white" opacity="0.6"/>
-      <path d="M15 13h2v2h-2z" fill="white" opacity="0.6"/>
-      <circle cx="6.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
-      <circle cx="17.5" cy="16" r="1.5" fill="white" opacity="0.5"/>
-    </svg>
-  `;
-
-  const getStatusIcon = (driver: CombinedDriverPosition, isRouteDriver: boolean = false) => {
-    const realStatus = getRealStatus(driver);
-    
-    switch (realStatus) {
-      case 'DRIVING':
-        return DrivingIcon(isRouteDriver);
-      case 'IDLE':
-      case 'STOPPED':
-        return IdleIcon();
-      case 'BREAK':
-        return OnBreakIcon();
-      case 'OFFLINE':
-        return OfflineIcon();
-      default:
-        return DefaultIcon();
-    }
-  };
-
-  // Crear popup de Mapbox cuando se selecciona un conductor
+  // Crear popup de Leaflet cuando se selecciona un conductor
   useEffect(() => {
     if (!selectedDriver || !map) return;
 
@@ -262,42 +185,17 @@ export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetai
       </div>
     `;
 
-    // Crear el popup de Mapbox
-    const popup = new window.mapboxgl.Popup({
-      offset: 25,
+    // Crear el popup de Leaflet
+    const popup = L.popup({
+      offset: [0, -10],
       closeButton: false,
       closeOnClick: false,
-      closeOnMove: false,
+      autoClose: false,
       className: 'custom-driver-popup'
     })
-      .setLngLat([selectedDriver.location.longitude, selectedDriver.location.latitude])
-      .setHTML(popupContent)
-      .addTo(map);
-
-    // Agregar estilos CSS personalizados para ocultar el fondo del popup
-    const popupElement = popup.getElement();
-    if (popupElement) {
-      popupElement.style.background = 'transparent';
-      popupElement.style.border = 'none';
-      popupElement.style.boxShadow = 'none';
-      popupElement.style.padding = '0';
-      
-      // Ocultar el fondo del popup de Mapbox
-      const popupContent = popupElement.querySelector('.mapboxgl-popup-content');
-      if (popupContent) {
-        popupContent.style.background = 'transparent';
-        popupContent.style.border = 'none';
-        popupContent.style.boxShadow = 'none';
-        popupContent.style.padding = '0';
-        popupContent.style.borderRadius = '0';
-      }
-      
-      // Ocultar la flecha del popup de Mapbox
-      const popupTip = popupElement.querySelector('.mapboxgl-popup-tip');
-      if (popupTip) {
-        popupTip.style.display = 'none';
-      }
-    }
+      .setLatLng([selectedDriver.location.latitude, selectedDriver.location.longitude])
+      .setContent(popupContent)
+      .openOn(map);
 
     popupRef.current = popup;
 
@@ -321,6 +219,6 @@ export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetai
 
   if (!selectedDriver) return null;
 
-  // El popup se maneja completamente a través de Mapbox
+  // El popup se maneja completamente a través de Leaflet
   return null;
 }

@@ -167,5 +167,6 @@ export function useUnifiedDriverPositions() {
     setMapCentered,
     setMapCenteringComplete,
     wsReady,
+    setWsReady,
   };
 }

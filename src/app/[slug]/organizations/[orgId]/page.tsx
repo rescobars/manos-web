@@ -24,7 +24,7 @@ export default function OrganizationDetailPage() {
   const params = useParams();
   const { organizations, hasPermission } = useAuth();
   
-  const orgId = params.orgId as string;
+  const orgId = params?.orgId ? (Array.isArray(params.orgId) ? params.orgId[0] : params.orgId) : '';
   const organization = organizations.find(org => org.uuid === orgId);
 
   if (!organization) {

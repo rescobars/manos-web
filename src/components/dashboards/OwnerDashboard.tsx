@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { DriverMap } from '@/components/ui/mapbox/DriverMap';
+import { DriverMap } from '@/features/map';
 import { 
   Crown,
   Shield

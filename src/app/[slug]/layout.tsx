@@ -23,7 +23,7 @@ export default function OrganizationLayout({
     logout
   } = useAuth();
 
-  const slug = params.slug as string;
+  const slug = params?.slug ? (Array.isArray(params.slug) ? params.slug[0] : params.slug) : '';
 
   useEffect(() => {
     // Si no está autenticado, redirigir a login

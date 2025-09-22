@@ -1,0 +1,91 @@
+/* Estilos personalizados para Leaflet */
+
+/* Popup personalizado para conductores */
+.custom-driver-popup .leaflet-popup-content-wrapper {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.custom-driver-popup .leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+}
+
+.custom-driver-popup .leaflet-popup-tip {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* Iconos personalizados */
+.custom-driver-icon,
+.custom-order-icon,
+.custom-pickup-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Animaciones suaves para marcadores */
+.leaflet-marker-icon {
+  transition: all 0.3s ease;
+}
+
+.leaflet-marker-icon:hover {
+  transform: scale(1.1);
+  z-index: 1000;
+}
+
+/* Estilos para el mapa */
+.leaflet-container {
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+/* Controles del mapa */
+.leaflet-control-zoom {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-control-zoom a {
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* Atribución */
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+/* Loading state */
+.leaflet-container.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .leaflet-popup-content-wrapper {
+    max-width: 280px;
+  }
+  
+  .custom-driver-popup .w-80 {
+    width: 280px;
+  }
+}
