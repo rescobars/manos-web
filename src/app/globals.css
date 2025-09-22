@@ -62,6 +62,11 @@
     --theme-warning: #eab308;
     --theme-error: #dc2626;
     --theme-info: #0ea5e9;
+    
+    /* Variables de branding de la organización */
+    --organization-logo: none;
+    --primary-font: 'Inter', sans-serif;
+    --secondary-font: 'Roboto', sans-serif;
   }
 
   .dark {
@@ -342,6 +347,35 @@
 
 .mapboxgl-canvas {
   border-radius: inherit;
+}
+
+/* Clases de branding de la organización */
+.org-logo {
+  background-image: var(--organization-logo);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.org-primary-font {
+  font-family: var(--primary-font);
+}
+
+.org-secondary-font {
+  font-family: var(--secondary-font);
+}
+
+/* Aplicar fuentes por defecto */
+body {
+  font-family: var(--primary-font);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--primary-font);
+}
+
+button, input, select, textarea {
+  font-family: var(--primary-font);
 }
 
 /* Contenedor del mapa */

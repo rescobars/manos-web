@@ -71,6 +71,34 @@ export interface OrganizationThemeConfig {
   updated_at?: string;
 }
 
+// Configuración de branding
+export interface OrganizationBranding {
+  logo_url?: string | null;
+  favicon_url?: string | null;
+  primary_font?: string;
+  secondary_font?: string;
+}
+
+// Estructura completa de la organización con tema y branding
+export interface OrganizationWithTheme {
+  uuid: string;
+  name: string;
+  slug: string;
+  theme_config: {
+    theme_name: string;
+    theme_version?: string;
+    colors: DynamicThemeColors;
+    metadata?: {
+      created_at?: string;
+      updated_at?: string;
+      created_by?: string;
+      is_default?: boolean;
+      is_active?: boolean;
+    };
+  };
+  branding: OrganizationBranding;
+}
+
 // Tema Movigo por defecto
 const defaultMovigoTheme: DynamicThemeColors = movigoTheme;
 
@@ -134,9 +162,11 @@ const defaultGreenTheme: DynamicThemeColors = {
 interface DynamicThemeContextType {
   themeConfig: OrganizationThemeConfig | null;
   colors: DynamicThemeColors;
+  branding: OrganizationBranding | null;
   isLoading: boolean;
   error: string | null;
   updateTheme: (newConfig: OrganizationThemeConfig) => void;
+  updateBranding: (newBranding: OrganizationBranding) => void;
   resetToDefault: () => void;
 }
 
@@ -146,6 +176,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   const { currentOrganization } = useAuth();
   const [themeConfig, setThemeConfig] = useState<OrganizationThemeConfig | null>(null);
   const [colors, setColors] = useState<DynamicThemeColors>(defaultMovigoTheme);
+  const [branding, setBranding] = useState<OrganizationBranding | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -186,36 +217,63 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     setError(null);
     
     try {
-      // Simular delay de carga
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Obtener información pública de la organización desde la API externa
+      const response = await fetch(`/api/organizations/public/${organizationUuid}`);
+
+      console.log('response', response);
+      const organizationData = await response.json();
       
-      // Buscar tema específico de la organización
-      const organizationTheme = getThemeByOrganizationUuid(organizationUuid);
-      
-      if (organizationTheme) {
-        setThemeConfig(organizationTheme);
-        setColors(organizationTheme.colors);
-        applyThemeToDocument(organizationTheme.colors);
-      } else {
-        // Usar tema Movigo por defecto si no se encuentra tema específico
-        const defaultThemeConfig: OrganizationThemeConfig = {
-          organization_uuid: organizationUuid,
-          theme_name: 'Movigo - Moderno',
-          colors: defaultMovigoTheme,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
+      if (response.ok && organizationData.success) {
+        // Usar theme_config y branding de la API externa
+        const { theme_config, branding } = organizationData.data;
+
+        console.log("theme_config", theme_config);
+        console.log("branding", branding);
         
-        setThemeConfig(defaultThemeConfig);
-        setColors(defaultThemeConfig.colors);
-        applyThemeToDocument(defaultThemeConfig.colors);
+        if (theme_config && theme_config.colors) {
+          // Crear configuración de tema desde la API
+          const themeConfig: OrganizationThemeConfig = {
+            organization_uuid: organizationUuid,
+            theme_name: theme_config.theme_name || 'Tema Personalizado',
+            colors: theme_config.colors,
+            is_active: theme_config.metadata?.is_active ?? true,
+            created_at: theme_config.metadata?.created_at,
+            updated_at: theme_config.metadata?.updated_at,
+          };
+          
+          setThemeConfig(themeConfig);
+          setColors(themeConfig.colors);
+          applyThemeToDocument(themeConfig.colors);
+          
+          // Aplicar branding si está disponible
+          if (branding) {
+            setBranding(branding);
+            applyBrandingToDocument(branding);
+          }
+        } else {
+          // Fallback al tema por defecto si no hay theme_config
+          const defaultThemeConfig: OrganizationThemeConfig = {
+            organization_uuid: organizationUuid,
+            theme_name: 'Movigo - Moderno',
+            colors: defaultMovigoTheme,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          
+          setThemeConfig(defaultThemeConfig);
+          setColors(defaultThemeConfig.colors);
+          applyThemeToDocument(defaultThemeConfig.colors);
+        }
+      } else {
+        throw new Error(organizationData.error || 'Error al obtener información de la organización');
       }
       
     } catch (err) {
       console.error('Error loading organization theme:', err);
       setError('Error al cargar el tema de la organización');
       setColors(defaultMovigoTheme);
+      applyThemeToDocument(defaultMovigoTheme);
     } finally {
       setIsLoading(false);
     }
@@ -296,6 +354,48 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     console.log('Saving theme config:', newConfig);
   };
 
+  const applyBrandingToDocument = (branding: OrganizationBranding) => {
+    if (typeof window === 'undefined') return;
+
+    const root = document.documentElement;
+    
+    // Aplicar logo si está disponible
+    if (branding.logo_url) {
+      root.style.setProperty('--organization-logo', `url(${branding.logo_url})`);
+    } else {
+      root.style.removeProperty('--organization-logo');
+    }
+    
+    // Aplicar favicon si está disponible
+    if (branding.favicon_url) {
+      const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+      if (favicon) {
+        favicon.href = branding.favicon_url;
+      } else {
+        const newFavicon = document.createElement('link');
+        newFavicon.rel = 'icon';
+        newFavicon.href = branding.favicon_url;
+        document.head.appendChild(newFavicon);
+      }
+    }
+    
+    // Aplicar fuentes si están disponibles
+    if (branding.primary_font) {
+      root.style.setProperty('--primary-font', branding.primary_font);
+    }
+    
+    if (branding.secondary_font) {
+      root.style.setProperty('--secondary-font', branding.secondary_font);
+    }
+    
+    console.log('🎨 Branding applied successfully!', branding);
+  };
+
+  const updateBranding = (newBranding: OrganizationBranding) => {
+    setBranding(newBranding);
+    applyBrandingToDocument(newBranding);
+  };
+
   const resetToDefault = () => {
     if (currentOrganization) {
       const defaultConfig: OrganizationThemeConfig = {
@@ -314,9 +414,11 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       value={{
         themeConfig,
         colors,
+        branding,
         isLoading,
         error,
         updateTheme,
+        updateBranding,
         resetToDefault,
       }}
     >
