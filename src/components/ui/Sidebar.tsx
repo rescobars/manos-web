@@ -12,7 +12,6 @@ import { Button } from './Button';
 import NavigationSelector, { NavigationItem } from '@/components/navigation/NavigationSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
-import { ModeToggle } from './mode-toggle';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -149,14 +148,9 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
 
         {/* Footer */}
         <div 
-          className="p-3 border-t theme-divider space-y-2"
+          className="p-3 border-t theme-divider"
           style={{ borderColor: colors.divider }}
         >
-          {/* Theme Toggle */}
-          <div className="mb-2">
-            <ModeToggle />
-          </div>
-          
           {/* Logout Button */}
           <Button
             variant="ghost"
