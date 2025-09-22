@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { DriverPosition } from '@/hooks/useDriverPositions';
 import { RouteDriverPosition } from '@/hooks/useRouteDriverPositions';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import L from 'leaflet';
 
 // Declarar función global para TypeScript
@@ -25,6 +26,7 @@ const OFFLINE_THRESHOLD_MINUTES = 70; // 1 hora 10 minutos = 70 minutos
 
 export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetailsModalProps) {
   const popupRef = useRef<L.Popup | null>(null);
+  const { colors } = useDynamicTheme();
 
   // Función para determinar si un conductor está offline basado en el tiempo
   const isDriverOffline = (driver: CombinedDriverPosition): boolean => {
@@ -84,9 +86,9 @@ export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetai
 
     // Crear el contenido HTML del popup
     const popupContent = `
-      <div class="w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
+      <div class="w-80 rounded-xl shadow-xl overflow-hidden" style="background-color: ${colors.background3}; border: 1px solid ${colors.border};">
         <!-- Header con gradiente -->
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-100">
+        <div class="px-4 py-3 border-b" style="background: linear-gradient(135deg, ${colors.background2}, ${colors.background1}); border-color: ${colors.divider};">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
               <div class="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-lg" style="background: linear-gradient(135deg, ${statusColor}, ${statusColor}dd);">
@@ -95,12 +97,12 @@ export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetai
                 </svg>
               </div>
               <div>
-                <h3 class="text-lg font-bold text-gray-900">${selectedDriver.driverName}</h3>
-                <p class="text-xs text-gray-500">${isRouteDriver ? 'Conductor de Ruta' : 'Conductor General'}</p>
+                <h3 class="text-lg font-bold" style="color: ${colors.textPrimary};">${selectedDriver.driverName}</h3>
+                <p class="text-xs" style="color: ${colors.textSecondary};">${isRouteDriver ? 'Conductor de Ruta' : 'Conductor General'}</p>
               </div>
             </div>
-            <button onclick="window.closeDriverPopup && window.closeDriverPopup()" class="p-1.5 hover:bg-white hover:shadow-sm rounded-full transition-all duration-200">
-              <svg class="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onclick="window.closeDriverPopup && window.closeDriverPopup()" class="p-1.5 rounded-full transition-all duration-200" style="color: ${colors.textSecondary};" onmouseover="this.style.backgroundColor='${colors.background2}'" onmouseout="this.style.backgroundColor='transparent'">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -108,7 +110,7 @@ export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetai
         </div>
 
         <!-- Status Badge -->
-        <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
+        <div class="px-4 py-3 border-b" style="background-color: ${colors.background2}; border-color: ${colors.divider};">
           <div class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm" style="background-color: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
             <div class="w-2 h-2 rounded-full mr-2" style="background-color: ${statusColor}"></div>
             ${realStatus === 'DRIVING' ? 
@@ -122,41 +124,41 @@ export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetai
         <div class="p-4 space-y-4">
           <!-- Ruta -->
           <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: ${colors.info}20;">
+              <svg class="w-4 h-4" style="color: ${colors.info};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
             </div>
             <div class="flex-1">
-              <div class="text-xs text-gray-500 font-medium">Ruta asignada</div>
-              <div class="text-sm font-semibold text-gray-900">${selectedDriver.routeName || 'Sin ruta asignada'}</div>
+              <div class="text-xs font-medium" style="color: ${colors.textSecondary};">Ruta asignada</div>
+              <div class="text-sm font-semibold" style="color: ${colors.textPrimary};">${selectedDriver.routeName || 'Sin ruta asignada'}</div>
             </div>
           </div>
 
           <!-- Velocidad -->
           <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: ${colors.success}20;">
+              <svg class="w-4 h-4" style="color: ${colors.success};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
             <div class="flex-1">
-              <div class="text-xs text-gray-500 font-medium">Velocidad actual</div>
-              <div class="text-sm font-semibold text-green-600">${Math.round(selectedDriver.location.speed || 0)} km/h</div>
+              <div class="text-xs font-medium" style="color: ${colors.textSecondary};">Velocidad actual</div>
+              <div class="text-sm font-semibold" style="color: ${colors.success};">${Math.round(selectedDriver.location.speed || 0)} km/h</div>
             </div>
           </div>
 
           <!-- Coordenadas -->
           <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-              <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: ${colors.warning}20;">
+              <svg class="w-4 h-4" style="color: ${colors.warning};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
             <div class="flex-1">
-              <div class="text-xs text-gray-500 font-medium">Ubicación</div>
-              <div class="text-xs font-mono text-gray-700 bg-gray-50 px-2 py-1 rounded">
+              <div class="text-xs font-medium" style="color: ${colors.textSecondary};">Ubicación</div>
+              <div class="text-xs font-mono px-2 py-1 rounded" style="color: ${colors.textMuted}; background-color: ${colors.background2};">
                 ${selectedDriver.location.latitude.toFixed(4)}, ${selectedDriver.location.longitude.toFixed(4)}
               </div>
             </div>
@@ -164,14 +166,14 @@ export function DriverDetailsModal({ selectedDriver, onClose, map }: DriverDetai
 
           <!-- Última actualización -->
           <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: ${colors.background2};">
+              <svg class="w-4 h-4" style="color: ${colors.textMuted};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div class="flex-1">
-              <div class="text-xs text-gray-500 font-medium">Última actualización</div>
-              <div class="text-xs text-gray-700">
+              <div class="text-xs font-medium" style="color: ${colors.textSecondary};">Última actualización</div>
+              <div class="text-xs" style="color: ${colors.textMuted};">
                 ${new Date(selectedDriver.transmission_timestamp || selectedDriver.timestamp).toLocaleString('es-ES', {
                   month: '2-digit',
                   day: '2-digit',
