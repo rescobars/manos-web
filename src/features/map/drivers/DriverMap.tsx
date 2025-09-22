@@ -51,6 +51,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   // Estado para el conductor seleccionado
   const [selectedDriver, setSelectedDriver] = useState<CombinedDriverPosition | null>(null);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+  const [hasInitiallyCentered, setHasInitiallyCentered] = useState(false);
 
   const handleDriverClick = useCallback((driver: CombinedDriverPosition) => {
     setSelectedDriver(driver);
@@ -81,19 +82,16 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     setMapCentered(true);
     setMapCenteringComplete(true);
     setWsReady(true);
+  }, [setMapCentered, setMapCenteringComplete, setWsReady]);
 
-    // Ajustar vista a los conductores si hay datos
-    if (driversBounds) {
-      map.fitBounds(driversBounds, { padding: [20, 20] });
-    }
-  }, [driversBounds, setMapCentered, setMapCenteringComplete, setWsReady]);
-
-  // Ajustar vista cuando cambien los conductores
+  // Centrar el mapa solo una vez cuando esté listo y haya datos de drivers
   useEffect(() => {
-    if (mapInstance && driversBounds) {
+    if (mapInstance && driversBounds && !hasInitiallyCentered) {
+      console.log('🎯 CENTRANDO MAPA INICIAL - Una sola vez');
       mapInstance.fitBounds(driversBounds, { padding: [20, 20] });
+      setHasInitiallyCentered(true);
     }
-  }, [mapInstance, driversBounds]);
+  }, [mapInstance, driversBounds, hasInitiallyCentered]);
 
   // Loading state
   if (authLoading) {
