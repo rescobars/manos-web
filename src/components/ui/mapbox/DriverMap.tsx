@@ -226,6 +226,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
               onDriverClick={handleDriverClick}
               selectedDriver={selectedDriver}
               onCloseDriverDetails={handleCloseDriverDetails}
+              selectedRouteIds={selectedRouteIds}
             />
           )}
         </BaseMap>

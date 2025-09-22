@@ -60,6 +60,12 @@ export function useWebSocketDriverUpdates({
       return;
     }
     
+    // Solo procesar drivers de organización si no hay rutas seleccionadas
+    if (selectedRouteIds.length > 0) {
+      console.log('⏭️ OMITIENDO - Driver de organización porque hay rutas seleccionadas:', updateData.driverId);
+      return;
+    }
+    
     setDriverPositions((prevPositions: UnifiedDriverPosition[]) => {
       const updatedPositions = [...prevPositions];
       const existingIndex = updatedPositions.findIndex(
@@ -91,7 +97,8 @@ export function useWebSocketDriverUpdates({
           appVersion: '',
           deviceInfo: '',
           networkType: updateData.networkType
-        }
+        },
+        transmission_timestamp: updateData.timestamp
       };
 
       if (existingIndex >= 0) {
@@ -105,7 +112,7 @@ export function useWebSocketDriverUpdates({
       console.log('📊 ESTADO ACTUALIZADO - Total drivers:', updatedPositions.length);
       return updatedPositions;
     });
-  }, [setDriverPositions]);
+  }, [setDriverPositions, selectedRouteIds]);
 
   // Manejar actualizaciones de drivers de ruta
   const handleRouteDriverUpdate = useCallback((data: any) => {
@@ -146,7 +153,8 @@ export function useWebSocketDriverUpdates({
         routeId: updateData.routeId,
         routeName: updateData.routeName,
         organizationId: '', // Se puede llenar desde el contexto
-        organizationName: '' // Se puede llenar desde el contexto
+        organizationName: '', // Se puede llenar desde el contexto
+        transmission_timestamp: updateData.timestamp
       };
 
       if (existingIndex >= 0) {

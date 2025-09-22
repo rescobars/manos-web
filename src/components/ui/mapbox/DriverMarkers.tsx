@@ -12,13 +12,30 @@ interface DriverMarkersProps {
   onDriverClick?: (driver: CombinedDriverPosition) => void;
   selectedDriver?: CombinedDriverPosition | null;
   onCloseDriverDetails?: () => void;
+  selectedRouteIds?: string[];
 }
 
 // Constante para determinar si un conductor está offline
 const OFFLINE_THRESHOLD_MINUTES = 70; // 1 hora 10 minutos = 70 minutos
 
-export function DriverMarkers({ map, driverPositions, onDriverClick, selectedDriver, onCloseDriverDetails }: DriverMarkersProps) {
+export function DriverMarkers({ map, driverPositions, onDriverClick, selectedDriver, onCloseDriverDetails, selectedRouteIds = [] }: DriverMarkersProps) {
   const markersRef = useRef<Map<string, any>>(new Map());
+
+  // Filtrar conductores basado en las rutas seleccionadas
+  const filteredDriverPositions = driverPositions.filter(driver => {
+    // Si no hay rutas seleccionadas, mostrar todos los conductores
+    if (selectedRouteIds.length === 0) {
+      return true;
+    }
+    
+    // Si es un conductor de ruta, verificar si su ruta está seleccionada
+    if ('routeId' in driver) {
+      return selectedRouteIds.includes(driver.routeId);
+    }
+    
+    // Si es un conductor de organización, no mostrarlo cuando hay rutas seleccionadas
+    return false;
+  });
 
   // Función para determinar si un conductor está offline basado en el tiempo
   const isDriverOffline = (driver: CombinedDriverPosition): boolean => {
@@ -272,22 +289,22 @@ export function DriverMarkers({ map, driverPositions, onDriverClick, selectedDri
     clearAllMarkers();
 
     // Add new markers
-    if (driverPositions.length > 0) {
-      driverPositions.forEach((driver) => {
+    if (filteredDriverPositions.length > 0) {
+      filteredDriverPositions.forEach((driver) => {
         if (driver.location && driver.location.latitude && driver.location.longitude) {
           addMarker(driver);
         }
       });
     }
-  }, [map]); // Solo cuando cambie el mapa
+  }, [map, filteredDriverPositions]); // Cuando cambie el mapa o los conductores filtrados
 
   // Actualizar posiciones de markers existentes con animación suave
   useEffect(() => {
-    if (!map || !window.mapboxgl || driverPositions.length === 0) {
+    if (!map || !window.mapboxgl || filteredDriverPositions.length === 0) {
       return;
     }
 
-    driverPositions.forEach((driver) => {
+    filteredDriverPositions.forEach((driver) => {
       if (driver.location && driver.location.latitude && driver.location.longitude) {
         const markerId = `driver-${driver.driverId}`;
         const marker = markersRef.current.get(markerId);
