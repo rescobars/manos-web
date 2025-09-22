@@ -31,3 +31,10 @@ export * from './mapbox';
 
 // Exportar componentes de Leaflet
 export * from './leaflet';
+
+// Componentes de tema
+export { ThemeProvider } from './theme-provider';
+export { ModeToggle } from './mode-toggle';
+export { ThemeSelector } from './theme-selector';
+export { OrganizationThemeSettings } from './organization-theme-settings';
+export { ThemeDemo } from './theme-demo';

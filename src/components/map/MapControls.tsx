@@ -85,9 +85,9 @@ export function MapControls({
       </div>
 
       {/* Status Filters - Siempre visibles */}
-      <div className="px-3 py-3 border-b border-gray-200">
+      <div className="px-3 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="space-y-2">
-          <div className="text-sm font-medium text-gray-700">
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Estados
           </div>
           {[
@@ -97,7 +97,7 @@ export function MapControls({
             { status: 'BREAK', label: 'En Parada', color: '#8B5CF6' },
             { status: 'OFFLINE', label: 'Offline', color: '#6B7280' }
           ].map(({ status, label, color }) => (
-            <label key={status} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded transition-colors">
+            <label key={status} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded transition-colors">
               <input
                 type="checkbox"
                 checked={statusFilters.has(status)}
@@ -116,10 +116,10 @@ export function MapControls({
                 className={`w-3 h-3 rounded-full transition-opacity flex-shrink-0 ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}
                 style={{ backgroundColor: color }}
               ></div>
-              <span className="text-xs text-gray-700 flex-1 truncate">
+              <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">
                 {label}
               </span>
-              <span className="text-xs text-gray-500 font-medium flex-shrink-0">
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium flex-shrink-0">
                 {statusCounts[status] || 0}
               </span>
             </label>

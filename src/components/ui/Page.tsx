@@ -25,9 +25,9 @@ export function Page({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h1>
           {subtitle && (
-            <p className="text-gray-600">{subtitle}</p>
+            <p className="text-gray-600 dark:text-gray-300">{subtitle}</p>
           )}
         </div>
         

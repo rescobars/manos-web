@@ -44,7 +44,7 @@ export function MobileControlsButton({
       
       {/* Quick Stats - Only show when drawer is closed */}
       {!isOpen && (
-        <div className="fixed bottom-4 left-4 z-[9998] bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-xl p-3 max-w-[200px]">
+        <div className="fixed bottom-4 left-4 z-[9998] bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3 max-w-[200px]">
           <div className="flex items-center space-x-2">
             <div className="relative">
               <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
@@ -52,11 +52,11 @@ export function MobileControlsButton({
                 <div className="absolute inset-0 w-2 h-2 bg-green-500 rounded-full animate-ping opacity-30"></div>
               )}
             </div>
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
               {driverCount} de {totalDrivers}
             </div>
           </div>
-          <div className="text-xs text-gray-600 mt-1">
+          <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
             {wsConnected ? 'Conectado' : 'Desconectado'}
           </div>
         </div>

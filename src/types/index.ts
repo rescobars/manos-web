@@ -84,6 +84,19 @@ export interface Organization {
   member_since: string;
   is_owner: boolean;
   is_admin: boolean;
+  // Configuración de tema
+  theme_config?: OrganizationThemeConfig;
+}
+
+export interface OrganizationThemeConfig {
+  organization_uuid: string;
+  theme_id: string;
+  custom_logo_url?: string;
+  custom_favicon_url?: string;
+  custom_css?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface SessionData {

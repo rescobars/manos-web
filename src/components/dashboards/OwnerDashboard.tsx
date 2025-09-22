@@ -66,27 +66,29 @@ function DashboardContent() {
 }
 
 export default function OwnerDashboard() {
-  const { currentOrganization, user, logout } = useAuth();
+  const { currentOrganization } = useAuth();
 
   if (!currentOrganization) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">No se encontró la organización</p>
+        <p className="text-gray-600 dark:text-gray-300">No se encontró la organización</p>
       </div>
     );
   }
 
   return (
     <MapControlsProvider>
-      <DashboardLayout 
-        user={user} 
-        onLogout={logout} 
-        currentSlug={currentOrganization.slug}
-        isFullScreen={true}
-        rightSidebar={<MapControlsContainer />}
-      >
-        <DashboardContent />
-      </DashboardLayout>
+      <div className="flex h-full">
+        {/* Contenido principal del dashboard */}
+        <div className="flex-1">
+          <DashboardContent />
+        </div>
+        
+        {/* Controles de escritorio - Sidebar derecho */}
+        <div className="hidden lg:block w-72 p-3 overflow-y-auto border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <MapControlsContainer />
+        </div>
+      </div>
     </MapControlsProvider>
   );
 }
