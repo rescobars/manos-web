@@ -10,9 +10,10 @@ interface DashboardLayoutProps {
   onLogout: () => void;
   currentSlug?: string;
   isFullScreen?: boolean;
+  rightSidebar?: React.ReactNode;
 }
 
-export function DashboardLayout({ children, user, onLogout, currentSlug, isFullScreen = false }: DashboardLayoutProps) {
+export function DashboardLayout({ children, user, onLogout, currentSlug, isFullScreen = false, rightSidebar }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -34,10 +35,20 @@ export function DashboardLayout({ children, user, onLogout, currentSlug, isFullS
           currentSlug={currentSlug}
         />
 
-        {/* Page Content - Scrollable */}
-        <main className={`flex-1 overflow-y-auto h-[calc(100vh-3rem)] ${isFullScreen ? 'p-0' : 'p-4 sm:p-6 lg:p-8'}`}>
-          {children}
-        </main>
+        {/* Content Area with optional right sidebar */}
+        <div className="flex-1 flex h-[calc(100vh-3rem)]">
+          {/* Page Content */}
+          <main className={`flex-1 overflow-y-auto ${isFullScreen ? 'p-0' : 'p-4 sm:p-6 lg:p-8'} ${rightSidebar ? 'pr-0' : ''}`}>
+            {children}
+          </main>
+          
+          {/* Right Sidebar for controls */}
+          {rightSidebar && (
+            <div className="w-72 p-3 overflow-y-auto border-l border-gray-200 bg-gray-50">
+              {rightSidebar}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

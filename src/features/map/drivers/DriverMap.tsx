@@ -4,14 +4,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseMap } from '@/components/map/leaflet/base/BaseMap';
 import { DriverMarkers } from '@/components/map/leaflet/markers/DriverMarkers';
 import { DriverDetailsModal } from '@/components/ui/DriverDetailsModal';
-import { MapTileSelector, MapTileType } from '@/components/ui/leaflet';
 import { useUnifiedDriverPositions } from '@/hooks/useUnifiedDriverPositions';
-import { useInProgressRoutes } from '@/hooks/useInProgressRoutes';
-import { RouteSelector } from '@/components/ui/RouteSelector';
-import { DriverPosition } from '@/hooks/useDriverPositions';
-import { RouteDriverPosition } from '@/hooks/useRouteDriverPositions';
 import { CombinedDriverPosition } from '@/lib/leaflet/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMapControls } from '@/contexts/MapControlsContext';
 import L from 'leaflet';
 import { calculateBounds, getRealDriverStatus } from '@/lib/leaflet/utils';
 
@@ -35,10 +31,8 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     );
   }
 
-  const { inProgressRoutes, loading: routesLoading, error: routesError } = useInProgressRoutes();
   const { 
     driverPositions, 
-    selectedRouteIds, 
     loading, 
     error,
     updateSelectedRoutes,
@@ -49,15 +43,23 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     setWsReady
   } = useUnifiedDriverPositions();
 
+  const {
+    selectedRouteIds,
+    statusFilters,
+    tileType
+  } = useMapControls();
+
+  // Sincronizar rutas seleccionadas con el hook
+  React.useEffect(() => {
+    updateSelectedRoutes(selectedRouteIds);
+  }, [selectedRouteIds, updateSelectedRoutes]);
+
   // Estado para el conductor seleccionado
   const [selectedDriver, setSelectedDriver] = useState<CombinedDriverPosition | null>(null);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [hasInitiallyCentered, setHasInitiallyCentered] = useState(false);
-  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set(['DRIVING', 'IDLE', 'STOPPED', 'BREAK', 'OFFLINE']));
   const [previousStatusFilters, setPreviousStatusFilters] = useState<Set<string>>(new Set(['DRIVING', 'IDLE', 'STOPPED', 'BREAK', 'OFFLINE']));
   const [previousSelectedRoutes, setPreviousSelectedRoutes] = useState<string[]>([]);
-  const [tileType, setTileType] = useState<MapTileType>('streets');
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const handleDriverClick = useCallback((driver: CombinedDriverPosition) => {
     setSelectedDriver(driver);
@@ -96,15 +98,6 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     });
   }, [driverPositions, statusFilters, selectedRouteIds]);
 
-  // Calcular contadores por estado
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    driverPositions.forEach(driver => {
-      const realStatus = getRealDriverStatus(driver);
-      counts[realStatus] = (counts[realStatus] || 0) + 1;
-    });
-    return counts;
-  }, [driverPositions]);
 
   // Calculate bounds for filtered drivers
   const driversBounds = useMemo(() => {
@@ -137,21 +130,39 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
   // Función para centrar el mapa solo en marcadores visibles
   const centerMapToVisibleDrivers = useCallback(() => {
-    if (mapInstance && filteredDrivers.length > 0) {
-      console.log('🎯 CENTRANDO MAPA A CONDUCTORES VISIBLES -', filteredDrivers.length, 'conductores filtrados');
-      const locations = filteredDrivers.map(driver => ({
-        latitude: driver.location.latitude,
-        longitude: driver.location.longitude
-      }));
-      const filteredBounds = calculateBounds(locations);
-      if (filteredBounds) {
-        mapInstance.fitBounds(filteredBounds, { 
-          padding: [20, 20],
-          maxZoom: 16
-        });
+    if (mapInstance) {
+      if (filteredDrivers.length > 0) {
+        console.log('🎯 CENTRANDO MAPA A CONDUCTORES VISIBLES -', filteredDrivers.length, 'conductores filtrados');
+        const locations = filteredDrivers.map(driver => ({
+          latitude: driver.location.latitude,
+          longitude: driver.location.longitude
+        }));
+        const filteredBounds = calculateBounds(locations);
+        if (filteredBounds) {
+          mapInstance.fitBounds(filteredBounds, { 
+            padding: [20, 20],
+            maxZoom: 16
+          });
+        }
+      } else {
+        // Si no hay conductores visibles, centrar en todos los conductores
+        console.log('🎯 SIN CONDUCTORES VISIBLES - Centrando en todos los conductores');
+        if (driverPositions.length > 0) {
+          const allLocations = driverPositions.map(driver => ({
+            latitude: driver.location.latitude,
+            longitude: driver.location.longitude
+          }));
+          const allBounds = calculateBounds(allLocations);
+          if (allBounds) {
+            mapInstance.fitBounds(allBounds, { 
+              padding: [20, 20],
+              maxZoom: 16
+            });
+          }
+        }
       }
     }
-  }, [mapInstance, filteredDrivers]);
+  }, [mapInstance, filteredDrivers, driverPositions]);
 
   // Detectar cambios en filtros de status y centrar el mapa
   useEffect(() => {
@@ -170,11 +181,15 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   useEffect(() => {
     // Comparar si las rutas seleccionadas han cambiado
     const routesChanged = selectedRouteIds.length !== previousSelectedRoutes.length ||
-                          !selectedRouteIds.every(routeId => previousSelectedRoutes.includes(routeId));
+                          !selectedRouteIds.every(routeId => previousSelectedRoutes.includes(routeId)) ||
+                          !previousSelectedRoutes.every(routeId => selectedRouteIds.includes(routeId));
     
     if (routesChanged && hasInitiallyCentered) {
       console.log('🎯 RUTAS SELECCIONADAS CAMBIARON - Centrando mapa a conductores visibles');
-      centerMapToVisibleDrivers();
+      // Pequeño delay para asegurar que el estado se actualice
+      setTimeout(() => {
+        centerMapToVisibleDrivers();
+      }, 100);
       setPreviousSelectedRoutes([...selectedRouteIds]);
     }
   }, [selectedRouteIds, previousSelectedRoutes, hasInitiallyCentered, centerMapToVisibleDrivers]);
@@ -232,145 +247,6 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
         </div>
       )}
 
-      {/* Error state */}
-      {error && (
-        <div className="absolute top-28 right-4 z-[1000] bg-red-50/95 backdrop-blur-sm border border-red-200 rounded-lg p-3 max-w-sm">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 text-red-600">⚠️</div>
-            <div>
-              <h3 className="text-xs font-semibold text-red-800">Error</h3>
-              <p className="text-xs text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Loading overlay */}
-      {loading && !authLoading && (
-        <div className="absolute top-28 right-4 z-[1000] bg-blue-50/95 backdrop-blur-sm border border-blue-200 rounded-lg p-3">
-          <div className="flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-            <span className="text-xs text-blue-800">Actualizando...</span>
-          </div>
-        </div>
-      )}
-
-      {/* Controles unificados - Selector de rutas, conteo de conductores y cartografía */}
-      <div className="absolute top-4 right-4 z-[1000] w-80">
-        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg">
-          {/* Route Selector - Top */}
-          <div className="p-4 border-b border-gray-200">
-            <RouteSelector
-              routes={inProgressRoutes}
-              selectedRouteIds={selectedRouteIds}
-              onSelectionChange={updateSelectedRoutes}
-              loading={routesLoading}
-              error={routesError}
-            />
-          </div>
-          
-          {/* Driver Count - Bottom */}
-          <div className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className={`w-3 h-3 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                  {wsConnected && (
-                    <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping opacity-30"></div>
-                  )}
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-gray-900">
-                    {filteredDrivers.length} de {driverPositions.length} conductor{driverPositions.length !== 1 ? 'es' : ''}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {wsConnected ? 'Conectado' : 'Desconectado'}
-                    {selectedRouteIds.length > 0 ? (
-                      <span className="ml-2 text-blue-600 font-medium">
-                        (Solo rutas seleccionadas)
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Botón para expandir/colapsar filtros */}
-              <button
-                onClick={() => setFiltersExpanded(!filtersExpanded)}
-                className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
-                title={filtersExpanded ? 'Ocultar filtros' : 'Mostrar filtros'}
-              >
-                <span>{filtersExpanded ? 'Ocultar' : 'Filtros'}</span>
-                <svg 
-                  className={`w-3 h-3 transition-transform duration-200 ${filtersExpanded ? 'rotate-180' : ''}`}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-            {/* Status Filters - Collapsible */}
-            {filtersExpanded && (
-              <div className="px-4 pb-4 border-b border-gray-200 animate-in slide-in-from-top-1 duration-200">
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700 mb-2">
-                    Filtrar por Estado
-                  </div>
-                  {[
-                    { status: 'DRIVING', label: 'Manejando', color: '#10B981' },
-                    { status: 'IDLE', label: 'Inactivo', color: '#F59E0B' },
-                    { status: 'STOPPED', label: 'Detenido', color: '#EF4444' },
-                    { status: 'BREAK', label: 'En Parada', color: '#8B5CF6' },
-                    { status: 'OFFLINE', label: 'Offline', color: '#6B7280' }
-                  ].map(({ status, label, color }) => (
-                    <label key={status} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={statusFilters.has(status)}
-                        onChange={(e) => {
-                          const newFilters = new Set(statusFilters);
-                          if (e.target.checked) {
-                            newFilters.add(status);
-                          } else {
-                            newFilters.delete(status);
-                          }
-                          setStatusFilters(newFilters);
-                        }}
-                        className="sr-only"
-                      />
-                      <div 
-                        className={`w-3 h-3 rounded-full ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}
-                        style={{ backgroundColor: color }}
-                      ></div>
-                      <span className="text-xs text-gray-600">
-                        {label} ({statusCounts[status] || 0})
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Selector de cartografía */}
-            <div className="p-4">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-700 block">
-                  Tipo de Mapa
-                </label>
-                <div className="w-full">
-                  <MapTileSelector
-                    onTileChange={setTileType}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </div>
-        </div>
-      </div>
 
       {/* Modal de detalles del conductor */}
       <DriverDetailsModal 

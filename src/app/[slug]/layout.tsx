@@ -69,11 +69,16 @@ export default function OrganizationLayout({
     );
   }
 
-  // Detectar si estamos en el dashboard para usar pantalla completa
+  // Detectar si estamos en el dashboard para dejar que maneje su propio layout
   const isDashboard = typeof window !== 'undefined' && window.location.pathname.includes('/dashboard');
   
+  // Si es dashboard, renderizar directamente los children (que incluirán su propio DashboardLayout)
+  if (isDashboard) {
+    return <>{children}</>;
+  }
+  
   return (
-    <DashboardLayout user={user} onLogout={logout} currentSlug={slug} isFullScreen={isDashboard}>
+    <DashboardLayout user={user} onLogout={logout} currentSlug={slug}>
       {children}
     </DashboardLayout>
   );
