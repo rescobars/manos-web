@@ -117,6 +117,24 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     }
   }, [mapInstance, driversBounds, hasInitiallyCentered]);
 
+  // Centrar el mapa cuando cambien los filtros de conductores
+  useEffect(() => {
+    if (mapInstance && filteredDrivers.length > 0) {
+      console.log('🎯 CENTRANDO MAPA POR FILTROS -', filteredDrivers.length, 'conductores');
+      const locations = filteredDrivers.map(driver => ({
+        latitude: driver.location.latitude,
+        longitude: driver.location.longitude
+      }));
+      const filteredBounds = calculateBounds(locations);
+      if (filteredBounds) {
+        mapInstance.fitBounds(filteredBounds, { 
+          padding: [20, 20],
+          maxZoom: 16
+        });
+      }
+    }
+  }, [mapInstance, filteredDrivers]);
+
   // Loading state
   if (authLoading) {
     return (
