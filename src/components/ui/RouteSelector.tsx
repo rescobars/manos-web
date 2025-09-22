@@ -145,7 +145,7 @@ export function RouteSelector({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-xl z-50 max-h-80 overflow-hidden">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-xl z-[1000] max-h-80 overflow-hidden">
           {/* Search Input */}
           <div className="p-3 border-b border-gray-100">
             <input

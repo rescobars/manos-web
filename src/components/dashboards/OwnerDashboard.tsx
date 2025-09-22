@@ -23,7 +23,7 @@ export default function OwnerDashboard() {
   const isPlatformAdmin = currentOrganization.roles.some(role => role.name === 'PLATFORM_ADMIN');
 
   return (
-    <div className="absolute inset-0 w-full h-full relative overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       {/* Mapa ocupa toda el área disponible */}
       <DriverMap 
         className="w-full h-full"
@@ -34,7 +34,7 @@ export default function OwnerDashboard() {
       />
       
       {/* Header flotante minimalista */}
-      <div className="absolute top-4 left-4 z-30 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 shadow-lg">
+      <div className="absolute top-4 right-4 z-[1000] bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 shadow-lg">
         <div className="flex items-center space-x-2">
           {currentOrganization.logo_url ? (
             <img 

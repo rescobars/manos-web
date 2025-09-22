@@ -11,7 +11,7 @@ interface DynamicHeaderProps {
 
 export default function DynamicHeader({ onMenuClick, currentSlug }: DynamicHeaderProps) {
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 h-12 flex items-center px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
+    <header className="bg-white shadow-sm border-b border-gray-200 h-12 flex items-center px-4 sm:px-6 lg:px-8 sticky top-0 z-[1100]">
       <div className="flex items-center">
         <Button
           variant="ghost"

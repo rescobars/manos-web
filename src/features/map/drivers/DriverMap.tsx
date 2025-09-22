@@ -147,7 +147,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
       {/* Error state */}
       {error && (
-        <div className="absolute top-28 left-4 z-10 bg-red-50/95 backdrop-blur-sm border border-red-200 rounded-lg p-3 max-w-sm">
+        <div className="absolute top-28 right-4 z-[1000] bg-red-50/95 backdrop-blur-sm border border-red-200 rounded-lg p-3 max-w-sm">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 text-red-600">⚠️</div>
             <div>
@@ -160,7 +160,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
       {/* Loading overlay */}
       {loading && !authLoading && (
-        <div className="absolute top-28 left-4 z-10 bg-blue-50/95 backdrop-blur-sm border border-blue-200 rounded-lg p-3">
+        <div className="absolute top-28 right-4 z-[1000] bg-blue-50/95 backdrop-blur-sm border border-blue-200 rounded-lg p-3">
           <div className="flex items-center space-x-2">
             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
             <span className="text-xs text-blue-800">Actualizando...</span>
@@ -169,7 +169,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
       )}
 
       {/* Controles unificados - Selector de rutas y conteo de conductores */}
-      <div className="absolute top-16 left-4 z-30 w-80">
+      <div className="absolute top-16 right-4 z-[1000] w-80">
         <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg">
           {/* Route Selector - Top */}
           <div className="p-4 border-b border-gray-200">
