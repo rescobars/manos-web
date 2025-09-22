@@ -73,17 +73,18 @@ export function RouteSelector({
         onClick={() => setIsOpen(!isOpen)}
         disabled={loading}
         className={`
-          w-full px-3 py-2 bg-white/95 backdrop-blur-sm border border-gray-200 
+          w-full px-3 py-2 backdrop-blur-sm border theme-border
           rounded-lg shadow-sm hover:shadow-md transition-all duration-200
-          ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-gray-300'}
+          theme-bg-3 theme-text-primary
+          ${isOpen ? 'ring-2 ring-blue-500' : ''}
           ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-          ${error ? 'border-red-300 bg-red-50/95' : ''}
+          ${error ? 'border-red-300' : ''}
         `}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
-            <MapPin className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-            <span className="text-xs font-medium text-gray-900 truncate">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0 theme-info" />
+            <span className="text-xs font-medium truncate theme-text-primary">
               {selectedRouteIds.length === 0 
                 ? 'Seleccionar rutas' 
                 : `${selectedRouteIds.length} ruta${selectedRouteIds.length !== 1 ? 's' : ''}`
@@ -108,31 +109,31 @@ export function RouteSelector({
                   }
                 }}
               >
-                <X className="w-3 h-3 text-gray-500" />
+                <X className="w-3 h-3 theme-text-muted" />
               </div>
             )}
             <ChevronDown 
-              className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+              className={`w-4 h-4 transition-transform duration-200 theme-text-muted ${
                 isOpen ? 'rotate-180' : ''
-              }`} 
+              }`}
             />
           </div>
         </div>
 
         {/* Selected routes preview */}
         {selectedRoutes.length > 0 && (
-          <div className="mt-1 pt-1 border-t border-gray-100">
+          <div className="mt-1 pt-1 border-t theme-divider">
             <div className="flex flex-wrap gap-1">
               {selectedRoutes.slice(0, 1).map(route => (
                 <span
                   key={route.uuid}
-                  className="inline-flex items-center px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded truncate max-w-[120px]"
+                  className="inline-flex items-center px-1.5 py-0.5 text-xs rounded truncate max-w-[120px] theme-bg-2 theme-text-primary"
                 >
                   {route.route_name}
                 </span>
               ))}
               {selectedRoutes.length > 1 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                <span className="inline-flex items-center px-1.5 py-0.5 text-xs rounded theme-bg-2 theme-text-secondary">
                   +{selectedRoutes.length - 1}
                 </span>
               )}
@@ -143,15 +144,15 @@ export function RouteSelector({
 
       {/* Dropdown Menu */}
       {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg z-[1000] max-h-64 overflow-hidden">
+          <div className="absolute top-full left-0 right-0 mt-1 backdrop-blur-sm border theme-border rounded-lg shadow-lg z-[1000] max-h-64 overflow-hidden theme-bg-3">
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-100">
+          <div className="p-2 border-b theme-border">
             <input
               type="text"
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-2 py-1.5 text-xs border theme-border rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none theme-bg-3 theme-text-primary"
             />
           </div>
 

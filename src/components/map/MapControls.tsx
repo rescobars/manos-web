@@ -3,6 +3,7 @@
 import React from 'react';
 import { RouteSelector } from '@/components/ui/RouteSelector';
 import { MapTileSelector, MapTileType } from '@/components/ui/leaflet';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 
 interface MapControlsProps {
   // Route controls
@@ -40,12 +41,26 @@ export function MapControls({
   tileType,
   onTileTypeChange
 }: MapControlsProps) {
+  const { colors } = useDynamicTheme();
+  
   return (
-    <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg">
+    <div 
+      className="backdrop-blur-sm border rounded-lg shadow-lg"
+      style={{
+        backgroundColor: colors.background3 + 'F5', // 95% opacity
+        borderColor: colors.border
+      }}
+    >
       {/* Route Selector - Top */}
-      <div className="p-3 border-b border-gray-200">
+      <div 
+        className="p-3 border-b"
+        style={{ borderColor: colors.border }}
+      >
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 block">
+          <label 
+            className="text-sm font-medium block"
+            style={{ color: colors.textPrimary }}
+          >
             Rutas Activas
           </label>
           <RouteSelector
@@ -60,22 +75,40 @@ export function MapControls({
       </div>
       
       {/* Driver Count */}
-      <div className="p-3 border-b border-gray-200">
+      <div 
+        className="p-3 border-b"
+        style={{ borderColor: colors.border }}
+      >
         <div className="flex items-center space-x-2">
           <div className="relative">
-            <div className={`w-2.5 h-2.5 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+            <div 
+              className={`w-2.5 h-2.5 rounded-full ${wsConnected ? 'animate-pulse' : ''}`}
+              style={{ backgroundColor: wsConnected ? colors.success : colors.error }}
+            ></div>
             {wsConnected && (
-              <div className="absolute inset-0 w-2.5 h-2.5 bg-green-500 rounded-full animate-ping opacity-30"></div>
+              <div 
+                className="absolute inset-0 w-2.5 h-2.5 rounded-full animate-ping opacity-30"
+                style={{ backgroundColor: colors.success }}
+              ></div>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold text-gray-900 truncate">
+            <div 
+              className="text-sm font-bold truncate"
+              style={{ color: colors.textPrimary }}
+            >
               {filteredDrivers.length} de {totalDrivers} conductor{totalDrivers !== 1 ? 'es' : ''}
             </div>
-            <div className="text-xs text-gray-600 truncate">
+            <div 
+              className="text-xs truncate"
+              style={{ color: colors.textSecondary }}
+            >
               {wsConnected ? 'Conectado' : 'Desconectado'}
               {selectedRouteIds.length > 0 && (
-                <span className="ml-1 text-blue-600 font-medium">
+                <span 
+                  className="ml-1 font-medium"
+                  style={{ color: colors.info }}
+                >
                   (Filtrado)
                 </span>
               )}
@@ -85,19 +118,38 @@ export function MapControls({
       </div>
 
       {/* Status Filters - Siempre visibles */}
-      <div className="px-3 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div 
+        className="px-3 py-3 border-b"
+        style={{ borderColor: colors.border }}
+      >
         <div className="space-y-2">
-          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div 
+            className="text-sm font-medium"
+            style={{ color: colors.textPrimary }}
+          >
             Estados
           </div>
           {[
-            { status: 'DRIVING', label: 'Manejando', color: '#10B981' },
-            { status: 'IDLE', label: 'Inactivo', color: '#F59E0B' },
-            { status: 'STOPPED', label: 'Detenido', color: '#EF4444' },
-            { status: 'BREAK', label: 'En Parada', color: '#8B5CF6' },
-            { status: 'OFFLINE', label: 'Offline', color: '#6B7280' }
+            { status: 'DRIVING', label: 'Manejando', color: colors.success },
+            { status: 'IDLE', label: 'Inactivo', color: colors.warning },
+            { status: 'STOPPED', label: 'Detenido', color: colors.error },
+            { status: 'BREAK', label: 'En Parada', color: colors.info },
+            { status: 'OFFLINE', label: 'Offline', color: colors.textMuted }
           ].map(({ status, label, color }) => (
-            <label key={status} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded transition-colors">
+            <label 
+              key={status} 
+              className="flex items-center space-x-2 cursor-pointer p-1.5 rounded transition-colors"
+              style={{ 
+                backgroundColor: 'transparent',
+                '--hover-bg': colors.menuItemHover
+              } as React.CSSProperties}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.menuItemHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
               <input
                 type="checkbox"
                 checked={statusFilters.has(status)}
@@ -116,10 +168,16 @@ export function MapControls({
                 className={`w-3 h-3 rounded-full transition-opacity flex-shrink-0 ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}
                 style={{ backgroundColor: color }}
               ></div>
-              <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">
+              <span 
+                className="text-xs flex-1 truncate"
+                style={{ color: colors.textPrimary }}
+              >
                 {label}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium flex-shrink-0">
+              <span 
+                className="text-xs font-medium flex-shrink-0"
+                style={{ color: colors.textSecondary }}
+              >
                 {statusCounts[status] || 0}
               </span>
             </label>
@@ -130,7 +188,10 @@ export function MapControls({
       {/* Selector de cartografía */}
       <div className="p-3">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 block">
+          <label 
+            className="text-sm font-medium block"
+            style={{ color: colors.textPrimary }}
+          >
             Mapa
           </label>
           <MapTileSelector

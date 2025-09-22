@@ -872,8 +872,8 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
           
           {/* Selector de Rutas con Diseño Card */}
           <div className="mb-4 sm:mb-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
-              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 sm:mr-3"></span>
+            <h3 className="text-base sm:text-lg font-semibold theme-text-primary mb-3 sm:mb-4 flex items-center">
+              <span className="w-2 h-2 rounded-full mr-2 sm:mr-3" style={{ backgroundColor: colors.info }}></span>
               Seleccionar Ruta
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
@@ -894,12 +894,14 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                     <div 
                       className={`w-full p-2 rounded-xl border-2 transition-all duration-200 ${
                         isSelected 
-                          ? 'ring-2 ring-offset-2 ring-blue-500 shadow-lg border-blue-500' 
-                          : 'shadow-md hover:shadow-lg border-gray-200 hover:border-gray-300'
+                          ? 'ring-2 ring-offset-2 shadow-lg' 
+                          : 'shadow-md hover:shadow-lg'
                       }`}
                       style={{
-                        backgroundColor: isSelected ? routeColor : 'white',
-                        color: isSelected ? 'white' : 'inherit',
+                        borderColor: isSelected ? colors.buttonPrimary1 : colors.border,
+                        ringColor: isSelected ? colors.buttonPrimary1 : 'transparent',
+                        backgroundColor: isSelected ? routeColor : colors.background3,
+                        color: isSelected ? 'white' : colors.textPrimary,
                       }}
                     >
                       {/* Header del card */}

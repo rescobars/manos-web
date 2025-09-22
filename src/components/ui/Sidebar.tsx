@@ -154,13 +154,13 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
                 )}
                 style={{
                   backgroundColor: isActive ? colors.sidebarItemActive : 'transparent',
-                  color: isActive ? 'white' : colors.sidebarText,
+                  color: isActive ? colors.buttonText : colors.sidebarText,
                 }}
               >
                 <span 
                   className="w-5 h-5 mr-3"
                   style={{ 
-                    color: isActive ? 'white' : colors.sidebarText 
+                    color: isActive ? colors.buttonText : colors.sidebarText 
                   }}
                 >
                   <Icon className="w-5 h-5" />

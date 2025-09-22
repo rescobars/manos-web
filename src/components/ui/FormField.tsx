@@ -153,13 +153,18 @@ export function SelectField({
   className = '',
   disabled = false
 }: SelectFieldProps) {
+  const { colors } = useDynamicTheme();
   const selectId = `select-${label.toLowerCase().replace(/\s+/g, '-')}`;
   
   return (
     <div className={className}>
-      <label htmlFor={selectId} className="block text-sm font-semibold text-gray-700 mb-3">
+      <label 
+        htmlFor={selectId} 
+        className="block text-sm font-semibold theme-text-primary mb-3"
+        style={{ color: colors.textPrimary }}
+      >
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="theme-error ml-1" style={{ color: colors.error }}>*</span>}
       </label>
       
       <select
@@ -167,27 +172,46 @@ export function SelectField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
           error 
-            ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
-            : 'border-gray-200'
+            ? 'focus:border-red-500 focus:ring-red-200' 
+            : ''
         }`}
+        style={{
+          backgroundColor: colors.background3,
+          borderColor: error ? colors.error : colors.border,
+          color: colors.textPrimary,
+        }}
       >
         {placeholder && (
-          <option value="" disabled>
+          <option 
+            value="" 
+            disabled
+            style={{
+              backgroundColor: colors.background3,
+              color: colors.textMuted
+            }}
+          >
             {placeholder}
           </option>
         )}
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option 
+            key={option.value} 
+            value={option.value}
+            style={{
+              backgroundColor: colors.background3,
+              color: colors.textPrimary
+            }}
+          >
             {option.label}
           </option>
         ))}
       </select>
       
       {error && (
-        <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+        <p className="mt-2 text-sm theme-error flex items-center gap-2" style={{ color: colors.error }}>
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors.error }}></span>
           {error}
         </p>
       )}

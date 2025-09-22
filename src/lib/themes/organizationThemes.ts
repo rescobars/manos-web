@@ -1,63 +1,63 @@
 import { DynamicThemeColors, OrganizationThemeConfig } from '@/contexts/DynamicThemeContext';
 
-// Farmacia Cruz Verde Guatemala - Tema Rojo Moderno
+// Farmacia Cruz Verde Guatemala - Tema Verde Auténtico
 export const cruzVerdeTheme: DynamicThemeColors = {
   // Backgrounds
-  background1: '#0f0f0f',      // Negro profundo
-  background2: '#1a1a1a',      // Gris muy oscuro
+  background1: '#f0fdf4',      // Verde muy claro
+  background2: '#dcfce7',      // Verde claro
   background3: '#ffffff',      // Blanco
   
   // Botones
-  buttonPrimary1: '#ef4444',   // Rojo vibrante moderno
-  buttonPrimary2: '#dc2626',   // Rojo hover
-  buttonPrimary3: '#b91c1c',   // Rojo activo
-  buttonSecondary1: '#1a1a1a', // Gris oscuro
-  buttonSecondary2: '#2a2a2a', // Gris medio
-  buttonHover: '#dc2626',      // Rojo hover general
-  buttonActive: '#b91c1c',     // Rojo activo general
+  buttonPrimary1: '#16a34a',   // Verde principal auténtico
+  buttonPrimary2: '#15803d',   // Verde hover
+  buttonPrimary3: '#166534',   // Verde activo
+  buttonSecondary1: '#f0fdf4', // Verde muy claro
+  buttonSecondary2: '#dcfce7', // Verde claro
+  buttonHover: '#15803d',      // Verde hover general
+  buttonActive: '#166534',     // Verde activo general
   buttonText: '#ffffff',       // Texto blanco
   buttonTextHover: '#ffffff',  // Texto blanco en hover
   
   // Tablas
-  tableHeader: '#ef4444',      // Rojo principal
+  tableHeader: '#16a34a',      // Verde principal
   tableRow: '#ffffff',         // Blanco
-  tableRowHover: '#f8fafc',    // Gris muy claro
-  tableBorder: '#e2e8f0',      // Gris claro
+  tableRowHover: '#f0fdf4',    // Verde muy claro
+  tableBorder: '#bbf7d0',      // Verde claro
   
   // Menús
   menuBackground1: '#ffffff',  // Blanco
-  menuBackground2: '#f8fafc',  // Gris muy claro
-  menuItemHover: '#f1f5f9',    // Gris claro
+  menuBackground2: '#f0fdf4',  // Verde muy claro
+  menuItemHover: '#dcfce7',    // Verde claro
   
   // Header/Navbar específico
-  headerBackground: '#ef4444', // Rojo principal
+  headerBackground: '#16a34a', // Verde principal
   headerText: '#ffffff',       // Blanco
-  headerBorder: '#dc2626',     // Rojo hover
+  headerBorder: '#15803d',     // Verde hover
   
   // Sidebar específico
-  sidebarBackground: '#1a1a1a', // Gris muy oscuro
-  sidebarText: '#ffffff',       // Blanco
-  sidebarBorder: '#ef4444',     // Rojo principal
-  sidebarItemHover: '#2a2a2a',  // Gris medio
-  sidebarItemActive: '#ef4444', // Rojo principal
+  sidebarBackground: '#f8fafc', // Gris muy claro
+  sidebarText: '#14532d',       // Verde muy oscuro
+  sidebarBorder: '#16a34a',     // Verde principal
+  sidebarItemHover: '#dcfce7',  // Verde claro
+  sidebarItemActive: '#16a34a', // Verde principal
   
   // Textos
-  textPrimary: '#0f172a',      // Negro profundo
-  textSecondary: '#475569',    // Gris oscuro
-  textMuted: '#94a3b8',        // Gris medio
+  textPrimary: '#14532d',      // Verde muy oscuro
+  textSecondary: '#166534',    // Verde oscuro
+  textMuted: '#4ade80',        // Verde medio
   
   // Bordes y divisores
-  border: '#e2e8f0',           // Gris claro
-  divider: '#f1f5f9',          // Gris muy claro
+  border: '#bbf7d0',           // Verde claro
+  divider: '#dcfce7',          // Verde claro
   
   // Estados
-  success: '#10b981',          // Verde esmeralda
-  warning: '#f59e0b',          // Ámbar
-  error: '#ef4444',            // Rojo
-  info: '#3b82f6',             // Azul moderno
+  success: '#16a34a',          // Verde principal
+  warning: '#eab308',          // Amarillo
+  error: '#dc2626',            // Rojo
+  info: '#0ea5e9',             // Azul
 };
 
-// Farmacia Galeno Guatemala - Tema Azul Médico Moderno
+// Farmacia Galeno Guatemala - Tema Azul, Rojo y Blanco Médico
 export const galenoTheme: DynamicThemeColors = {
   // Backgrounds
   background1: '#f8fafc',      // Gris muy claro
@@ -65,18 +65,18 @@ export const galenoTheme: DynamicThemeColors = {
   background3: '#ffffff',      // Blanco
   
   // Botones
-  buttonPrimary1: '#0ea5e9',   // Azul cielo moderno
-  buttonPrimary2: '#0284c7',   // Azul hover
-  buttonPrimary3: '#0369a1',   // Azul activo
-  buttonSecondary1: '#f1f5f9', // Gris muy claro
-  buttonSecondary2: '#e2e8f0', // Gris claro
-  buttonHover: '#0284c7',      // Azul hover general
-  buttonActive: '#0369a1',     // Azul activo general
+  buttonPrimary1: '#1e40af',   // Azul médico profundo
+  buttonPrimary2: '#1d4ed8',   // Azul hover
+  buttonPrimary3: '#1e3a8a',   // Azul activo
+  buttonSecondary1: '#fef2f2', // Rojo muy claro
+  buttonSecondary2: '#fee2e2', // Rojo claro
+  buttonHover: '#1d4ed8',      // Azul hover general
+  buttonActive: '#1e3a8a',     // Azul activo general
   buttonText: '#ffffff',       // Texto blanco
   buttonTextHover: '#ffffff',  // Texto blanco en hover
   
   // Tablas
-  tableHeader: '#0ea5e9',      // Azul principal
+  tableHeader: '#1e40af',      // Azul principal
   tableRow: '#ffffff',         // Blanco
   tableRowHover: '#f8fafc',    // Gris muy claro
   tableBorder: '#cbd5e1',      // Gris medio
@@ -84,22 +84,22 @@ export const galenoTheme: DynamicThemeColors = {
   // Menús
   menuBackground1: '#ffffff',  // Blanco
   menuBackground2: '#f8fafc',  // Gris muy claro
-  menuItemHover: '#f1f5f9',    // Gris claro
+  menuItemHover: '#fef2f2',    // Rojo muy claro
   
   // Header/Navbar específico
-  headerBackground: '#0ea5e9', // Azul principal
+  headerBackground: '#1e40af', // Azul principal
   headerText: '#ffffff',       // Blanco
-  headerBorder: '#0284c7',     // Azul hover
+  headerBorder: '#1d4ed8',     // Azul hover
   
   // Sidebar específico
   sidebarBackground: '#f1f5f9', // Gris muy claro
-  sidebarText: '#0f172a',       // Negro profundo
-  sidebarBorder: '#0ea5e9',     // Azul principal
-  sidebarItemHover: '#e2e8f0',  // Gris claro
-  sidebarItemActive: '#0ea5e9', // Azul principal
+  sidebarText: '#1e3a8a',       // Azul oscuro
+  sidebarBorder: '#1e40af',     // Azul principal
+  sidebarItemHover: '#fef2f2',  // Rojo muy claro
+  sidebarItemActive: '#1e40af', // Azul principal
   
   // Textos
-  textPrimary: '#0f172a',      // Negro profundo
+  textPrimary: '#1e3a8a',      // Azul oscuro
   textSecondary: '#475569',    // Gris oscuro
   textMuted: '#64748b',        // Gris medio
   
@@ -110,64 +110,121 @@ export const galenoTheme: DynamicThemeColors = {
   // Estados
   success: '#10b981',          // Verde esmeralda
   warning: '#f59e0b',          // Ámbar
-  error: '#ef4444',            // Rojo
-  info: '#0ea5e9',             // Azul principal
+  error: '#dc2626',            // Rojo
+  info: '#1e40af',             // Azul principal
 };
 
-// Campero Guatemala - Tema Naranja Vibrante Moderno
+// Campero Guatemala - Tema Amarillo y Rojo Auténtico
 export const camperoTheme: DynamicThemeColors = {
   // Backgrounds
-  background1: '#1c1917',      // Marrón muy oscuro
-  background2: '#292524',      // Marrón oscuro
+  background1: '#fefce8',      // Amarillo muy claro
+  background2: '#fef3c7',      // Amarillo claro
   background3: '#ffffff',      // Blanco
   
   // Botones
-  buttonPrimary1: '#f97316',   // Naranja vibrante moderno
-  buttonPrimary2: '#ea580c',   // Naranja hover
-  buttonPrimary3: '#c2410c',   // Naranja activo
-  buttonSecondary1: '#292524', // Marrón oscuro
-  buttonSecondary2: '#3c3c3c', // Gris oscuro
-  buttonHover: '#ea580c',      // Naranja hover general
-  buttonActive: '#c2410c',     // Naranja activo general
+  buttonPrimary1: '#dc2626',   // Rojo principal
+  buttonPrimary2: '#b91c1c',   // Rojo hover
+  buttonPrimary3: '#991b1b',   // Rojo activo
+  buttonSecondary1: '#fefce8', // Amarillo muy claro
+  buttonSecondary2: '#fef3c7', // Amarillo claro
+  buttonHover: '#b91c1c',      // Rojo hover general
+  buttonActive: '#991b1b',     // Rojo activo general
   buttonText: '#ffffff',       // Texto blanco
   buttonTextHover: '#ffffff',  // Texto blanco en hover
   
   // Tablas
-  tableHeader: '#f97316',      // Naranja principal
+  tableHeader: '#dc2626',      // Rojo principal
   tableRow: '#ffffff',         // Blanco
-  tableRowHover: '#fef3c7',    // Amarillo muy claro
-  tableBorder: '#d1d5db',      // Gris claro
+  tableRowHover: '#fefce8',    // Amarillo muy claro
+  tableBorder: '#fbbf24',      // Amarillo
   
   // Menús
   menuBackground1: '#ffffff',  // Blanco
-  menuBackground2: '#fef3c7',  // Amarillo muy claro
-  menuItemHover: '#fde68a',    // Amarillo claro
+  menuBackground2: '#fefce8',  // Amarillo muy claro
+  menuItemHover: '#fef3c7',    // Amarillo claro
   
   // Header/Navbar específico
-  headerBackground: '#f97316', // Naranja principal
-  headerText: '#ffffff',       // Blanco
-  headerBorder: '#ea580c',     // Naranja hover
+  headerBackground: '#fbbf24', // Amarillo dorado
+  headerText: '#1f2937',       // Gris muy oscuro
+  headerBorder: '#f59e0b',     // Amarillo hover
   
   // Sidebar específico
-  sidebarBackground: '#292524', // Marrón oscuro
-  sidebarText: '#ffffff',       // Blanco
-  sidebarBorder: '#f97316',     // Naranja principal
-  sidebarItemHover: '#3c3c3c',  // Gris oscuro
-  sidebarItemActive: '#f97316', // Naranja principal
+  sidebarBackground: '#f8fafc', // Gris muy claro
+  sidebarText: '#1f2937',       // Gris muy oscuro
+  sidebarBorder: '#dc2626',     // Rojo principal
+  sidebarItemHover: '#fef3c7',  // Amarillo claro
+  sidebarItemActive: '#dc2626', // Rojo principal
   
   // Textos
-  textPrimary: '#0f172a',      // Negro profundo
+  textPrimary: '#1f2937',      // Gris muy oscuro
   textSecondary: '#374151',    // Gris oscuro
   textMuted: '#6b7280',        // Gris medio
   
   // Bordes y divisores
-  border: '#d1d5db',           // Gris claro
-  divider: '#e5e7eb',          // Gris muy claro
+  border: '#fbbf24',           // Amarillo
+  divider: '#fef3c7',          // Amarillo claro
+  
+  // Estados
+  success: '#16a34a',          // Verde
+  warning: '#f59e0b',          // Amarillo
+  error: '#dc2626',            // Rojo
+  info: '#0ea5e9',             // Azul
+};
+
+// Movigo - Tema Moderno por Defecto (Estilo Next.js)
+export const movigoTheme: DynamicThemeColors = {
+  // Backgrounds
+  background1: '#000000',      // Negro puro
+  background2: '#111111',      // Negro suave
+  background3: '#1a1a1a',      // Negro con toque gris
+  
+  // Botones
+  buttonPrimary1: '#ffffff',   // Blanco puro
+  buttonPrimary2: '#f3f4f6',   // Gris muy claro
+  buttonPrimary3: '#e5e7eb',   // Gris claro
+  buttonSecondary1: '#1a1a1a', // Negro con toque gris
+  buttonSecondary2: '#2a2a2a', // Gris oscuro
+  buttonHover: '#f3f4f6',      // Gris muy claro hover
+  buttonActive: '#e5e7eb',     // Gris claro activo
+  buttonText: '#000000',       // Texto negro
+  buttonTextHover: '#000000',  // Texto negro en hover
+  
+  // Tablas
+  tableHeader: '#1a1a1a',      // Negro con toque gris
+  tableRow: '#000000',         // Negro puro
+  tableRowHover: '#111111',    // Negro suave
+  tableBorder: '#333333',      // Gris oscuro
+  
+  // Menús
+  menuBackground1: '#000000',  // Negro puro
+  menuBackground2: '#111111',  // Negro suave
+  menuItemHover: '#1a1a1a',    // Negro con toque gris
+  
+  // Header/Navbar específico
+  headerBackground: '#000000', // Negro puro
+  headerText: '#ffffff',       // Blanco
+  headerBorder: '#333333',     // Gris oscuro
+  
+  // Sidebar específico
+  sidebarBackground: '#111111', // Negro suave
+  sidebarText: '#ffffff',       // Blanco
+  sidebarBorder: '#333333',     // Gris oscuro
+  sidebarItemHover: '#1a1a1a',  // Negro con toque gris
+  sidebarItemActive: '#ffffff', // Blanco
+  
+  // Textos
+  textPrimary: '#ffffff',      // Blanco
+  textSecondary: '#d1d5db',    // Gris claro
+  textMuted: '#9ca3af',        // Gris medio
+  
+  // Bordes y divisores
+  border: '#333333',           // Gris oscuro
+  divider: '#1a1a1a',          // Negro con toque gris
   
   // Estados
   success: '#10b981',          // Verde esmeralda
   warning: '#f59e0b',          // Ámbar
-  error: '#ef4444',            // Rojo
+  error: '#ef4444',            // Rojo moderno
   info: '#3b82f6',             // Azul moderno
 };
 
@@ -175,7 +232,7 @@ export const camperoTheme: DynamicThemeColors = {
 export const organizationThemes: Record<string, OrganizationThemeConfig> = {
   'cruz-verde-guatemala': {
     organization_uuid: 'cruz-verde-guatemala',
-    theme_name: 'Farmacia Cruz Verde Guatemala',
+    theme_name: 'Cruz Verde - Verde Salud',
     colors: cruzVerdeTheme,
     is_active: true,
     created_at: new Date().toISOString(),
@@ -183,7 +240,7 @@ export const organizationThemes: Record<string, OrganizationThemeConfig> = {
   },
   'galeno-guatemala': {
     organization_uuid: 'galeno-guatemala',
-    theme_name: 'Farmacia Galeno Guatemala',
+    theme_name: 'Galeno - Azul Médico',
     colors: galenoTheme,
     is_active: true,
     created_at: new Date().toISOString(),
@@ -191,8 +248,16 @@ export const organizationThemes: Record<string, OrganizationThemeConfig> = {
   },
   'campero-guatemala': {
     organization_uuid: 'campero-guatemala',
-    theme_name: 'Campero Guatemala',
+    theme_name: 'Campero - Amarillo & Rojo',
     colors: camperoTheme,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  'movigo-default': {
+    organization_uuid: 'movigo-default',
+    theme_name: 'Movigo - Moderno',
+    colors: movigoTheme,
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

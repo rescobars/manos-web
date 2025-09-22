@@ -69,15 +69,15 @@ export function RouteStatsCards({ allRoutes, filterStatus, onFilterChange }: Rou
             filterStatus === 'ASSIGNED' ? 'ring-2' : ''
           }`}
           style={{
-            '--tw-ring-color': filterStatus === 'ASSIGNED' ? '#f97316' : 'transparent'
+            '--tw-ring-color': filterStatus === 'ASSIGNED' ? colors.warning : 'transparent'
           } as React.CSSProperties}
         >
           <StatCard
             title="Asignadas"
             value={assignedRoutes}
             icon={Users}
-            iconColor="#f97316"
-            iconBgColor="#f9731620"
+            iconColor={colors.warning}
+            iconBgColor={colors.warning + '20'}
           />
         </div>
         

@@ -6,7 +6,7 @@ import { organizationThemes } from '@/lib/themes/organizationThemes';
 import { useState, useEffect } from 'react';
 
 export default function TestDynamicThemePage() {
-  const [selectedOrg, setSelectedOrg] = useState<string>('cruz-verde-guatemala');
+  const [selectedOrg, setSelectedOrg] = useState<string>('movigo-default');
   const [isChanging, setIsChanging] = useState(false);
 
   const handleOrgChange = async (orgUuid: string) => {

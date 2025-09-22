@@ -103,13 +103,15 @@ export function MapTileSelector({ onTileChange, className = '' }: MapTileSelecto
       {/* Botón principal */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg hover:bg-white transition-colors"
+        className="flex items-center space-x-2 px-3 py-2 backdrop-blur-sm border theme-border rounded-lg shadow-lg transition-colors theme-bg-3"
         title="Cambiar tipo de mapa"
       >
-        <Icon className="w-4 h-4 text-gray-600" />
-        <span className="text-sm font-medium text-gray-700">{currentConfig.label}</span>
+        <Icon className="w-4 h-4 theme-text-secondary" />
+        <span className="text-sm font-medium theme-text-primary">
+          {currentConfig.label}
+        </span>
         <svg 
-          className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          className={`w-4 h-4 transition-transform theme-text-muted ${isOpen ? 'rotate-180' : ''}`}
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -128,7 +130,7 @@ export function MapTileSelector({ onTileChange, className = '' }: MapTileSelecto
           />
           
           {/* Menu */}
-          <div className="absolute top-full left-0 mt-1 w-48 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-xl z-20">
+          <div className="absolute top-full left-0 mt-1 w-48 backdrop-blur-sm border theme-border rounded-lg shadow-xl z-20 theme-bg-3">
             {Object.entries(tileConfig).map(([tileType, config]) => {
               const Icon = config.icon;
               const isSelected = selectedTile === tileType;
@@ -137,14 +139,24 @@ export function MapTileSelector({ onTileChange, className = '' }: MapTileSelecto
                 <button
                   key={tileType}
                   onClick={() => handleTileSelect(tileType as MapTileType)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                    isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                  className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors first:rounded-t-lg last:rounded-b-lg theme-menu-item ${
+                    isSelected ? 'theme-bg-2' : ''
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{config.label}</span>
+                  <Icon 
+                    className={`w-4 h-4 ${isSelected ? 'theme-button-primary-1' : 'theme-text-secondary'}`}
+                  />
+                  <span 
+                    className={`text-sm font-medium ${isSelected ? 'theme-button-primary-1' : 'theme-text-primary'}`}
+                  >
+                    {config.label}
+                  </span>
                   {isSelected && (
-                    <svg className="w-4 h-4 ml-auto text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <svg 
+                      className="w-4 h-4 ml-auto theme-button-primary-1" 
+                      fill="currentColor" 
+                      viewBox="0 0 20 20"
+                    >
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   )}

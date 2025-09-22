@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
-import { getThemeByOrganizationUuid } from '@/lib/themes/organizationThemes';
+import { getThemeByOrganizationUuid, movigoTheme } from '@/lib/themes/organizationThemes';
 
 // Definición de la estructura de colores para el tema dinámico
 export interface DynamicThemeColors {
@@ -71,7 +71,10 @@ export interface OrganizationThemeConfig {
   updated_at?: string;
 }
 
-// Tema verde por defecto
+// Tema Movigo por defecto
+const defaultMovigoTheme: DynamicThemeColors = movigoTheme;
+
+// Tema verde por defecto (mantenido para compatibilidad)
 const defaultGreenTheme: DynamicThemeColors = {
   // Backgrounds
   background1: '#f0fdf4',      // Verde muy claro
@@ -142,7 +145,7 @@ const DynamicThemeContext = createContext<DynamicThemeContextType | undefined>(u
 export function DynamicThemeProvider({ children }: { children: React.ReactNode }) {
   const { currentOrganization } = useAuth();
   const [themeConfig, setThemeConfig] = useState<OrganizationThemeConfig | null>(null);
-  const [colors, setColors] = useState<DynamicThemeColors>(defaultGreenTheme);
+  const [colors, setColors] = useState<DynamicThemeColors>(defaultMovigoTheme);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -153,7 +156,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     } else {
       // Resetear a tema por defecto cuando no hay organización
       setThemeConfig(null);
-      setColors(defaultGreenTheme);
+      setColors(defaultMovigoTheme);
     }
   }, [currentOrganization]);
 
@@ -194,11 +197,11 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
         setColors(organizationTheme.colors);
         applyThemeToDocument(organizationTheme.colors);
       } else {
-        // Usar tema verde por defecto si no se encuentra tema específico
+        // Usar tema Movigo por defecto si no se encuentra tema específico
         const defaultThemeConfig: OrganizationThemeConfig = {
           organization_uuid: organizationUuid,
-          theme_name: 'Tema Verde Corporativo',
-          colors: defaultGreenTheme,
+          theme_name: 'Movigo - Moderno',
+          colors: defaultMovigoTheme,
           is_active: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -212,7 +215,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     } catch (err) {
       console.error('Error loading organization theme:', err);
       setError('Error al cargar el tema de la organización');
-      setColors(defaultGreenTheme);
+      setColors(defaultMovigoTheme);
     } finally {
       setIsLoading(false);
     }
@@ -297,8 +300,8 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     if (currentOrganization) {
       const defaultConfig: OrganizationThemeConfig = {
         organization_uuid: currentOrganization.uuid,
-        theme_name: 'Tema Verde Corporativo',
-        colors: defaultGreenTheme,
+        theme_name: 'Movigo - Moderno',
+        colors: defaultMovigoTheme,
         is_active: true,
         updated_at: new Date().toISOString(),
       };

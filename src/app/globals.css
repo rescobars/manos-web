@@ -190,7 +190,7 @@
   .theme-sidebar-text { color: var(--theme-sidebar-text); }
   .theme-sidebar-border { border-color: var(--theme-sidebar-border); }
   .theme-sidebar-item:hover { background-color: var(--theme-sidebar-item-hover); }
-  .theme-sidebar-item.active { background-color: var(--theme-sidebar-item-active); color: white; }
+  .theme-sidebar-item.active { background-color: var(--theme-sidebar-item-active); color: var(--theme-button-text); }
   
   /* Clases adicionales para mejor cobertura */
   .theme-menu-item {

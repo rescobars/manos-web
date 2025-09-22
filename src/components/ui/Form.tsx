@@ -175,6 +175,7 @@ const FormField: React.FC<{
   onChange: (name: string, value: any) => void;
   onBlur?: (name: string) => void;
 }> = ({ field, value, error, onChange, onBlur }) => {
+  const { colors } = useDynamicTheme();
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -201,8 +202,8 @@ const FormField: React.FC<{
 
   const renderInput = () => {
     const baseClassName = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-      error ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'
-    } ${field.disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${field.className || ''}`;
+      error ? 'border-red-300' : ''
+    } ${field.disabled ? 'cursor-not-allowed' : ''} ${field.className || ''}`;
 
     switch (field.type) {
       case 'textarea':
@@ -228,10 +229,32 @@ const FormField: React.FC<{
             disabled={field.disabled}
             multiple={field.multiple}
             className={baseClassName}
+            style={{
+              backgroundColor: colors.background3,
+              borderColor: error ? colors.error : colors.border,
+              color: colors.textPrimary,
+            }}
           >
-            {!field.multiple && <option value="">Selecciona una opción...</option>}
+            {!field.multiple && (
+              <option 
+                value=""
+                style={{
+                  backgroundColor: colors.background3,
+                  color: colors.textMuted
+                }}
+              >
+                Selecciona una opción...
+              </option>
+            )}
             {field.options?.map(option => (
-              <option key={option.value} value={option.value}>
+              <option 
+                key={option.value} 
+                value={option.value}
+                style={{
+                  backgroundColor: colors.background3,
+                  color: colors.textPrimary
+                }}
+              >
                 {option.label}
               </option>
             ))}
