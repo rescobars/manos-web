@@ -12,7 +12,7 @@ import { RouteDriverPosition } from '@/hooks/useRouteDriverPositions';
 import { CombinedDriverPosition } from '@/lib/leaflet/types';
 import { useAuth } from '@/contexts/AuthContext';
 import L from 'leaflet';
-import { calculateBounds } from '@/lib/leaflet/utils';
+import { calculateBounds, getRealDriverStatus } from '@/lib/leaflet/utils';
 
 interface DriverMapProps {
   className?: string;
@@ -52,6 +52,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   const [selectedDriver, setSelectedDriver] = useState<CombinedDriverPosition | null>(null);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [hasInitiallyCentered, setHasInitiallyCentered] = useState(false);
+  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set(['DRIVING', 'IDLE', 'STOPPED', 'BREAK', 'OFFLINE']));
 
   const handleDriverClick = useCallback((driver: CombinedDriverPosition) => {
     setSelectedDriver(driver);
@@ -67,13 +68,31 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   // Default center to Guatemala City
   const defaultCenter: [number, number] = [-90.5069, 14.6349];
 
-  // Calculate bounds for all drivers
-  const driversBounds = useMemo(() => {
-    if (driverPositions.length === 0) return null;
-    
-    const locations = driverPositions.map(driver => driver.location);
-    return calculateBounds(locations);
+  // Filtrar drivers por estado
+  const filteredDrivers = useMemo(() => {
+    return driverPositions.filter(driver => {
+      const realStatus = getRealDriverStatus(driver);
+      return statusFilters.has(realStatus);
+    });
+  }, [driverPositions, statusFilters]);
+
+  // Calcular contadores por estado
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    driverPositions.forEach(driver => {
+      const realStatus = getRealDriverStatus(driver);
+      counts[realStatus] = (counts[realStatus] || 0) + 1;
+    });
+    return counts;
   }, [driverPositions]);
+
+  // Calculate bounds for filtered drivers
+  const driversBounds = useMemo(() => {
+    if (filteredDrivers.length === 0) return null;
+    
+    const locations = filteredDrivers.map(driver => driver.location);
+    return calculateBounds(locations);
+  }, [filteredDrivers]);
 
   // Handle map ready
   const handleMapReady = useCallback((map: L.Map) => {
@@ -130,7 +149,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
         >
           {/* Marcadores de conductores */}
           <DriverMarkers
-            drivers={driverPositions}
+            drivers={filteredDrivers}
             selectedDriver={selectedDriver}
             selectedRouteIds={selectedRouteIds}
             onDriverClick={handleDriverClick}
@@ -169,7 +188,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
       )}
 
       {/* Controles unificados - Selector de rutas y conteo de conductores */}
-      <div className="absolute top-16 right-4 z-[1000] w-80">
+      <div className="absolute top-4 right-4 z-[1000] w-80">
         <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg">
           {/* Route Selector - Top */}
           <div className="p-4 border-b border-gray-200">
@@ -194,10 +213,10 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
               <div className="flex items-center space-x-4">
                 <div>
                   <div className="text-sm font-bold text-gray-900">
-                    {driverPositions.length} conductor{driverPositions.length !== 1 ? 'es' : ''}
+                    {filteredDrivers.length} de {driverPositions.length} conductor{driverPositions.length !== 1 ? 'es' : ''}
                   </div>
                   <div className="text-xs text-gray-600">
-                    {driverPositions.filter(d => d.status === 'DRIVING').length} activos
+                    {wsConnected ? 'Conectado' : 'Desconectado'}
                     {selectedRouteIds.length > 0 ? (
                       <span className="ml-2 text-blue-600 font-medium">
                         (Solo rutas seleccionadas)
@@ -206,6 +225,40 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Status Filters */}
+          <div className="px-4 pb-4">
+            <div className="space-y-2">
+              {[
+                { status: 'DRIVING', label: 'Manejando', color: 'bg-green-500' },
+
+                { status: 'STOPPED', label: 'Detenido', color: 'bg-orange-500' },
+                { status: 'BREAK', label: 'En Parada', color: 'bg-purple-500' },
+                { status: 'OFFLINE', label: 'Offline', color: 'bg-red-500' }
+              ].map(({ status, label, color }) => (
+                <label key={status} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={statusFilters.has(status)}
+                    onChange={(e) => {
+                      const newFilters = new Set(statusFilters);
+                      if (e.target.checked) {
+                        newFilters.add(status);
+                      } else {
+                        newFilters.delete(status);
+                      }
+                      setStatusFilters(newFilters);
+                    }}
+                    className="sr-only"
+                  />
+                  <div className={`w-3 h-3 rounded-full ${color} ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}></div>
+                  <span className="text-xs text-gray-600">
+                    {label} ({statusCounts[status] || 0})
+                  </span>
+                </label>
+              ))}
             </div>
           </div>
         </div>
