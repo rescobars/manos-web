@@ -233,7 +233,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
             <div className="space-y-2">
               {[
                 { status: 'DRIVING', label: 'Manejando', color: 'bg-green-500' },
-
+                { status: 'IDLE', label: 'Inactivo', color: 'bg-yellow-500' },
                 { status: 'STOPPED', label: 'Detenido', color: 'bg-orange-500' },
                 { status: 'BREAK', label: 'En Parada', color: 'bg-purple-500' },
                 { status: 'OFFLINE', label: 'Offline', color: 'bg-red-500' }
