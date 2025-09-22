@@ -57,6 +57,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   const [previousStatusFilters, setPreviousStatusFilters] = useState<Set<string>>(new Set(['DRIVING', 'IDLE', 'STOPPED', 'BREAK', 'OFFLINE']));
   const [previousSelectedRoutes, setPreviousSelectedRoutes] = useState<string[]>([]);
   const [tileType, setTileType] = useState<MapTileType>('streets');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const handleDriverClick = useCallback((driver: CombinedDriverPosition) => {
     setSelectedDriver(driver);
@@ -72,13 +73,28 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   // Default center to Guatemala City
   const defaultCenter: [number, number] = [-90.5069, 14.6349];
 
-  // Filtrar drivers por estado
+  // Filtrar drivers por estado Y rutas seleccionadas (filtrado unificado)
   const filteredDrivers = useMemo(() => {
     return driverPositions.filter(driver => {
+      // Filtro por estado
       const realStatus = getRealDriverStatus(driver);
-      return statusFilters.has(realStatus);
+      const passesStatusFilter = statusFilters.has(realStatus);
+      
+      // Filtro por rutas (igual lógica que en DriverMarkers)
+      let passesRouteFilter = true;
+      if (selectedRouteIds.length > 0) {
+        // Si hay rutas seleccionadas, solo mostrar conductores de esas rutas
+        if ('routeId' in driver) {
+          passesRouteFilter = selectedRouteIds.includes(driver.routeId);
+        } else {
+          // Si es un conductor de organización, no mostrarlo cuando hay rutas seleccionadas
+          passesRouteFilter = false;
+        }
+      }
+      
+      return passesStatusFilter && passesRouteFilter;
     });
-  }, [driverPositions, statusFilters]);
+  }, [driverPositions, statusFilters, selectedRouteIds]);
 
   // Calcular contadores por estado
   const statusCounts = useMemo(() => {
@@ -119,10 +135,10 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     }
   }, [mapInstance, driversBounds, hasInitiallyCentered]);
 
-  // Función para centrar el mapa
-  const centerMapToFilteredDrivers = useCallback(() => {
+  // Función para centrar el mapa solo en marcadores visibles
+  const centerMapToVisibleDrivers = useCallback(() => {
     if (mapInstance && filteredDrivers.length > 0) {
-      console.log('🎯 CENTRANDO MAPA -', filteredDrivers.length, 'conductores');
+      console.log('🎯 CENTRANDO MAPA A CONDUCTORES VISIBLES -', filteredDrivers.length, 'conductores filtrados');
       const locations = filteredDrivers.map(driver => ({
         latitude: driver.location.latitude,
         longitude: driver.location.longitude
@@ -144,11 +160,11 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                                 !Array.from(previousStatusFilters).every(status => statusFilters.has(status));
     
     if (statusFiltersChanged && hasInitiallyCentered) {
-      console.log('🎯 FILTROS DE STATUS CAMBIARON - Centrando mapa');
-      centerMapToFilteredDrivers();
+      console.log('🎯 FILTROS DE STATUS CAMBIARON - Centrando mapa a conductores visibles');
+      centerMapToVisibleDrivers();
       setPreviousStatusFilters(new Set(statusFilters));
     }
-  }, [statusFilters, previousStatusFilters, hasInitiallyCentered, centerMapToFilteredDrivers]);
+  }, [statusFilters, previousStatusFilters, hasInitiallyCentered, centerMapToVisibleDrivers]);
 
   // Detectar cambios en rutas seleccionadas y centrar el mapa
   useEffect(() => {
@@ -157,11 +173,11 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                           !selectedRouteIds.every(routeId => previousSelectedRoutes.includes(routeId));
     
     if (routesChanged && hasInitiallyCentered) {
-      console.log('🎯 RUTAS SELECCIONADAS CAMBIARON - Centrando mapa');
-      centerMapToFilteredDrivers();
+      console.log('🎯 RUTAS SELECCIONADAS CAMBIARON - Centrando mapa a conductores visibles');
+      centerMapToVisibleDrivers();
       setPreviousSelectedRoutes([...selectedRouteIds]);
     }
-  }, [selectedRouteIds, previousSelectedRoutes, hasInitiallyCentered, centerMapToFilteredDrivers]);
+  }, [selectedRouteIds, previousSelectedRoutes, hasInitiallyCentered, centerMapToVisibleDrivers]);
 
   // Loading state
   if (authLoading) {
@@ -203,7 +219,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
           <DriverMarkers
             drivers={filteredDrivers}
             selectedDriver={selectedDriver}
-            selectedRouteIds={selectedRouteIds}
+            selectedRouteIds={[]} // Pasamos array vacío para evitar doble filtrado
             onDriverClick={handleDriverClick}
           />
         </BaseMap>
@@ -255,14 +271,14 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
           
           {/* Driver Count - Bottom */}
           <div className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className={`w-3 h-3 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                {wsConnected && (
-                  <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping opacity-30"></div>
-                )}
-              </div>
-              <div className="flex items-center space-x-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <div className={`w-3 h-3 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                  {wsConnected && (
+                    <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping opacity-30"></div>
+                  )}
+                </div>
                 <div>
                   <div className="text-sm font-bold text-gray-900">
                     {filteredDrivers.length} de {driverPositions.length} conductor{driverPositions.length !== 1 ? 'es' : ''}
@@ -277,45 +293,67 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                   </div>
                 </div>
               </div>
+              
+              {/* Botón para expandir/colapsar filtros */}
+              <button
+                onClick={() => setFiltersExpanded(!filtersExpanded)}
+                className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                title={filtersExpanded ? 'Ocultar filtros' : 'Mostrar filtros'}
+              >
+                <span>{filtersExpanded ? 'Ocultar' : 'Filtros'}</span>
+                <svg 
+                  className={`w-3 h-3 transition-transform duration-200 ${filtersExpanded ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
             </div>
           </div>
 
-            {/* Status Filters */}
-            <div className="px-4 pb-4 border-b border-gray-200">
-              <div className="space-y-2">
-                {[
-                  { status: 'DRIVING', label: 'Manejando', color: '#10B981' },
-                  { status: 'IDLE', label: 'Inactivo', color: '#F59E0B' },
-                  { status: 'STOPPED', label: 'Detenido', color: '#EF4444' },
-                  { status: 'BREAK', label: 'En Parada', color: '#8B5CF6' },
-                  { status: 'OFFLINE', label: 'Offline', color: '#6B7280' }
-                ].map(({ status, label, color }) => (
-                  <label key={status} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={statusFilters.has(status)}
-                      onChange={(e) => {
-                        const newFilters = new Set(statusFilters);
-                        if (e.target.checked) {
-                          newFilters.add(status);
-                        } else {
-                          newFilters.delete(status);
-                        }
-                        setStatusFilters(newFilters);
-                      }}
-                      className="sr-only"
-                    />
-                    <div 
-                      className={`w-3 h-3 rounded-full ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}
-                      style={{ backgroundColor: color }}
-                    ></div>
-                    <span className="text-xs text-gray-600">
-                      {label} ({statusCounts[status] || 0})
-                    </span>
-                  </label>
-                ))}
+            {/* Status Filters - Collapsible */}
+            {filtersExpanded && (
+              <div className="px-4 pb-4 border-b border-gray-200 animate-in slide-in-from-top-1 duration-200">
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700 mb-2">
+                    Filtrar por Estado
+                  </div>
+                  {[
+                    { status: 'DRIVING', label: 'Manejando', color: '#10B981' },
+                    { status: 'IDLE', label: 'Inactivo', color: '#F59E0B' },
+                    { status: 'STOPPED', label: 'Detenido', color: '#EF4444' },
+                    { status: 'BREAK', label: 'En Parada', color: '#8B5CF6' },
+                    { status: 'OFFLINE', label: 'Offline', color: '#6B7280' }
+                  ].map(({ status, label, color }) => (
+                    <label key={status} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={statusFilters.has(status)}
+                        onChange={(e) => {
+                          const newFilters = new Set(statusFilters);
+                          if (e.target.checked) {
+                            newFilters.add(status);
+                          } else {
+                            newFilters.delete(status);
+                          }
+                          setStatusFilters(newFilters);
+                        }}
+                        className="sr-only"
+                      />
+                      <div 
+                        className={`w-3 h-3 rounded-full ${statusFilters.has(status) ? 'opacity-100' : 'opacity-30'}`}
+                        style={{ backgroundColor: color }}
+                      ></div>
+                      <span className="text-xs text-gray-600">
+                        {label} ({statusCounts[status] || 0})
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Selector de cartografía */}
             <div className="p-4">
