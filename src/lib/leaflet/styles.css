@@ -28,14 +28,43 @@
   border: none !important;
 }
 
+/* Eliminar solo el fondo del contenedor de Leaflet, no de los iconos */
+.leaflet-marker-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+
 /* Animaciones suaves para marcadores */
 .leaflet-marker-icon {
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .leaflet-marker-icon:hover {
-  transform: scale(1.1);
+  transform: scale(1.05);
   z-index: 1000;
+}
+
+/* Animación de transmisión para conductores en DRIVING (más lenta y suave) */
+@keyframes transmission-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* Efectos específicos para conductores en DRIVING */
+.driving-transmission {
+  position: relative;
 }
 
 /* Estilos para el mapa */
