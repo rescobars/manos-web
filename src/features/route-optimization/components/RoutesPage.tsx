@@ -7,10 +7,10 @@ import { DataTable } from '@/components/ui/DataTable';
 import { Button } from '@/components/ui/Button';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { SavedRoute } from '@/types';
-import { Plus, Route, Clock, Users, CheckCircle, AlertCircle, XCircle, MapPin, Package, Eye, UserPlus } from 'lucide-react';
+import { Plus, Route, Clock, Users, CheckCircle, AlertCircle, XCircle, MapPin, Package, Eye, UserPlus, Truck } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
-import { RouteStatsCards } from './RouteStatsCards';
+import { StatCard } from '@/components/ui/StatCard';
 import { RouteAssignmentModal } from './RouteAssignmentModal';
 import { RouteViewModal } from './RouteViewModal';
 import { RouteCreationModal } from './RouteCreationModal';
@@ -453,41 +453,122 @@ export default function RoutesPage() {
           </div>
         </div>
 
-        {/* Contenido principal - Solo listado de rutas */}
-        <div className="w-full px-4 sm:px-6 lg:px-8 pb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Estadísticas por estado - Clickeables */}
-            <RouteStatsCards
-              allRoutes={allRoutes}
-              filterStatus={filterStatus}
-              onFilterChange={handleFilterChange}
+        {/* Stats Cards - Clickables para filtrar */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-4 sm:px-6 lg:px-8">
+          <div 
+            onClick={() => handleFilterChange('all')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
+              filterStatus === 'all' ? 'ring-2' : ''
+            }`}
+            style={{
+              '--tw-ring-color': filterStatus === 'all' ? colors.buttonPrimary1 : 'transparent'
+            } as React.CSSProperties}
+          >
+            <StatCard
+              title="Total Rutas"
+              value={allRoutes.length}
+              icon={Route}
+              iconColor={colors.textPrimary}
+              iconBgColor={colors.background2}
             />
-
-            {/* Lista de rutas */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              {routesError ? (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                  <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-red-800 mb-2">Error al cargar rutas</h3>
-                  <p className="text-red-700">{routesError}</p>
-                </div>
-              ) : (
-                <DataTable
-                  data={routes}
-                  columns={columns}
-                  pagination={pagination}
-                  onPageChange={handlePageChange}
-                  onSort={handleSort}
-                  loading={routesLoading}
-                  emptyMessage="No hay rutas disponibles"
-                  viewMode={viewMode}
-                  onViewModeChange={setViewMode}
-                  gridColumns={3}
-                  gridItemRender={gridItemRender}
-                />
-              )}
-            </div>
           </div>
+          
+          <div 
+            onClick={() => handleFilterChange('PLANNED')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
+              filterStatus === 'PLANNED' ? 'ring-2' : ''
+            }`}
+            style={{
+              '--tw-ring-color': filterStatus === 'PLANNED' ? colors.info : 'transparent'
+            } as React.CSSProperties}
+          >
+            <StatCard
+              title="Planificadas"
+              value={allRoutes.filter(route => route.status === 'PLANNED').length}
+              icon={Clock}
+              iconColor={colors.info}
+              iconBgColor={colors.info + '20'}
+            />
+          </div>
+          
+          <div 
+            onClick={() => handleFilterChange('ASSIGNED')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
+              filterStatus === 'ASSIGNED' ? 'ring-2' : ''
+            }`}
+            style={{
+              '--tw-ring-color': filterStatus === 'ASSIGNED' ? colors.warning : 'transparent'
+            } as React.CSSProperties}
+          >
+            <StatCard
+              title="Asignadas"
+              value={allRoutes.filter(route => route.status === 'ASSIGNED').length}
+              icon={UserPlus}
+              iconColor={colors.warning}
+              iconBgColor={colors.warning + '20'}
+            />
+          </div>
+          
+          <div 
+            onClick={() => handleFilterChange('IN_PROGRESS')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
+              filterStatus === 'IN_PROGRESS' ? 'ring-2' : ''
+            }`}
+            style={{
+              '--tw-ring-color': filterStatus === 'IN_PROGRESS' ? colors.success : 'transparent'
+            } as React.CSSProperties}
+          >
+            <StatCard
+              title="En Progreso"
+              value={allRoutes.filter(route => route.status === 'IN_PROGRESS').length}
+              icon={Truck}
+              iconColor={colors.success}
+              iconBgColor={colors.success + '20'}
+            />
+          </div>
+          
+          <div 
+            onClick={() => handleFilterChange('COMPLETED')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
+              filterStatus === 'COMPLETED' ? 'ring-2' : ''
+            }`}
+            style={{
+              '--tw-ring-color': filterStatus === 'COMPLETED' ? colors.success : 'transparent'
+            } as React.CSSProperties}
+          >
+            <StatCard
+              title="Completadas"
+              value={allRoutes.filter(route => route.status === 'COMPLETED').length}
+              icon={CheckCircle}
+              iconColor={colors.success}
+              iconBgColor={colors.success + '20'}
+            />
+          </div>
+        </div>
+
+        {/* DataTable con paginación */}
+        <div className="px-4 sm:px-6 lg:px-8">
+          {routesError ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+              <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Error al cargar rutas</h3>
+              <p className="text-red-700">{routesError}</p>
+            </div>
+          ) : (
+            <DataTable
+              data={routes}
+              columns={columns}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onSort={handleSort}
+              loading={routesLoading}
+              emptyMessage="No hay rutas disponibles"
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              gridColumns={3}
+              gridItemRender={gridItemRender}
+            />
+          )}
         </div>
       </Page>
 
