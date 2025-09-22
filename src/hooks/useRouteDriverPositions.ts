@@ -17,6 +17,7 @@ export interface RouteDriverPosition {
   };
   status: 'DRIVING' | 'STOPPED' | 'IDLE' | 'OFFLINE' | 'BREAK';
   timestamp: string;
+  transmission_timestamp: string;
 }
 
 interface RouteDriverPositionsResponse {

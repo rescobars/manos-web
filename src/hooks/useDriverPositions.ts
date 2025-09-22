@@ -22,6 +22,7 @@ export interface DriverPosition {
   signalStrength: number;
   networkType: string;
   timestamp: string;
+  transmission_timestamp: string;
   metadata: {
     appVersion: string;
     deviceInfo: string;

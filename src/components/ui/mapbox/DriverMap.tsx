@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseMap, useMap } from './BaseMap';
 import { DriverMarkers } from './DriverMarkers';
+import { DriverDetailsModal } from '@/components/ui/DriverDetailsModal';
 import { useUnifiedDriverPositions } from '@/hooks/useUnifiedDriverPositions';
 import { useInProgressRoutes } from '@/hooks/useInProgressRoutes';
 import { RouteSelector } from '@/components/ui/RouteSelector';
@@ -31,11 +32,19 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   } = useUnifiedDriverPositions();
   const { currentOrganization, isLoading: authLoading } = useAuth();
 
+  // Estado para el conductor seleccionado
+  const [selectedDriver, setSelectedDriver] = useState<DriverPosition | RouteDriverPosition | null>(null);
+
   const handleDriverClick = useCallback((driver: DriverPosition | RouteDriverPosition) => {
+    setSelectedDriver(driver);
     if (onDriverClick) {
       onDriverClick(driver);
     }
   }, [onDriverClick]);
+
+  const handleCloseDriverDetails = useCallback(() => {
+    setSelectedDriver(null);
+  }, []);
 
   // Default center to Guatemala City
   const defaultCenter: [number, number] = [-90.5069, 14.6349];
@@ -215,6 +224,8 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
               map={map}
               driverPositions={driverPositions}
               onDriverClick={handleDriverClick}
+              selectedDriver={selectedDriver}
+              onCloseDriverDetails={handleCloseDriverDetails}
             />
           )}
         </BaseMap>
@@ -345,6 +356,13 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
           )}
         </div>
       )}
+
+      {/* Driver Details Modal */}
+      <DriverDetailsModal 
+        selectedDriver={selectedDriver}
+        onClose={handleCloseDriverDetails}
+        map={map}
+      />
     </div>
   );
 }
