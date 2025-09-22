@@ -40,7 +40,7 @@ export function ThemeWrapper({ children }: ThemeWrapperProps) {
   }, [theme, mounted]);
 
   if (!mounted) {
-    return <div className="min-h-screen bg-white dark:bg-gray-900">{children}</div>;
+    return <div className="min-h-screen theme-bg-1">{children}</div>;
   }
 
   return <>{children}</>;

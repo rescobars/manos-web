@@ -17,7 +17,7 @@ export function DashboardLayout({ children, user, onLogout, currentSlug, isFullS
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <div className="min-h-screen theme-bg-1 flex">
       {/* Sidebar - Fixed on desktop */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -44,7 +44,7 @@ export function DashboardLayout({ children, user, onLogout, currentSlug, isFullS
           
           {/* Right Sidebar for controls - Hidden on mobile, visible on desktop */}
           {rightSidebar && (
-            <div className="hidden lg:block w-72 p-3 overflow-y-auto border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <div className="hidden lg:block w-72 p-3 overflow-y-auto border-l theme-border theme-bg-2">
               {rightSidebar}
             </div>
           )}

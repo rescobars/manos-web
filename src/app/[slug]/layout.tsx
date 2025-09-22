@@ -64,10 +64,10 @@ export default function OrganizationLayout({
   // Mostrar loading mientras se verifica la organización
   if (isLoading || !isAuthenticated || !organizations || organizations.length === 0 || !currentOrganization || currentOrganization.slug !== slug) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen theme-bg-1 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Cargando organización...</p>
+          <p className="theme-text-secondary">Cargando organización...</p>
         </div>
       </div>
     );

@@ -305,6 +305,20 @@ export default function OrdersPage() {
   }
 
 
+  // Si está abierto el QuickOrderScreen, mostrarlo en lugar del contenido normal
+  if (isQuickOrderOpen) {
+    return (
+      <>
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+        <QuickOrderScreen
+          organizationUuid={currentOrganization.uuid}
+          onClose={handleCloseQuickOrder}
+          onSubmit={handleCreateOrder}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
@@ -313,29 +327,29 @@ export default function OrdersPage() {
         title="Pedidos"
         subtitle={`Gestiona los pedidos de ${currentOrganization.name}`}
       >
-        {/* Header con botón de crear pedido */}
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header compacto con botón de crear pedido */}
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold theme-text-primary">Mis Pedidos</h1>
-              <p className="theme-text-secondary">Administra y visualiza los pedidos de {currentOrganization.name}</p>
+              <h1 className="text-xl font-bold theme-text-primary">Pedidos</h1>
+              <p className="text-sm theme-text-secondary">{currentOrganization.name}</p>
             </div>
-            <Button onClick={handleQuickOrder}>
+            <Button onClick={handleQuickOrder} size="sm">
               <Plus className="w-4 h-4 mr-2" />
               Crear Pedido
             </Button>
           </div>
         </div>
         {/* Stats Cards - Clickables para filtrar */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-4 sm:px-6 lg:px-8">
           <div 
             onClick={() => handleFilterChange('all')}
             className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
               filterStatus === 'all' ? 'ring-2' : ''
             }`}
             style={{
-              ringColor: filterStatus === 'all' ? colors.buttonPrimary1 : 'transparent'
-            }}
+              '--tw-ring-color': filterStatus === 'all' ? colors.buttonPrimary1 : 'transparent'
+            } as React.CSSProperties}
           >
             <StatCard
               title="Total Pedidos"
@@ -350,8 +364,8 @@ export default function OrdersPage() {
               filterStatus === 'PENDING' ? 'ring-2' : ''
             }`}
             style={{
-              ringColor: filterStatus === 'PENDING' ? colors.warning : 'transparent'
-            }}
+              '--tw-ring-color': filterStatus === 'PENDING' ? colors.warning : 'transparent'
+            } as React.CSSProperties}
           >
             <StatCard
               title="Pendientes"
@@ -366,8 +380,8 @@ export default function OrdersPage() {
               filterStatus === 'ASSIGNED' ? 'ring-2' : ''
             }`}
             style={{
-              ringColor: filterStatus === 'ASSIGNED' ? colors.info : 'transparent'
-            }}
+              '--tw-ring-color': filterStatus === 'ASSIGNED' ? colors.info : 'transparent'
+            } as React.CSSProperties}
           >
             <StatCard
               title="Asignados"
@@ -382,8 +396,8 @@ export default function OrdersPage() {
               filterStatus === 'IN_ROUTE' ? 'ring-2' : ''
             }`}
             style={{
-              ringColor: filterStatus === 'IN_ROUTE' ? colors.buttonPrimary1 : 'transparent'
-            }}
+              '--tw-ring-color': filterStatus === 'IN_ROUTE' ? colors.buttonPrimary1 : 'transparent'
+            } as React.CSSProperties}
           >
             <StatCard
               title="En Camino"
@@ -398,8 +412,8 @@ export default function OrdersPage() {
               filterStatus === 'COMPLETED' ? 'ring-2' : ''
             }`}
             style={{
-              ringColor: filterStatus === 'COMPLETED' ? colors.success : 'transparent'
-            }}
+              '--tw-ring-color': filterStatus === 'COMPLETED' ? colors.success : 'transparent'
+            } as React.CSSProperties}
           >
             <StatCard
               title="Entregados"
@@ -410,13 +424,14 @@ export default function OrdersPage() {
         </div>
 
         {/* DataTable con paginación */}
-        {error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <div className="text-red-600 mb-2">Error al cargar pedidos</div>
-            <p className="text-red-700">{error}</p>
-          </div>
-        ) : (
-          <DataTable
+        <div className="px-4 sm:px-6 lg:px-8">
+          {error ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+              <div className="text-red-600 mb-2">Error al cargar pedidos</div>
+              <p className="text-red-700">{error}</p>
+            </div>
+          ) : (
+            <DataTable
             data={orders}
             columns={columns}
             pagination={pagination}
@@ -491,6 +506,7 @@ export default function OrdersPage() {
             )}
           />
         )}
+        </div>
       </Page>
 
       {/* Order Detail Modal */}
@@ -500,14 +516,6 @@ export default function OrdersPage() {
         order={selectedOrderForDetail}
       />
 
-      {/* Quick Order Screen */}
-      {isQuickOrderOpen && (
-        <QuickOrderScreen
-          organizationUuid={currentOrganization.uuid}
-          onClose={handleCloseQuickOrder}
-          onSubmit={handleCreateOrder}
-        />
-      )}
     </>
   );
 }

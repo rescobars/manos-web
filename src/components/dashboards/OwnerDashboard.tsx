@@ -71,7 +71,7 @@ export default function OwnerDashboard() {
   if (!currentOrganization) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-300">No se encontró la organización</p>
+        <p className="theme-text-secondary">No se encontró la organización</p>
       </div>
     );
   }
@@ -85,7 +85,7 @@ export default function OwnerDashboard() {
         </div>
         
         {/* Controles de escritorio - Sidebar derecho */}
-        <div className="hidden lg:block w-72 p-3 overflow-y-auto border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="hidden lg:block w-72 p-3 overflow-y-auto border-l theme-border theme-bg-2">
           <MapControlsContainer />
         </div>
       </div>

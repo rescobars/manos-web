@@ -5,6 +5,7 @@ import { X, MapPin, Package, Save } from 'lucide-react';
 import { LocationSelector } from './LocationSelector';
 import { Button } from './Button';
 import { BRANCH_LOCATION } from '@/lib/constants';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 
 interface Location {
   lat: number;
@@ -23,6 +24,7 @@ export function QuickOrderScreen({
   onClose, 
   onSubmit 
 }: QuickOrderScreenProps) {
+  const { colors } = useDynamicTheme();
   const [deliveryLocation, setDeliveryLocation] = useState<Location | null>(null);
   const [description, setDescription] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
@@ -68,24 +70,24 @@ export function QuickOrderScreen({
   };
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+    <div className="min-h-screen theme-bg-1 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
+      <div className="theme-bg-3 border-b theme-border px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <Package className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Nuevo Pedido Rápido</h1>
+            <Package className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: colors.buttonPrimary1 }} />
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold theme-text-primary">Nuevo Pedido Rápido</h1>
           </div>
           
           <Button
             variant="ghost"
             onClick={onClose}
-            className="p-2 hover:bg-gray-100"
+            className="p-2 hover:theme-bg-2"
           >
             <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
         </div>
-        <p className="text-sm sm:text-base text-gray-600 mt-2">
+        <p className="text-sm sm:text-base theme-text-secondary mt-2">
           Selecciona el punto de entrega en el mapa y crea tu pedido en segundos
         </p>
       </div>
@@ -93,10 +95,10 @@ export function QuickOrderScreen({
       {/* Contenido principal - Layout responsive */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Columna Izquierda - Solo Punto A y Punto B */}
-        <div className="w-full lg:w-80 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 p-3 lg:p-6 order-1 lg:order-1">
+        <div className="w-full lg:w-80 theme-bg-2 border-b lg:border-b-0 lg:border-r theme-border p-3 lg:p-6 order-1 lg:order-1">
           {/* Versión minimalista para móviles */}
           <div className="lg:hidden">
-            <h3 className="font-semibold text-gray-900 mb-2 text-sm">Ubicaciones</h3>
+            <h3 className="font-semibold theme-text-primary mb-2 text-sm">Ubicaciones</h3>
             
             {/* Punto A y Punto B en la misma fila - SIN SCROLL */}
             <div className="grid grid-cols-2 gap-2">
