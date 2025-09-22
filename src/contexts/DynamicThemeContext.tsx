@@ -165,8 +165,10 @@ interface DynamicThemeContextType {
   branding: OrganizationBranding | null;
   isLoading: boolean;
   error: string | null;
+  useDefaultTheme: boolean;
   updateTheme: (newConfig: OrganizationThemeConfig) => void;
   updateBranding: (newBranding: OrganizationBranding) => void;
+  toggleThemeMode: () => void;
   resetToDefault: () => void;
 }
 
@@ -179,6 +181,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   const [branding, setBranding] = useState<OrganizationBranding | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useDefaultTheme, setUseDefaultTheme] = useState(false);
 
   // Cargar tema de la organización
   useEffect(() => {
@@ -211,6 +214,17 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       applyThemeToDocument(colors);
     }
   }, [colors]);
+
+  // Aplicar tema basado en el modo seleccionado
+  useEffect(() => {
+    if (useDefaultTheme) {
+      setColors(defaultMovigoTheme);
+      applyThemeToDocument(defaultMovigoTheme);
+    } else if (themeConfig) {
+      setColors(themeConfig.colors);
+      applyThemeToDocument(themeConfig.colors);
+    }
+  }, [useDefaultTheme, themeConfig]);
 
   const loadOrganizationTheme = async (organizationUuid: string) => {
     setIsLoading(true);
@@ -388,6 +402,10 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     applyBrandingToDocument(newBranding);
   };
 
+  const toggleThemeMode = () => {
+    setUseDefaultTheme(!useDefaultTheme);
+  };
+
   const resetToDefault = () => {
     if (currentOrganization) {
       const defaultConfig: OrganizationThemeConfig = {
@@ -409,8 +427,10 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
         branding,
         isLoading,
         error,
+        useDefaultTheme,
         updateTheme,
         updateBranding,
+        toggleThemeMode,
         resetToDefault,
       }}
     >

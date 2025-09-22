@@ -2,6 +2,7 @@
 
 import { DynamicThemeDemo } from '@/components/ui/DynamicThemeDemo';
 import { ThemeDebugger } from '@/components/ui/ThemeDebugger';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { organizationThemes } from '@/lib/themes/organizationThemes';
 import { useState, useEffect } from 'react';
 
@@ -43,8 +44,9 @@ export default function TestDynamicThemePage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-6">
               <h2 className="text-xl font-semibold theme-text-primary">Panel de Control</h2>
+              
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium theme-text-secondary">Tema:</span>
+                <span className="text-sm font-medium theme-text-secondary">Organización:</span>
                 <div className="relative">
                   <select
                     value={selectedOrg}
@@ -77,7 +79,12 @@ export default function TestDynamicThemePage() {
                 )}
               </div>
             </div>
-            <button
+            
+            <div className="flex items-center gap-4">
+              {/* Toggle de modo de tema */}
+              <ThemeToggle />
+              
+              <button
               onClick={() => {
                 if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
                   alert('Sesión cerrada (simulado)');
@@ -95,6 +102,7 @@ export default function TestDynamicThemePage() {
               </svg>
               <span>Cerrar Sesión</span>
             </button>
+            </div>
           </div>
         </div>
       </div>
