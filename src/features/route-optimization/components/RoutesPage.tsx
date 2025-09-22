@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Page } from '@/components/ui/Page';
 import { DataTable } from '@/components/ui/DataTable';
+import { Button } from '@/components/ui/Button';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { SavedRoute } from '@/types';
 import { Plus, Route, Clock, Users, CheckCircle, AlertCircle, XCircle, MapPin, Package, Eye, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
@@ -14,6 +16,7 @@ import { RouteViewModal } from './RouteViewModal';
 import { RouteCreationModal } from './RouteCreationModal';
 
 export default function RoutesPage() {
+  const { colors } = useDynamicTheme();
   const { currentOrganization } = useAuth();
   const { success, error: showError, toasts, removeToast } = useToast();
   
@@ -251,7 +254,7 @@ export default function RoutesPage() {
       sortable: true,
       className: 'w-48',
       render: (value: any) => (
-        <div className="font-medium text-gray-900 truncate">{value}</div>
+        <div className="font-medium theme-text-primary truncate">{value}</div>
       )
     },
     {
@@ -282,8 +285,8 @@ export default function RoutesPage() {
       sortable: true,
       className: 'w-48',
       render: (value: any) => (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <MapPin className="w-4 h-4 text-blue-500" />
+        <div className="flex items-center gap-2 text-sm theme-text-secondary">
+          <MapPin className="w-4 h-4" style={{ color: colors.buttonPrimary1 }} />
           <span className="truncate">{value}</span>
         </div>
       )
@@ -391,7 +394,7 @@ export default function RoutesPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => handleViewRoute(route)}
-            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+            className="px-2 py-1 text-white text-xs font-medium rounded transition-colors flex items-center gap-1 theme-btn-primary"
           >
             <Eye className="w-3 h-3" />
             Ver
@@ -400,7 +403,8 @@ export default function RoutesPage() {
           {route.status === 'PLANNED' && (
             <button
               onClick={() => handleAssignRoute(route)}
-              className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+              className="px-2 py-1 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+              style={{ backgroundColor: colors.info }}
             >
               <UserPlus className="w-3 h-3" />
               Asignar
@@ -413,11 +417,17 @@ export default function RoutesPage() {
 
   if (!currentOrganization) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+      <div 
+        className="min-h-screen flex items-center justify-center p-6"
+        style={{ backgroundColor: colors.background1 }}
+      >
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">Selecciona una organización</h1>
-          <p className="text-gray-600">Necesitas seleccionar una organización para gestionar rutas</p>
+          <AlertCircle 
+            className="w-12 h-12 mx-auto mb-4" 
+            style={{ color: colors.warning }}
+          />
+          <h1 className="text-2xl font-bold theme-text-primary mb-3">Selecciona una organización</h1>
+          <p className="theme-text-secondary">Necesitas seleccionar una organización para gestionar rutas</p>
         </div>
       </div>
     );
@@ -433,16 +443,13 @@ export default function RoutesPage() {
         <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Mis Rutas</h1>
-              <p className="text-gray-600">Administra y visualiza las rutas de {currentOrganization.name}</p>
+              <h1 className="text-2xl font-bold theme-text-primary">Mis Rutas</h1>
+              <p className="theme-text-secondary">Administra y visualiza las rutas de {currentOrganization.name}</p>
             </div>
-            <button
-              onClick={handleCreateRoute}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl"
-            >
-              <Plus className="w-5 h-5" />
+            <Button onClick={handleCreateRoute}>
+              <Plus className="w-4 h-4 mr-2" />
               Crear Ruta
-            </button>
+            </Button>
           </div>
         </div>
 

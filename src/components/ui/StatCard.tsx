@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 
 interface StatCardProps {
   title: string;
@@ -28,28 +29,48 @@ export function StatCard({
   onClick,
   className = ''
 }: StatCardProps) {
+  const { colors } = useDynamicTheme();
+  
   const cardClasses = `
-    bg-white rounded-2xl shadow-sm border border-gray-100 p-6 
+    theme-bg-3 rounded-2xl shadow-sm border theme-border p-6 
     hover:shadow-md transition-all duration-200 cursor-pointer
     ${onClick ? 'hover:scale-105' : ''}
     ${className}
   `;
 
   return (
-    <div className={cardClasses} onClick={onClick}>
+    <div 
+      className={cardClasses} 
+      onClick={onClick}
+      style={{
+        backgroundColor: colors.background3,
+        borderColor: colors.border,
+      }}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center">
-          <div className={`p-3 rounded-xl ${iconBgColor} ${iconColor}`}>
+          <div 
+            className="p-3 rounded-xl"
+            style={{ 
+              backgroundColor: colors.background2,
+              color: colors.buttonPrimary1 
+            }}
+          >
             <Icon className="w-6 h-6" />
           </div>
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-sm font-medium theme-text-secondary">{title}</p>
+            <p className="text-2xl font-bold theme-text-primary">{value}</p>
           </div>
         </div>
         
         {trend && (
-          <div className={`text-right ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          <div 
+            className="text-right"
+            style={{ 
+              color: trend.isPositive ? colors.success : colors.error 
+            }}
+          >
             <div className="flex items-center gap-1 text-sm font-medium">
               <span className={trend.isPositive ? '↑' : '↓'}>
                 {trend.isPositive ? '↑' : '↓'}
@@ -57,7 +78,7 @@ export function StatCard({
               {Math.abs(trend.value)}%
             </div>
             {trend.label && (
-              <p className="text-xs text-gray-500">{trend.label}</p>
+              <p className="text-xs theme-text-muted">{trend.label}</p>
             )}
           </div>
         )}

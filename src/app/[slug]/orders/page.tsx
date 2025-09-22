@@ -13,6 +13,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { DataTable } from '@/components/ui/DataTable';
 import { Page } from '@/components/ui/Page';
 import { useOrders } from '@/hooks/useOrders';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { 
   Package, 
   Clock, 
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 
 export default function OrdersPage() {
+  const { colors } = useDynamicTheme();
   const { currentOrganization } = useAuth();
   const { success, error: showError, toasts, removeToast } = useToast();
   const { 
@@ -208,8 +210,8 @@ export default function OrdersPage() {
       sortable: true,
       className: 'w-20',
       render: (value: any) => (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <DollarSign className="w-4 h-4 text-green-500" />
+        <div className="flex items-center gap-2 text-sm theme-text-secondary">
+          <DollarSign className="w-4 h-4" style={{ color: colors.success }} />
           <span>Q{Number(value || 0).toFixed(2)}</span>
         </div>
       )
@@ -220,8 +222,8 @@ export default function OrdersPage() {
       sortable: true,
       className: 'w-1/5',
       render: (value: string) => (
-        <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
-          <MapPin className="w-4 h-4 text-blue-500 flex-shrink-0" />
+        <div className="flex items-center gap-2 text-sm theme-text-secondary min-w-0">
+          <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
           <span className="truncate">{value}</span>
         </div>
       )
@@ -232,8 +234,8 @@ export default function OrdersPage() {
       sortable: true,
       className: 'w-1/5',
       render: (value: string) => (
-        <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
-          <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
+        <div className="flex items-center gap-2 text-sm theme-text-secondary min-w-0">
+          <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: colors.error }} />
           <span className="truncate">{value}</span>
         </div>
       )
@@ -244,7 +246,7 @@ export default function OrdersPage() {
       sortable: true,
       className: 'w-20',
       render: (value: string) => (
-        <span className="text-xs text-gray-500">
+        <span className="text-xs theme-text-muted">
           {new Date(value).toLocaleDateString('es-ES', {
             month: 'short',
             day: 'numeric'
@@ -261,7 +263,7 @@ export default function OrdersPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => handleViewOrder(item)}
-            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+            className="px-2 py-1 text-white text-xs font-medium rounded transition-colors flex items-center gap-1 theme-btn-primary"
             title="Ver detalles"
           >
             <Eye className="w-3 h-3" />
@@ -281,13 +283,22 @@ export default function OrdersPage() {
 
   if (!currentOrganization) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+      <div 
+        className="min-h-screen flex items-center justify-center p-6"
+        style={{ backgroundColor: colors.background1 }}
+      >
         <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <Package className="w-10 h-10 text-blue-600" />
+          <div 
+            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
+            style={{ backgroundColor: colors.background3 }}
+          >
+            <Package 
+              className="w-10 h-10" 
+              style={{ color: colors.buttonPrimary1 }}
+            />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">Selecciona una organización</h1>
-          <p className="text-gray-600">Necesitas seleccionar una organización para gestionar los pedidos</p>
+          <h1 className="text-2xl font-bold theme-text-primary mb-3">Selecciona una organización</h1>
+          <p className="theme-text-secondary">Necesitas seleccionar una organización para gestionar los pedidos</p>
         </div>
       </div>
     );
@@ -306,16 +317,13 @@ export default function OrdersPage() {
         <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Mis Pedidos</h1>
-              <p className="text-gray-600">Administra y visualiza los pedidos de {currentOrganization.name}</p>
+              <h1 className="text-2xl font-bold theme-text-primary">Mis Pedidos</h1>
+              <p className="theme-text-secondary">Administra y visualiza los pedidos de {currentOrganization.name}</p>
             </div>
-            <button
-              onClick={handleQuickOrder}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl"
-            >
-              <Plus className="w-5 h-5" />
+            <Button onClick={handleQuickOrder}>
+              <Plus className="w-4 h-4 mr-2" />
               Crear Pedido
-            </button>
+            </Button>
           </div>
         </div>
         {/* Stats Cards - Clickables para filtrar */}
@@ -323,75 +331,80 @@ export default function OrdersPage() {
           <div 
             onClick={() => handleFilterChange('all')}
             className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
-              filterStatus === 'all' ? 'ring-2 ring-blue-500' : ''
+              filterStatus === 'all' ? 'ring-2' : ''
             }`}
+            style={{
+              ringColor: filterStatus === 'all' ? colors.buttonPrimary1 : 'transparent'
+            }}
           >
             <StatCard
               title="Total Pedidos"
               value={totalOrders}
               icon={Package}
-              iconColor="text-blue-600"
-              iconBgColor="bg-blue-100"
             />
           </div>
           
           <div 
             onClick={() => handleFilterChange('PENDING')}
             className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
-              filterStatus === 'PENDING' ? 'ring-2 ring-amber-500' : ''
+              filterStatus === 'PENDING' ? 'ring-2' : ''
             }`}
+            style={{
+              ringColor: filterStatus === 'PENDING' ? colors.warning : 'transparent'
+            }}
           >
             <StatCard
               title="Pendientes"
               value={pendingOrders}
               icon={Clock}
-              iconColor="text-amber-600"
-              iconBgColor="bg-amber-100"
             />
           </div>
           
           <div 
             onClick={() => handleFilterChange('ASSIGNED')}
             className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
-              filterStatus === 'ASSIGNED' ? 'ring-2 ring-purple-500' : ''
+              filterStatus === 'ASSIGNED' ? 'ring-2' : ''
             }`}
+            style={{
+              ringColor: filterStatus === 'ASSIGNED' ? colors.info : 'transparent'
+            }}
           >
             <StatCard
               title="Asignados"
               value={assignedOrders}
               icon={Package}
-              iconColor="text-purple-600"
-              iconBgColor="bg-purple-100"
             />
           </div>
           
           <div 
             onClick={() => handleFilterChange('IN_ROUTE')}
             className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
-              filterStatus === 'IN_ROUTE' ? 'ring-2 ring-blue-500' : ''
+              filterStatus === 'IN_ROUTE' ? 'ring-2' : ''
             }`}
+            style={{
+              ringColor: filterStatus === 'IN_ROUTE' ? colors.buttonPrimary1 : 'transparent'
+            }}
           >
             <StatCard
               title="En Camino"
               value={inRouteOrders}
               icon={Truck}
-              iconColor="text-blue-600"
-              iconBgColor="bg-blue-100"
             />
           </div>
           
           <div 
             onClick={() => handleFilterChange('COMPLETED')}
             className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
-              filterStatus === 'COMPLETED' ? 'ring-2 ring-green-500' : ''
+              filterStatus === 'COMPLETED' ? 'ring-2' : ''
             }`}
+            style={{
+              ringColor: filterStatus === 'COMPLETED' ? colors.success : 'transparent'
+            }}
           >
             <StatCard
               title="Entregados"
               value={completedOrders}
               icon={CheckCircle}
-              iconColor="text-green-600"
-              iconBgColor="bg-green-100"
             />
           </div>
         </div>

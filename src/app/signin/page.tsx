@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useOrganizationInfo } from '@/hooks/useOrganizationInfo';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 
 export default function SigninPage() {
   const [email, setEmail] = useState('');
@@ -21,6 +22,7 @@ export default function SigninPage() {
   const [role, setRole] = useState<string | null>(null);
   
   const { login, verifyCode } = useAuth();
+  const { colors } = useDynamicTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { organization, loading: orgLoading, error: orgError } = useOrganizationInfo(orgUuid);
@@ -103,14 +105,23 @@ export default function SigninPage() {
 
   if (isEmailSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div 
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ backgroundColor: colors.background1 }}
+      >
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Key className="w-6 h-6 text-blue-600" />
+            <div 
+              className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4"
+              style={{ backgroundColor: colors.background2 }}
+            >
+              <Key 
+                className="w-6 h-6" 
+                style={{ color: colors.buttonPrimary1 }}
+              />
             </div>
-            <CardTitle className="text-xl">Ingresa tu código</CardTitle>
-            <p className="text-gray-600 mt-2">
+            <CardTitle className="text-xl theme-text-primary">Ingresa tu código</CardTitle>
+            <p className="theme-text-secondary mt-2">
               Hemos enviado un código de 6 dígitos a <strong>{email}</strong>
             </p>
           </CardHeader>
@@ -132,10 +143,6 @@ export default function SigninPage() {
                 loading={isVerifying}
                 disabled={!isCodeButtonEnabled}
                 className="w-full"
-                style={{
-                  backgroundColor: organization?.colors?.primary || '#3B82F6',
-                  borderColor: organization?.colors?.primary || '#3B82F6'
-                }}
               >
                 Verificar y continuar
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -170,19 +177,13 @@ export default function SigninPage() {
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4"
-      style={{
-        background: organization?.colors 
-          ? `linear-gradient(135deg, ${organization.colors.primary}15, ${organization.colors.secondary}15)`
-          : 'linear-gradient(135deg, #3B82F615, #1E40AF15)'
-      }}
+      style={{ backgroundColor: colors.background1 }}
     >
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div 
             className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4"
-            style={{
-              backgroundColor: organization?.colors?.primary ? `${organization.colors.primary}20` : '#3B82F620'
-            }}
+            style={{ backgroundColor: colors.background2 }}
           >
             {organization?.logo_url ? (
               <img 
@@ -193,21 +194,21 @@ export default function SigninPage() {
             ) : (
               <Building2 
                 className="w-6 h-6" 
-                style={{ color: organization?.colors?.primary || '#3B82F6' }}
+                style={{ color: colors.buttonPrimary1 }}
               />
             )}
           </div>
-          <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
-          <p className="text-gray-600 mt-2">
+          <CardTitle className="text-2xl theme-text-primary">Iniciar Sesión</CardTitle>
+          <p className="theme-text-secondary mt-2">
             Accede a tu cuenta de <span className="font-semibold">{organization?.name || 'organización'}</span>
           </p>
           {orgLoading && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs theme-text-muted mt-1">
               Cargando información de la organización...
             </p>
           )}
           {orgError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs theme-error mt-1">
               Error al cargar la organización
             </p>
           )}
@@ -228,10 +229,6 @@ export default function SigninPage() {
               loading={isLoading}
               disabled={!isButtonEnabled}
               className="w-full"
-              style={{
-                backgroundColor: organization?.colors?.primary || '#3B82F6',
-                borderColor: organization?.colors?.primary || '#3B82F6'
-              }}
             >
               Continuar
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -239,11 +236,12 @@ export default function SigninPage() {
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm theme-text-muted">
               ¿No tienes cuenta?{' '}
               <Link
                 href={`/signup?org_uuid=${orgUuid}&role=${role || 'DRIVER'}`}
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="font-medium hover:opacity-80"
+                style={{ color: colors.buttonPrimary1 }}
               >
                 Regístrate aquí
               </Link>

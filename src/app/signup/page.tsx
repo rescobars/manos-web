@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import Link from 'next/link';
 import { useOrganizationInfo } from '@/hooks/useOrganizationInfo';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 
 interface RegisterFormData {
   email: string;
@@ -29,6 +30,7 @@ export default function SignupPage() {
   
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { colors } = useDynamicTheme();
   const { organization, loading: orgLoading, error: orgError } = useOrganizationInfo(orgUuid);
 
   useEffect(() => {
@@ -94,20 +96,29 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+      <div 
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ backgroundColor: colors.background1 }}
+      >
         <Card className="w-full max-w-md">
           <CardContent className="text-center py-8">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+            <div 
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: colors.background2 }}
+            >
+              <CheckCircle 
+                className="w-8 h-8" 
+                style={{ color: colors.success }}
+              />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-xl font-semibold theme-text-primary mb-2">
               ¡Registro exitoso!
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="theme-text-secondary mb-4">
               Se ha enviado un código de verificación a tu email.
             </p>
             <div className="animate-pulse">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm theme-text-muted">
                 Redirigiendo a verificación...
               </p>
             </div>
@@ -120,19 +131,13 @@ export default function SignupPage() {
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4"
-      style={{
-        background: organization?.colors 
-          ? `linear-gradient(135deg, ${organization.colors.primary}15, ${organization.colors.secondary}15)`
-          : 'linear-gradient(135deg, #3B82F615, #1E40AF15)'
-      }}
+      style={{ backgroundColor: colors.background1 }}
     >
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div 
             className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4"
-            style={{
-              backgroundColor: organization?.colors?.primary ? `${organization.colors.primary}20` : '#3B82F620'
-            }}
+            style={{ backgroundColor: colors.background2 }}
           >
             {organization?.logo_url ? (
               <img 
@@ -143,21 +148,21 @@ export default function SignupPage() {
             ) : (
               <Building2 
                 className="w-6 h-6" 
-                style={{ color: organization?.colors?.primary || '#3B82F6' }}
+                style={{ color: colors.buttonPrimary1 }}
               />
             )}
           </div>
-          <CardTitle className="text-2xl">Crear cuenta</CardTitle>
-          <p className="text-gray-600 mt-2">
+          <CardTitle className="text-2xl theme-text-primary">Crear cuenta</CardTitle>
+          <p className="theme-text-secondary mt-2">
             Únete a <span className="font-semibold">{organization?.name || 'esta organización'}</span> como {role || 'conductor'}
           </p>
           {orgLoading && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs theme-text-muted mt-1">
               Cargando información de la organización...
             </p>
           )}
           {orgError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs theme-error mt-1">
               Error al cargar la organización
             </p>
           )}
@@ -196,8 +201,14 @@ export default function SignupPage() {
             />
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <p className="text-sm text-red-600">{error}</p>
+              <div 
+                className="border rounded-md p-3"
+                style={{
+                  backgroundColor: colors.background2,
+                  borderColor: colors.error,
+                }}
+              >
+                <p className="text-sm theme-error">{error}</p>
               </div>
             )}
 
@@ -206,10 +217,6 @@ export default function SignupPage() {
               className="w-full"
               loading={loading}
               disabled={loading}
-              style={{
-                backgroundColor: organization?.colors?.primary || '#3B82F6',
-                borderColor: organization?.colors?.primary || '#3B82F6'
-              }}
             >
               Crear cuenta
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -217,11 +224,12 @@ export default function SignupPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm theme-text-muted">
               ¿Ya tienes cuenta?{' '}
               <Link 
                 href={`/signin?org_uuid=${orgUuid}&role=${role || 'DRIVER'}`}
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="font-medium hover:opacity-80"
+                style={{ color: colors.buttonPrimary1 }}
               >
                 Inicia sesión aquí
               </Link>

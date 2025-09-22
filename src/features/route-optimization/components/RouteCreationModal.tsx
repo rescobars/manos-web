@@ -6,6 +6,7 @@ import { Order } from '@/types';
 import { XCircle, Route, AlertCircle, MapPin, Package, Clock, ArrowLeft, ArrowRight, CheckCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { useRouteCreation } from '@/hooks/useRouteCreation';
 import { ordersApiService } from '@/lib/api/orders';
 import { BRANCH_LOCATION } from '@/lib/constants';
@@ -26,6 +27,7 @@ interface RouteCreationModalProps {
 }
 
 export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationModalProps) {
+  const { colors } = useDynamicTheme();
   const { currentOrganization } = useAuth();
   const { success, error: showError, toasts, removeToast } = useToast();
   
@@ -428,16 +430,22 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-gray-200">
+      <div 
+        className="rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] flex flex-col theme-bg-3"
+        style={{ backgroundColor: colors.background3 }}
+      >
+        <div 
+          className="p-6 border-b theme-divider"
+          style={{ borderColor: colors.divider }}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Crear Nueva Ruta</h3>
-              <p className="text-sm text-gray-600 mt-1">Selecciona pedidos y crea una ruta optimizada</p>
+              <h3 className="text-lg font-semibold theme-text-primary">Crear Nueva Ruta</h3>
+              <p className="text-sm theme-text-secondary mt-1">Selecciona pedidos y crea una ruta optimizada</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 theme-text-muted hover:theme-text-primary hover:theme-bg-2 rounded-lg transition-colors"
             >
               <XCircle className="w-5 h-5" />
             </button>
@@ -701,14 +709,20 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
         </div>
 
         {/* Botones de navegación */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div 
+          className="p-6 border-t theme-divider"
+          style={{ 
+            borderColor: colors.divider,
+            backgroundColor: colors.background2 
+          }}
+        >
           <div className="flex items-center justify-between">
             <button
               onClick={goBack}
               disabled={!canGoBack}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
                 canGoBack
-                  ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  ? 'theme-text-secondary hover:theme-text-primary hover:theme-bg-2'
                   : 'text-gray-400 cursor-not-allowed'
               }`}
             >
@@ -721,7 +735,7 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
               disabled={!stepInfo.canNext}
               className={`px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
                 stepInfo.canNext
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
+                  ? 'text-white shadow-lg hover:shadow-xl theme-btn-primary'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >

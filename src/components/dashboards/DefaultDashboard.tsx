@@ -4,6 +4,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { StatCard } from '@/components/ui/StatCard';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { 
   Users, 
   Building2, 
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function DefaultDashboard() {
+  const { colors } = useDynamicTheme();
   const { 
     user, 
     currentOrganization, 
@@ -26,7 +28,7 @@ export default function DefaultDashboard() {
   if (!currentOrganization) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">No se encontró la organización</p>
+        <p className="theme-text-secondary">No se encontró la organización</p>
       </div>
     );
   }
@@ -36,9 +38,18 @@ export default function DefaultDashboard() {
   const isAdmin = currentOrganization.is_admin;
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+    <div 
+      className="space-y-4 sm:space-y-6 p-4 sm:p-6"
+      style={{ backgroundColor: colors.background1 }}
+    >
       {/* Header con información de la organización */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+      <div 
+        className="theme-bg-3 rounded-lg shadow-sm border theme-border p-4 sm:p-6"
+        style={{
+          backgroundColor: colors.background3,
+          borderColor: colors.border,
+        }}
+      >
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {currentOrganization.logo_url ? (
