@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -6,12 +6,14 @@ import {
   Menu, 
   X,
   LogOut,
-  User
+  User,
+  Palette
 } from 'lucide-react';
 import { Button } from './Button';
 import NavigationSelector, { NavigationItem } from '@/components/navigation/NavigationSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
+import { organizationThemes } from '@/lib/themes/organizationThemes';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,9 +27,30 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: SidebarProps) {
   const pathname = usePathname();
+  const [selectedTheme, setSelectedTheme] = useState<string>('cruz-verde-guatemala');
+  const [isChangingTheme, setIsChangingTheme] = useState(false);
+  
   const { currentOrganization } = useAuth();
   const { colors } = useDynamicTheme();
   const menuItems = NavigationSelector({ slug: currentSlug || '' });
+
+  const handleThemeChange = async (themeUuid: string) => {
+    if (themeUuid === selectedTheme) return;
+    
+    setIsChangingTheme(true);
+    setSelectedTheme(themeUuid);
+    
+    // Simular cambio de tema
+    const mockEvent = new CustomEvent('organizationChanged', { 
+      detail: { uuid: themeUuid } 
+    });
+    window.dispatchEvent(mockEvent);
+    
+    // Simular delay de cambio
+    setTimeout(() => {
+      setIsChangingTheme(false);
+    }, 1000);
+  };
   
   return (
     <>
@@ -42,13 +65,13 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
       {/* Sidebar */}
       <div 
         className={clsx(
-          'w-64 theme-menu-bg border-r theme-border flex flex-col h-screen',
+          'w-64 theme-sidebar-bg border-r theme-sidebar-border flex flex-col h-screen',
           'fixed lg:fixed inset-y-0 left-0 z-[1100] transform transition-transform duration-300 ease-in-out',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
         style={{
-          backgroundColor: colors.menuBackground1,
-          borderColor: colors.border,
+          backgroundColor: colors.sidebarBackground,
+          borderColor: colors.sidebarBorder,
         }}
       >
         {/* Header */}
@@ -73,7 +96,7 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
                 </span>
               </div>
             )}
-            <h1 className="text-lg font-semibold theme-text-primary truncate">
+            <h1 className="text-lg font-semibold theme-sidebar-text truncate" style={{ color: colors.sidebarText }}>
               {currentOrganization?.name || 'Organización'}
             </h1>
           </div>
@@ -81,7 +104,8 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
             variant="ghost"
             size="sm"
             onClick={onToggle}
-            className="lg:hidden"
+            className="lg:hidden theme-sidebar-text hover:opacity-75"
+            style={{ color: colors.sidebarText }}
           >
             <X className="w-5 h-5" />
           </Button>
@@ -123,19 +147,20 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
                 key={item.label}
                 href={item.href}
                 className={clsx(
-                  'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors theme-menu-item',
+                  'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors theme-sidebar-item',
                   isActive
-                    ? 'theme-text-primary'
-                    : 'theme-text-secondary hover:theme-text-primary'
+                    ? 'theme-sidebar-text active'
+                    : 'theme-sidebar-text hover:opacity-75'
                 )}
                 style={{
-                  backgroundColor: isActive ? colors.menuItemHover : 'transparent',
+                  backgroundColor: isActive ? colors.sidebarItemActive : 'transparent',
+                  color: isActive ? 'white' : colors.sidebarText,
                 }}
               >
                 <span 
                   className="w-5 h-5 mr-3"
                   style={{ 
-                    color: isActive ? colors.buttonPrimary1 : colors.textSecondary 
+                    color: isActive ? 'white' : colors.sidebarText 
                   }}
                 >
                   <Icon className="w-5 h-5" />
@@ -151,11 +176,43 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
           className="p-3 border-t theme-divider"
           style={{ borderColor: colors.divider }}
         >
+          {/* Theme Selector */}
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Palette className="w-4 h-4 theme-sidebar-text" style={{ color: colors.sidebarText }} />
+              <span className="text-xs font-medium theme-sidebar-text" style={{ color: colors.sidebarText }}>Tema:</span>
+            </div>
+            <select
+              value={selectedTheme}
+              onChange={(e) => handleThemeChange(e.target.value)}
+              disabled={isChangingTheme}
+              className="w-full px-3 py-2 text-xs rounded border theme-sidebar-border theme-bg-3 theme-sidebar-text focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: colors.background3,
+                borderColor: colors.sidebarBorder,
+                color: colors.sidebarText
+              }}
+            >
+              {Object.entries(organizationThemes).map(([uuid, config]) => (
+                <option key={uuid} value={uuid}>
+                  {config.theme_name}
+                </option>
+              ))}
+            </select>
+            {isChangingTheme && (
+              <div className="flex items-center gap-1 mt-1 text-xs theme-sidebar-text" style={{ color: colors.sidebarText }}>
+                <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                <span>Cambiando...</span>
+              </div>
+            )}
+          </div>
+
           {/* Logout Button */}
           <Button
             variant="ghost"
             onClick={onLogout}
-            className="w-full justify-start theme-text-secondary hover:theme-text-primary"
+            className="w-full justify-start theme-sidebar-text hover:opacity-75"
+            style={{ color: colors.sidebarText }}
           >
             <LogOut className="w-5 h-5 mr-3" />
             Cerrar sesión

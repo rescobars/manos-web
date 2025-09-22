@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { getThemeByOrganizationUuid } from '@/lib/themes/organizationThemes';
 
 // Definición de la estructura de colores para el tema dinámico
 export interface DynamicThemeColors {
@@ -16,6 +17,10 @@ export interface DynamicThemeColors {
   buttonPrimary3: string;     // Botón primario activo
   buttonSecondary1: string;   // Botón secundario
   buttonSecondary2: string;   // Botón secundario hover
+  buttonHover: string;        // Color de hover general para botones
+  buttonActive: string;       // Color de activo general para botones
+  buttonText: string;         // Color de texto para botones
+  buttonTextHover: string;    // Color de texto en hover
   
   // Tablas
   tableHeader: string;        // Fondo del header de tabla
@@ -27,6 +32,18 @@ export interface DynamicThemeColors {
   menuBackground1: string;    // Fondo del menú principal
   menuBackground2: string;    // Fondo de submenús
   menuItemHover: string;      // Fondo de item de menú al hover
+  
+  // Header/Navbar específico
+  headerBackground: string;   // Fondo de la barra superior
+  headerText: string;         // Texto de la barra superior
+  headerBorder: string;       // Borde de la barra superior
+  
+  // Sidebar específico
+  sidebarBackground: string;  // Fondo del sidebar
+  sidebarText: string;        // Texto del sidebar
+  sidebarBorder: string;      // Borde del sidebar
+  sidebarItemHover: string;   // Hover de items del sidebar
+  sidebarItemActive: string;  // Item activo del sidebar
   
   // Textos
   textPrimary: string;        // Texto principal
@@ -67,6 +84,10 @@ const defaultGreenTheme: DynamicThemeColors = {
   buttonPrimary3: '#166534',   // Verde activo
   buttonSecondary1: '#f0fdf4', // Verde muy claro
   buttonSecondary2: '#dcfce7', // Verde claro
+  buttonHover: '#15803d',      // Verde hover general
+  buttonActive: '#166534',     // Verde activo general
+  buttonText: '#ffffff',       // Texto blanco para botones
+  buttonTextHover: '#ffffff',  // Texto blanco en hover
   
   // Tablas
   tableHeader: '#16a34a',      // Verde principal
@@ -78,6 +99,18 @@ const defaultGreenTheme: DynamicThemeColors = {
   menuBackground1: '#ffffff',  // Blanco
   menuBackground2: '#f0fdf4',  // Verde muy claro
   menuItemHover: '#dcfce7',    // Verde claro
+  
+  // Header/Navbar específico
+  headerBackground: '#ffffff', // Blanco
+  headerText: '#14532d',       // Verde muy oscuro
+  headerBorder: '#bbf7d0',     // Verde claro
+  
+  // Sidebar específico
+  sidebarBackground: '#f8fafc', // Gris muy claro
+  sidebarText: '#14532d',       // Verde muy oscuro
+  sidebarBorder: '#bbf7d0',     // Verde claro
+  sidebarItemHover: '#dcfce7',  // Verde claro
+  sidebarItemActive: '#16a34a', // Verde principal
   
   // Textos
   textPrimary: '#14532d',      // Verde muy oscuro
@@ -124,29 +157,57 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     }
   }, [currentOrganization]);
 
+  // Escuchar cambios de organización para simulación
+  useEffect(() => {
+    const handleOrganizationChange = (event: CustomEvent) => {
+      const { uuid } = event.detail;
+      loadOrganizationTheme(uuid);
+    };
+
+    window.addEventListener('organizationChanged', handleOrganizationChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('organizationChanged', handleOrganizationChange as EventListener);
+    };
+  }, []);
+
+  // Aplicar tema inicial cuando se monta el componente
+  useEffect(() => {
+    if (colors) {
+      applyThemeToDocument(colors);
+    }
+  }, [colors]);
+
   const loadOrganizationTheme = async (organizationUuid: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Simular llamada al backend - por ahora usar tema verde por defecto
-      // TODO: Reemplazar con llamada real al backend
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simular delay
+      // Simular delay de carga
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      const mockThemeConfig: OrganizationThemeConfig = {
-        organization_uuid: organizationUuid,
-        theme_name: 'Tema Verde Corporativo',
-        colors: defaultGreenTheme,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      // Buscar tema específico de la organización
+      const organizationTheme = getThemeByOrganizationUuid(organizationUuid);
       
-      setThemeConfig(mockThemeConfig);
-      setColors(mockThemeConfig.colors);
-      
-      // Aplicar variables CSS personalizadas
-      applyThemeToDocument(mockThemeConfig.colors);
+      if (organizationTheme) {
+        setThemeConfig(organizationTheme);
+        setColors(organizationTheme.colors);
+        applyThemeToDocument(organizationTheme.colors);
+      } else {
+        // Usar tema verde por defecto si no se encuentra tema específico
+        const defaultThemeConfig: OrganizationThemeConfig = {
+          organization_uuid: organizationUuid,
+          theme_name: 'Tema Verde Corporativo',
+          colors: defaultGreenTheme,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        setThemeConfig(defaultThemeConfig);
+        setColors(defaultThemeConfig.colors);
+        applyThemeToDocument(defaultThemeConfig.colors);
+      }
       
     } catch (err) {
       console.error('Error loading organization theme:', err);
@@ -162,11 +223,65 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
 
     const root = document.documentElement;
     
+    // Mapeo específico de propiedades a variables CSS
+    const cssVarMap: Record<keyof DynamicThemeColors, string> = {
+      background1: '--theme-background-1',
+      background2: '--theme-background-2',
+      background3: '--theme-background-3',
+      buttonPrimary1: '--theme-button-primary-1',
+      buttonPrimary2: '--theme-button-primary-2',
+      buttonPrimary3: '--theme-button-primary-3',
+      buttonSecondary1: '--theme-button-secondary-1',
+      buttonSecondary2: '--theme-button-secondary-2',
+      buttonHover: '--theme-button-hover',
+      buttonActive: '--theme-button-active',
+      buttonText: '--theme-button-text',
+      buttonTextHover: '--theme-button-text-hover',
+      tableHeader: '--theme-table-header',
+      tableRow: '--theme-table-row',
+      tableRowHover: '--theme-table-row-hover',
+      tableBorder: '--theme-table-border',
+      menuBackground1: '--theme-menu-background-1',
+      menuBackground2: '--theme-menu-background-2',
+      menuItemHover: '--theme-menu-item-hover',
+      headerBackground: '--theme-header-background',
+      headerText: '--theme-header-text',
+      headerBorder: '--theme-header-border',
+      sidebarBackground: '--theme-sidebar-background',
+      sidebarText: '--theme-sidebar-text',
+      sidebarBorder: '--theme-sidebar-border',
+      sidebarItemHover: '--theme-sidebar-item-hover',
+      sidebarItemActive: '--theme-sidebar-item-active',
+      textPrimary: '--theme-text-primary',
+      textSecondary: '--theme-text-secondary',
+      textMuted: '--theme-text-muted',
+      border: '--theme-border',
+      divider: '--theme-divider',
+      success: '--theme-success',
+      warning: '--theme-warning',
+      error: '--theme-error',
+      info: '--theme-info',
+    };
+    
     // Aplicar variables CSS personalizadas
     Object.entries(themeColors).forEach(([key, value]) => {
-      const cssVarName = `--theme-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-      root.style.setProperty(cssVarName, value);
+      const cssVarName = cssVarMap[key as keyof DynamicThemeColors];
+      if (cssVarName) {
+        root.style.setProperty(cssVarName, value);
+        console.log(`🎨 Applied CSS variable: ${cssVarName} = ${value}`); // Debug log
+      } else {
+        console.warn(`⚠️ No CSS variable mapping found for: ${key}`);
+      }
     });
+    
+    // Forzar re-render de elementos con clases de tema
+    const elementsWithTheme = document.querySelectorAll('[class*="theme-"]');
+    elementsWithTheme.forEach((element) => {
+      // Trigger reflow to force style recalculation
+      (element as HTMLElement).offsetHeight;
+    });
+    
+    console.log(`✅ Theme applied successfully! Applied ${Object.keys(themeColors).length} variables.`);
   };
 
   const updateTheme = (newConfig: OrganizationThemeConfig) => {

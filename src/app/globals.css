@@ -34,6 +34,10 @@
     --theme-button-primary-3: #166534;
     --theme-button-secondary-1: #f0fdf4;
     --theme-button-secondary-2: #dcfce7;
+    --theme-button-hover: #15803d;
+    --theme-button-active: #166534;
+    --theme-button-text: #ffffff;
+    --theme-button-text-hover: #ffffff;
     --theme-table-header: #16a34a;
     --theme-table-row: #ffffff;
     --theme-table-row-hover: #f0fdf4;
@@ -41,6 +45,14 @@
     --theme-menu-background-1: #ffffff;
     --theme-menu-background-2: #f0fdf4;
     --theme-menu-item-hover: #dcfce7;
+    --theme-header-background: #ffffff;
+    --theme-header-text: #14532d;
+    --theme-header-border: #bbf7d0;
+    --theme-sidebar-background: #f8fafc;
+    --theme-sidebar-text: #14532d;
+    --theme-sidebar-border: #bbf7d0;
+    --theme-sidebar-item-hover: #dcfce7;
+    --theme-sidebar-item-active: #16a34a;
     --theme-text-primary: #14532d;
     --theme-text-secondary: #166534;
     --theme-text-muted: #4ade80;
@@ -114,21 +126,37 @@
   
   .theme-btn-primary {
     background-color: var(--theme-button-primary-1);
-    transition: background-color 0.2s ease;
+    color: var(--theme-button-text);
+    transition: all 0.2s ease;
   }
   .theme-btn-primary:hover {
-    background-color: var(--theme-button-primary-2);
+    background-color: var(--theme-button-hover);
+    color: var(--theme-button-text-hover);
   }
   .theme-btn-primary:active {
-    background-color: var(--theme-button-primary-3);
+    background-color: var(--theme-button-active);
+    color: var(--theme-button-text-hover);
   }
   
   .theme-btn-secondary {
     background-color: var(--theme-button-secondary-1);
-    transition: background-color 0.2s ease;
+    color: var(--theme-text-primary);
+    transition: all 0.2s ease;
   }
   .theme-btn-secondary:hover {
     background-color: var(--theme-button-secondary-2);
+    color: var(--theme-text-primary);
+  }
+  
+  /* Clases adicionales para botones con hover mejorado */
+  .theme-btn-hover:hover {
+    background-color: var(--theme-button-hover) !important;
+    color: var(--theme-button-text-hover) !important;
+  }
+  
+  .theme-btn-active:active {
+    background-color: var(--theme-button-active) !important;
+    color: var(--theme-button-text-hover) !important;
   }
   
   .theme-table-header { background-color: var(--theme-table-header); }
@@ -151,6 +179,41 @@
   .theme-warning { color: var(--theme-warning); }
   .theme-error { color: var(--theme-error); }
   .theme-info { color: var(--theme-info); }
+  
+  /* Clases específicas para Header/Navbar */
+  .theme-header-bg { background-color: var(--theme-header-background); }
+  .theme-header-text { color: var(--theme-header-text); }
+  .theme-header-border { border-color: var(--theme-header-border); }
+  
+  /* Clases específicas para Sidebar */
+  .theme-sidebar-bg { background-color: var(--theme-sidebar-background); }
+  .theme-sidebar-text { color: var(--theme-sidebar-text); }
+  .theme-sidebar-border { border-color: var(--theme-sidebar-border); }
+  .theme-sidebar-item:hover { background-color: var(--theme-sidebar-item-hover); }
+  .theme-sidebar-item.active { background-color: var(--theme-sidebar-item-active); color: white; }
+  
+  /* Clases adicionales para mejor cobertura */
+  .theme-menu-item {
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+  }
+  
+  .theme-menu-item:hover {
+    background-color: var(--theme-menu-item-hover);
+  }
+  
+  /* Forzar aplicación de colores en elementos específicos */
+  .theme-bg-1 * {
+    color: var(--theme-text-primary);
+  }
+  
+  .theme-bg-2 * {
+    color: var(--theme-text-primary);
+  }
+  
+  .theme-bg-3 * {
+    color: var(--theme-text-primary);
+  }
 }
 
 @layer components {

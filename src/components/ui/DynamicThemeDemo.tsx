@@ -83,13 +83,16 @@ export function DynamicThemeDemo() {
             <h4 className="text-lg font-semibold theme-text-primary mb-4">Botones</h4>
             <div className="space-y-3">
               <Button 
-                className="theme-btn-primary text-white px-4 py-2 rounded"
-                style={{ backgroundColor: colors.buttonPrimary1 }}
+                className="theme-btn-primary px-4 py-2 rounded font-medium"
+                style={{ 
+                  backgroundColor: colors.buttonPrimary1,
+                  color: colors.buttonText
+                }}
               >
                 Botón Primario
               </Button>
               <Button 
-                className="theme-btn-secondary theme-text-primary px-4 py-2 rounded border"
+                className="theme-btn-secondary px-4 py-2 rounded border font-medium"
                 style={{ 
                   backgroundColor: colors.buttonSecondary1,
                   color: colors.textPrimary,
@@ -97,6 +100,15 @@ export function DynamicThemeDemo() {
                 }}
               >
                 Botón Secundario
+              </Button>
+              <Button 
+                className="theme-btn-hover px-4 py-2 rounded font-medium"
+                style={{ 
+                  backgroundColor: colors.buttonPrimary1,
+                  color: colors.buttonText
+                }}
+              >
+                Botón con Hover
               </Button>
             </div>
           </div>
@@ -113,8 +125,8 @@ export function DynamicThemeDemo() {
                   style={{ backgroundColor: colors.tableHeader }}
                 >
                   <tr>
-                    <th className="px-4 py-2 text-left text-white font-semibold">Columna 1</th>
-                    <th className="px-4 py-2 text-left text-white font-semibold">Columna 2</th>
+                    <th className="px-4 py-2 text-left font-semibold" style={{ color: 'white' }}>Columna 1</th>
+                    <th className="px-4 py-2 text-left font-semibold" style={{ color: 'white' }}>Columna 2</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -177,34 +189,34 @@ export function DynamicThemeDemo() {
         <Card>
           <div className="p-6">
             <h4 className="text-lg font-semibold theme-text-primary mb-4">Estados</h4>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-2 rounded" style={{ backgroundColor: colors.success + '20' }}>
                 <div 
-                  className="w-4 h-4 rounded"
+                  className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: colors.success }}
                 ></div>
-                <span className="theme-success">Éxito</span>
+                <span className="font-medium" style={{ color: colors.success }}>Éxito</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 p-2 rounded" style={{ backgroundColor: colors.warning + '20' }}>
                 <div 
-                  className="w-4 h-4 rounded"
+                  className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: colors.warning }}
                 ></div>
-                <span className="theme-warning">Advertencia</span>
+                <span className="font-medium" style={{ color: colors.warning }}>Advertencia</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 p-2 rounded" style={{ backgroundColor: colors.error + '20' }}>
                 <div 
-                  className="w-4 h-4 rounded"
+                  className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: colors.error }}
                 ></div>
-                <span className="theme-error">Error</span>
+                <span className="font-medium" style={{ color: colors.error }}>Error</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 p-2 rounded" style={{ backgroundColor: colors.info + '20' }}>
                 <div 
-                  className="w-4 h-4 rounded"
+                  className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: colors.info }}
                 ></div>
-                <span className="theme-info">Información</span>
+                <span className="font-medium" style={{ color: colors.info }}>Información</span>
               </div>
             </div>
           </div>
@@ -217,13 +229,13 @@ export function DynamicThemeDemo() {
           <h4 className="text-lg font-semibold theme-text-primary mb-4">Paleta de Colores</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Object.entries(colors).map(([key, value]) => (
-              <div key={key} className="text-center">
+              <div key={key} className="text-center group">
                 <div 
-                  className="w-full h-16 rounded border mb-2"
+                  className="w-full h-20 rounded-lg border-2 shadow-sm mb-3 group-hover:shadow-md transition-shadow"
                   style={{ backgroundColor: value }}
                 ></div>
-                <p className="text-xs theme-text-muted">{key}</p>
-                <p className="text-xs theme-text-secondary font-mono">{value}</p>
+                <p className="text-xs font-medium theme-text-primary mb-1">{key}</p>
+                <p className="text-xs theme-text-muted font-mono bg-gray-100 px-2 py-1 rounded">{value}</p>
               </div>
             ))}
           </div>
