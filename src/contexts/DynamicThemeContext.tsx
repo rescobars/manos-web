@@ -219,16 +219,11 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     try {
       // Obtener información pública de la organización desde la API externa
       const response = await fetch(`/api/organizations/public/${organizationUuid}`);
-
-      console.log('response', response);
       const organizationData = await response.json();
       
       if (response.ok && organizationData.success) {
         // Usar theme_config y branding de la API externa
         const { theme_config, branding } = organizationData.data;
-
-        console.log("theme_config", theme_config);
-        console.log("branding", branding);
         
         if (theme_config && theme_config.colors) {
           // Crear configuración de tema desde la API
@@ -342,7 +337,6 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       (element as HTMLElement).offsetHeight;
     });
     
-    console.log(`✅ Theme applied successfully! Applied ${Object.keys(themeColors).length} variables.`);
   };
 
   const updateTheme = (newConfig: OrganizationThemeConfig) => {
@@ -351,7 +345,6 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     applyThemeToDocument(newConfig.colors);
     
     // TODO: Guardar en el backend
-    console.log('Saving theme config:', newConfig);
   };
 
   const applyBrandingToDocument = (branding: OrganizationBranding) => {
@@ -388,7 +381,6 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       root.style.setProperty('--secondary-font', branding.secondary_font);
     }
     
-    console.log('🎨 Branding applied successfully!', branding);
   };
 
   const updateBranding = (newBranding: OrganizationBranding) => {
