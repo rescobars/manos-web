@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, X, AlertCircle } from 'lucide-react';
 import { Input } from './Input';
 import { Button } from './Button';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { MAPBOX_CONFIG, isMapboxConfigured, getMapboxToken } from '@/lib/mapbox';
 
 interface Location {
@@ -27,6 +28,7 @@ export function LocationSelector({
   onDeliveryChange,
   onDeliveryClear
 }: LocationSelectorProps) {
+  const { colors } = useDynamicTheme();
   const [searchAddress, setSearchAddress] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -304,14 +306,20 @@ export function LocationSelector({
 
         {/* Resultados de búsqueda */}
         {searchResults.length > 0 && (
-          <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto theme-bg-3 border theme-border" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
             {searchResults.map((result, index) => (
               <button
                 key={index}
                 onClick={() => selectSearchResult(result)}
-                className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                className="w-full text-left p-3 border-b last:border-b-0 hover:opacity-75 transition-opacity"
+                style={{ 
+                  borderColor: colors.divider,
+                  color: colors.textPrimary 
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.background2}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <div className="text-sm font-medium text-gray-900">{result.place_name}</div>
+                <div className="text-sm font-medium" style={{ color: colors.textPrimary }}>{result.place_name}</div>
               </button>
             ))}
           </div>
@@ -321,18 +329,19 @@ export function LocationSelector({
       {/* Mapa - Tamaño original */}
       <div className="relative">
         <div 
-          ref={mapContainerRef} 
-          className="w-full h-96 rounded-lg border border-gray-200"
+          ref={mapContainerRef}
+          className="w-full h-96 rounded-lg border theme-border"
+          style={{ borderColor: colors.border }}
         />
         
         {/* Instrucciones del mapa */}
-        <div className="absolute top-2 left-2 bg-white bg-opacity-90 rounded-lg p-2 text-xs text-gray-600">
+        <div className="absolute top-2 left-2 rounded-lg p-2 text-xs" style={{ backgroundColor: `${colors.background3}E6`, color: colors.textSecondary }}>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.info }}></div>
             <span>Punto A: Sucursal (fijo)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.success }}></div>
             <span>Punto B: Hacer clic en el mapa</span>
           </div>
         </div>

@@ -103,25 +103,26 @@ export function QuickOrderScreen({
             {/* Punto A y Punto B en la misma fila - SIN SCROLL */}
             <div className="grid grid-cols-2 gap-2">
               {/* Punto A - Versión ultra compacta */}
-              <div className="bg-white border border-blue-200 rounded-lg p-2">
+              <div className="theme-bg-3 border theme-border rounded-lg p-2" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
                 <div className="flex items-center gap-1 mb-1">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-xs font-medium text-blue-900">Sucursal</span>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.info }}></div>
+                  <span className="text-xs font-medium" style={{ color: colors.textPrimary }}>Sucursal</span>
                 </div>
-                <p className="text-xs text-blue-800 leading-tight">{BRANCH_LOCATION.address}</p>
+                <p className="text-xs leading-tight" style={{ color: colors.textSecondary }}>{BRANCH_LOCATION.address}</p>
               </div>
 
               {/* Punto B - Versión ultra compacta */}
-              <div className="bg-white border border-green-200 rounded-lg p-2">
+              <div className="theme-bg-3 border theme-border rounded-lg p-2" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-xs font-medium text-green-900">Entrega</span>
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.success }}></div>
+                    <span className="text-xs font-medium" style={{ color: colors.textPrimary }}>Entrega</span>
                   </div>
                   {deliveryLocation && (
                     <button
                       onClick={handleDeliveryLocationClear}
-                      className="text-green-600 hover:text-green-800 p-0.5"
+                      className="p-0.5 hover:opacity-75"
+                      style={{ color: colors.textSecondary }}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -129,9 +130,9 @@ export function QuickOrderScreen({
                 </div>
                 
                 {deliveryLocation ? (
-                  <p className="text-xs text-green-800 leading-tight">{deliveryLocation.address}</p>
+                  <p className="text-xs leading-tight" style={{ color: colors.textSecondary }}>{deliveryLocation.address}</p>
                 ) : (
-                  <p className="text-xs text-green-600 italic leading-tight">Selecciona</p>
+                  <p className="text-xs italic leading-tight" style={{ color: colors.textMuted }}>Selecciona</p>
                 )}
               </div>
             </div>
@@ -140,28 +141,29 @@ export function QuickOrderScreen({
           {/* Versión completa para desktop */}
           <div className="hidden lg:block space-y-6">
             {/* Punto A - Sucursal */}
-            <div className="bg-white border border-blue-200 rounded-lg p-4">
+            <div className="theme-bg-3 border theme-border rounded-lg p-4" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
               <div className="flex items-center gap-2 mb-3">
-                <MapPin className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-blue-900">Punto A: Sucursal</h3>
+                <MapPin className="w-5 h-5" style={{ color: colors.info }} />
+                <h3 className="font-semibold" style={{ color: colors.textPrimary }}>Punto A: Sucursal</h3>
               </div>
-              <p className="text-sm text-blue-800 mb-2">{BRANCH_LOCATION.address}</p>
-              <p className="text-xs text-blue-600">
+              <p className="text-sm mb-2" style={{ color: colors.textSecondary }}>{BRANCH_LOCATION.address}</p>
+              <p className="text-xs" style={{ color: colors.textMuted }}>
                 Coordenadas: {BRANCH_LOCATION.lat.toFixed(6)}, {BRANCH_LOCATION.lng.toFixed(6)}
               </p>
             </div>
 
             {/* Punto B - Entrega */}
-            <div className="bg-white border border-green-200 rounded-lg p-4">
+            <div className="theme-bg-3 border theme-border rounded-lg p-4" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-green-600" />
-                  <h3 className="font-semibold text-green-900">Punto B: Entrega</h3>
+                  <MapPin className="w-5 h-5" style={{ color: colors.success }} />
+                  <h3 className="font-semibold" style={{ color: colors.textPrimary }}>Punto B: Entrega</h3>
                 </div>
                 {deliveryLocation && (
                   <button
                     onClick={handleDeliveryLocationClear}
-                    className="text-green-600 hover:text-green-800 p-1"
+                    className="p-1 hover:opacity-75"
+                    style={{ color: colors.textSecondary }}
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -170,13 +172,13 @@ export function QuickOrderScreen({
               
               {deliveryLocation ? (
                 <>
-                  <p className="text-sm text-green-800 mb-2">{deliveryLocation.address}</p>
-                  <p className="text-xs text-green-600">
+                  <p className="text-sm mb-2" style={{ color: colors.textSecondary }}>{deliveryLocation.address}</p>
+                  <p className="text-xs" style={{ color: colors.textMuted }}>
                     Coordenadas: {deliveryLocation.lat.toFixed(6)}, {deliveryLocation.lng.toFixed(6)}
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-green-600 italic">
+                <p className="text-sm italic" style={{ color: colors.textMuted }}>
                   Haz clic en el mapa o busca una dirección
                 </p>
               )}
@@ -205,15 +207,15 @@ export function QuickOrderScreen({
           
           {/* Detalles del pedido y botones debajo del mapa */}
           <div className="px-3 lg:px-6 pb-4 lg:pb-6">
-            <div className="bg-gray-50 rounded-lg p-3 lg:p-4 mb-4">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm lg:text-base">
-                <Package className="w-4 h-4 text-gray-600" />
+            <div className="theme-bg-2 rounded-lg p-3 lg:p-4 mb-4" style={{ backgroundColor: colors.background2 }}>
+              <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm lg:text-base" style={{ color: colors.textPrimary }}>
+                <Package className="w-4 h-4" style={{ color: colors.textSecondary }} />
                 Detalles del Pedido (Opcional)
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>
                     Descripción
                   </label>
                   <input
@@ -221,12 +223,17 @@ export function QuickOrderScreen({
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="¿Qué contiene el pedido?"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-transparent text-sm theme-bg-3 theme-border theme-text-primary"
+                    style={{ 
+                      backgroundColor: colors.background3, 
+                      borderColor: colors.border, 
+                      color: colors.textPrimary 
+                    }}
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>
                     Monto Total
                   </label>
                   <input
@@ -236,7 +243,12 @@ export function QuickOrderScreen({
                     placeholder="0.00"
                     step="0.01"
                     min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-transparent text-sm theme-bg-3 theme-border theme-text-primary"
+                    style={{ 
+                      backgroundColor: colors.background3, 
+                      borderColor: colors.border, 
+                      color: colors.textPrimary 
+                    }}
                   />
                 </div>
               </div>
@@ -248,7 +260,11 @@ export function QuickOrderScreen({
                 variant="outline"
                 onClick={onClose}
                 disabled={loading}
-                className="px-6 py-2 w-full sm:w-auto"
+                className="px-6 py-2 w-full sm:w-auto theme-border theme-text-primary hover:theme-bg-2"
+                style={{ 
+                  borderColor: colors.border, 
+                  color: colors.textPrimary 
+                }}
               >
                 Cancelar
               </Button>
@@ -256,11 +272,15 @@ export function QuickOrderScreen({
               <Button
                 onClick={handleSubmit}
                 disabled={!deliveryLocation || loading}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                className="px-6 py-2 w-full sm:w-auto theme-btn-primary"
+                style={{ 
+                  backgroundColor: colors.buttonPrimary1, 
+                  color: colors.buttonText 
+                }}
               >
                 {loading ? (
                   <>
-                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-b-2 border-white"></div>
+                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-b-2" style={{ borderColor: colors.buttonText }}></div>
                     Creando...
                   </>
                 ) : (
@@ -275,71 +295,71 @@ export function QuickOrderScreen({
         </div>
 
         {/* Columna Derecha - Solo Resumen del pedido */}
-        <div className="w-full lg:w-80 bg-gray-50 border-t lg:border-t-0 lg:border-l border-gray-200 p-4 sm:p-6 overflow-y-auto order-2 lg:order-3">
+        <div className="w-full lg:w-80 theme-bg-2 border-t lg:border-t-0 lg:border-l theme-border p-4 sm:p-6 overflow-y-auto order-2 lg:order-3" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
           {/* RESUMEN COMPLETAMENTE OCULTO EN MÓVILES */}
           <div className="hidden lg:block">
             <div className="sticky top-0">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5 text-gray-600" />
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: colors.textPrimary }}>
+                <Package className="w-5 h-5" style={{ color: colors.textSecondary }} />
                 Resumen del Pedido
               </h3>
               
               {deliveryLocation ? (
                 <div className="space-y-4">
                   {/* Información de la ruta */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-800 mb-3">Ruta de Entrega</h4>
+                  <div className="theme-bg-3 border theme-border rounded-lg p-4" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
+                    <h4 className="font-medium mb-3" style={{ color: colors.textPrimary }}>Ruta de Entrega</h4>
                     
                     <div className="space-y-3">
                       <div className="flex items-start gap-2">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="w-3 h-3 rounded-full mt-2 flex-shrink-0" style={{ backgroundColor: colors.info }}></div>
                         <div>
-                          <p className="text-sm font-medium text-gray-700">Desde</p>
-                          <p className="text-xs text-gray-600">{BRANCH_LOCATION.address}</p>
+                          <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Desde</p>
+                          <p className="text-xs" style={{ color: colors.textMuted }}>{BRANCH_LOCATION.address}</p>
                         </div>
                       </div>
                       
                       <div className="flex items-start gap-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="w-3 h-3 rounded-full mt-2 flex-shrink-0" style={{ backgroundColor: colors.success }}></div>
                         <div>
-                          <p className="text-sm font-medium text-gray-700">Hasta</p>
-                          <p className="text-xs text-gray-600">{deliveryLocation.address}</p>
+                          <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Hasta</p>
+                          <p className="text-xs" style={{ color: colors.textMuted }}>{deliveryLocation.address}</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Detalles del pedido */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-800 mb-3">Detalles</h4>
+                  <div className="theme-bg-3 border theme-border rounded-lg p-4" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
+                    <h4 className="font-medium mb-3" style={{ color: colors.textPrimary }}>Detalles</h4>
                     
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Descripción:</span>
-                        <span className="text-gray-900">{description || 'Pedido rápido'}</span>
+                        <span style={{ color: colors.textSecondary }}>Descripción:</span>
+                        <span style={{ color: colors.textPrimary }}>{description || 'Pedido rápido'}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-xs text-gray-600">Monto:</span>
-                        <span className="text-xs text-gray-900">Q{totalAmount || '0.00'}</span>
+                        <span className="text-xs" style={{ color: colors.textSecondary }}>Monto:</span>
+                        <span className="text-xs" style={{ color: colors.textPrimary }}>Q{totalAmount || '0.00'}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Estado de validación */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="rounded-lg p-4" style={{ backgroundColor: `${colors.success}20`, borderColor: colors.success, border: '1px solid' }}>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-800">Pedido listo para crear</span>
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.success }}></div>
+                      <span className="text-sm font-medium" style={{ color: colors.success }}>Pedido listo para crear</span>
                     </div>
-                    <p className="text-xs text-green-600 mt-1">
+                    <p className="text-xs mt-1" style={{ color: colors.success }}>
                       Todos los campos requeridos están completos
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                  <MapPin className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-                  <p className="text-sm text-yellow-800">
+                <div className="rounded-lg p-4 text-center" style={{ backgroundColor: `${colors.warning}20`, borderColor: colors.warning, border: '1px solid' }}>
+                  <MapPin className="w-8 h-8 mx-auto mb-2" style={{ color: colors.warning }} />
+                  <p className="text-sm" style={{ color: colors.warning }}>
                     Selecciona un punto de entrega en el mapa para ver el resumen
                   </p>
                 </div>

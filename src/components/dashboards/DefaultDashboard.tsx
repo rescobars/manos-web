@@ -179,34 +179,34 @@ export default function DefaultDashboard() {
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {hasPermission('orders', 'create') && (
-              <button className="p-4 border rounded-lg hover:bg-gray-50 text-center sm:text-left transition-colors">
-                <Package className="w-6 h-6 text-blue-600 mb-2 mx-auto sm:mx-0" />
-                <h4 className="font-medium text-sm sm:text-base">Crear Pedido</h4>
-                <p className="text-xs sm:text-sm text-gray-600">Nuevo pedido</p>
+              <button className="p-4 border rounded-lg text-center sm:text-left transition-colors theme-bg-3 theme-border hover:theme-bg-2" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
+                <Package className="w-6 h-6 mb-2 mx-auto sm:mx-0" style={{ color: colors.info }} />
+                <h4 className="font-medium text-sm sm:text-base" style={{ color: colors.textPrimary }}>Crear Pedido</h4>
+                <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>Nuevo pedido</p>
               </button>
             )}
             
             {hasPermission('drivers', 'create') && (
-              <button className="p-4 border rounded-lg hover:bg-gray-50 text-center sm:text-left transition-colors">
-                <Truck className="w-6 h-6 text-green-600 mb-2 mx-auto sm:mx-0" />
-                <h4 className="font-medium text-sm sm:text-base">Agregar Conductor</h4>
-                <p className="text-xs sm:text-sm text-gray-600">Nuevo conductor</p>
+              <button className="p-4 border rounded-lg text-center sm:text-left transition-colors theme-bg-3 theme-border hover:theme-bg-2" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
+                <Truck className="w-6 h-6 mb-2 mx-auto sm:mx-0" style={{ color: colors.success }} />
+                <h4 className="font-medium text-sm sm:text-base" style={{ color: colors.textPrimary }}>Agregar Conductor</h4>
+                <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>Nuevo conductor</p>
               </button>
             )}
             
             {hasPermission('customers', 'create') && (
-              <button className="p-4 border rounded-lg hover:bg-gray-50 text-center sm:text-left transition-colors">
-                <Users className="w-6 h-6 text-purple-600 mb-2 mx-auto sm:mx-0" />
-                <h4 className="font-medium text-sm sm:text-base">Agregar Cliente</h4>
-                <p className="text-xs sm:text-sm text-gray-600">Nuevo cliente</p>
+              <button className="p-4 border rounded-lg text-center sm:text-left transition-colors theme-bg-3 theme-border hover:theme-bg-2" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
+                <Users className="w-6 h-6 mb-2 mx-auto sm:mx-0" style={{ color: colors.warning }} />
+                <h4 className="font-medium text-sm sm:text-base" style={{ color: colors.textPrimary }}>Agregar Cliente</h4>
+                <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>Nuevo cliente</p>
               </button>
             )}
             
             {hasPermission('reports', 'read') && (
-              <button className="p-4 border rounded-lg hover:bg-gray-50 text-center sm:text-left transition-colors">
-                <Building2 className="w-6 h-6 text-orange-600 mb-2 mx-auto sm:mx-0" />
-                <h4 className="font-medium text-sm sm:text-base">Ver Reportes</h4>
-                <p className="text-xs sm:text-sm text-gray-600">Analíticas</p>
+              <button className="p-4 border rounded-lg text-center sm:text-left transition-colors theme-bg-3 theme-border hover:theme-bg-2" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
+                <Building2 className="w-6 h-6 mb-2 mx-auto sm:mx-0" style={{ color: colors.error }} />
+                <h4 className="font-medium text-sm sm:text-base" style={{ color: colors.textPrimary }}>Ver Reportes</h4>
+                <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>Analíticas</p>
               </button>
             )}
           </div>
