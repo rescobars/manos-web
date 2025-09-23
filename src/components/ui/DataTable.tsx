@@ -76,9 +76,9 @@ export function DataTable<T extends Record<string, any>>({
     const { page, totalPages, hasNext, hasPrev } = pagination;
     const pages = [];
     
-    // Calcular páginas a mostrar
-    const startPage = Math.max(1, page - 2);
-    const endPage = Math.min(totalPages, page + 2);
+    // Calcular páginas a mostrar - menos páginas en móvil
+    const startPage = Math.max(1, page - 1);
+    const endPage = Math.min(totalPages, page + 1);
     
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
@@ -86,19 +86,20 @@ export function DataTable<T extends Record<string, any>>({
 
     return (
       <div 
-        className="flex items-center justify-between px-6 py-4 theme-bg-2 border-b theme-border"
+        className="flex flex-col sm:flex-row items-center justify-between px-3 sm:px-6 py-4 theme-bg-2 border-b theme-border gap-3 sm:gap-0"
         style={{
           backgroundColor: colors.background2,
           borderColor: colors.border,
         }}
       >
-        <div className="flex items-center text-sm theme-text-secondary">
-          <span className="font-medium">
-            Mostrando {((page - 1) * pagination.limit) + 1} a {Math.min(page * pagination.limit, pagination.total)} de {pagination.total} resultados
+        <div className="flex items-center text-xs sm:text-sm theme-text-secondary">
+          <span className="font-medium text-center sm:text-left">
+            <span className="hidden sm:inline">Mostrando {((page - 1) * pagination.limit) + 1} a {Math.min(page * pagination.limit, pagination.total)} de {pagination.total} resultados</span>
+            <span className="sm:hidden">{page} de {totalPages}</span>
           </span>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Switch de vista */}
           {onViewModeChange && (
             <div 
@@ -107,7 +108,7 @@ export function DataTable<T extends Record<string, any>>({
             >
               <button
                 onClick={() => onViewModeChange('table')}
-                className={`p-2 rounded-md transition-colors ${
+                className={`p-1.5 sm:p-2 rounded-md transition-colors ${
                   viewMode === 'table'
                     ? 'shadow-sm'
                     : 'hover:opacity-80'
@@ -118,11 +119,11 @@ export function DataTable<T extends Record<string, any>>({
                 }}
                 title="Vista de tabla"
               >
-                <List className="w-4 h-4" />
+                <List className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
               <button
                 onClick={() => onViewModeChange('grid')}
-                className={`p-2 rounded-md transition-colors ${
+                className={`p-1.5 sm:p-2 rounded-md transition-colors ${
                   viewMode === 'grid'
                     ? 'shadow-sm'
                     : 'hover:opacity-80'
@@ -133,17 +134,17 @@ export function DataTable<T extends Record<string, any>>({
                 }}
                 title="Vista de cuadrícula"
               >
-                <Grid className="w-4 h-4" />
+                <Grid className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
             </div>
           )}
           
           <div className="flex items-center space-x-1">
-          {/* Botón Primera página */}
+          {/* Botón Primera página - Hidden on mobile */}
           <button
             onClick={() => onPageChange?.(1)}
             disabled={!hasPrev}
-            className="p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
+            className="hidden sm:block p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
             style={{
               color: colors.textMuted,
               borderColor: colors.border,
@@ -157,19 +158,19 @@ export function DataTable<T extends Record<string, any>>({
           <button
             onClick={() => onPageChange?.(page - 1)}
             disabled={!hasPrev}
-            className="p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
+            className="p-1.5 sm:p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
             style={{
               color: colors.textMuted,
               borderColor: colors.border,
             }}
             title="Página anterior"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
           
-          {/* Separador */}
+          {/* Separador - Hidden on mobile */}
           <div 
-            className="w-px h-6 mx-2"
+            className="hidden sm:block w-px h-6 mx-2"
             style={{ backgroundColor: colors.border }}
           ></div>
           
@@ -179,7 +180,7 @@ export function DataTable<T extends Record<string, any>>({
               <button
                 key={pageNum}
                 onClick={() => onPageChange?.(pageNum)}
-                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 ${
                   pageNum === page
                     ? 'shadow-md'
                     : 'hover:opacity-80 hover:shadow-sm'
@@ -195,9 +196,9 @@ export function DataTable<T extends Record<string, any>>({
             ))}
           </div>
           
-          {/* Separador */}
+          {/* Separador - Hidden on mobile */}
           <div 
-            className="w-px h-6 mx-2"
+            className="hidden sm:block w-px h-6 mx-2"
             style={{ backgroundColor: colors.border }}
           ></div>
           
@@ -205,21 +206,21 @@ export function DataTable<T extends Record<string, any>>({
           <button
             onClick={() => onPageChange?.(page + 1)}
             disabled={!hasNext}
-            className="p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
+            className="p-1.5 sm:p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
             style={{
               color: colors.textMuted,
               borderColor: colors.border,
             }}
             title="Página siguiente"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
           
-          {/* Botón Última página */}
+          {/* Botón Última página - Hidden on mobile */}
           <button
             onClick={() => onPageChange?.(totalPages)}
             disabled={!hasNext}
-            className="p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
+            className="hidden sm:block p-2 hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all duration-200 border border-transparent hover:border-opacity-50"
             style={{
               color: colors.textMuted,
               borderColor: colors.border,
@@ -328,7 +329,7 @@ export function DataTable<T extends Record<string, any>>({
       {viewMode === 'table' ? (
         <div className="overflow-x-auto">
           <table 
-            className="w-full table-fixed"
+            className="w-full table-fixed min-w-[600px]"
             style={{ borderColor: colors.tableBorder }}
           >
             <thead 

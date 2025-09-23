@@ -366,20 +366,21 @@ export default function OrdersPage() {
         subtitle={`Gestiona los pedidos de ${currentOrganization.name}`}
       >
         {/* Header compacto con botón de crear pedido */}
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+        <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
             <div>
-              <h1 className="text-xl font-bold theme-text-primary">Pedidos</h1>
-              <p className="text-sm theme-text-secondary">{currentOrganization.name}</p>
+              <h1 className="text-lg sm:text-xl font-bold theme-text-primary">Pedidos</h1>
+              <p className="text-xs sm:text-sm theme-text-secondary truncate">{currentOrganization.name}</p>
             </div>
-            <Button onClick={handleQuickOrder} size="sm">
+            <Button onClick={handleQuickOrder} size="sm" className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
-              Crear Pedido
+              <span className="hidden sm:inline">Crear Pedido</span>
+              <span className="sm:hidden">Crear</span>
             </Button>
           </div>
         </div>
         {/* Stats Cards - Clickables para filtrar */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div 
             onClick={() => handleFilterChange('all')}
             className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
@@ -472,7 +473,7 @@ export default function OrdersPage() {
         </div>
 
         {/* DataTable con paginación */}
-        <div className="px-4 sm:px-6 lg:px-8">
+        <div className="px-2 sm:px-4 lg:px-6 xl:px-8">
           {error ? (
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
               <div className="text-red-600 mb-2">Error al cargar pedidos</div>

@@ -217,31 +217,34 @@ export default function OrganizationsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Organizaciones</h1>
-          <p className="text-gray-600">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Organizaciones</h1>
+          <p className="text-sm sm:text-base text-gray-600">
             Gestiona todas tus organizaciones
           </p>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
           <Button
             variant="outline"
             onClick={reload}
             disabled={searchLoading}
+            className="w-full sm:w-auto"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${searchLoading ? 'animate-spin' : ''}`} />
-            Actualizar
+            <span className="hidden sm:inline">Actualizar</span>
+            <span className="sm:hidden">Actualizar</span>
           </Button>
           
           {/* Temporalmente habilitado para testing */}
           <Button onClick={() => {
             console.log('Abriendo modal de crear organización');
             setShowCreateModal(true);
-          }}>
+          }} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
-            Crear Organización
+            <span className="hidden sm:inline">Crear Organización</span>
+            <span className="sm:hidden">Crear</span>
           </Button>
         </div>
       </div>
@@ -273,7 +276,7 @@ export default function OrganizationsPage() {
       )}
 
       {/* Grid de organizaciones */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {organizations.map((org) => (
           <Card 
             key={org.uuid} 

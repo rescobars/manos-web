@@ -36,9 +36,9 @@ export function DashboardLayout({ children, user, onLogout, currentSlug, isFullS
         />
 
         {/* Content Area with optional right sidebar */}
-        <div className="flex-1 flex h-[calc(100vh-3rem)]">
+        <div className="flex-1 flex flex-col lg:flex-row h-[calc(100vh-3rem)]">
           {/* Page Content */}
-          <main className={`flex-1 overflow-y-auto ${isFullScreen ? 'p-0' : 'p-4 sm:p-6 lg:p-8'} ${rightSidebar ? 'pr-0 lg:pr-0' : ''}`}>
+          <main className={`flex-1 overflow-y-auto ${isFullScreen ? 'p-0' : 'p-2 sm:p-4 lg:p-6 xl:p-8'} ${rightSidebar ? 'pr-0 lg:pr-0' : ''}`}>
             {children}
           </main>
           

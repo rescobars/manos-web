@@ -84,15 +84,15 @@ export default function LoginPage() {
 
   if (isEmailSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-3 sm:p-4">
         <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
-              <Key className="w-6 h-6 text-primary-600" />
+          <CardHeader className="text-center p-4 sm:p-6">
+            <div className="mx-auto w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+              <Key className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
             </div>
-            <CardTitle className="text-xl">Ingresa tu código</CardTitle>
-            <p className="text-gray-600 mt-2">
-              Hemos enviado un código de 6 dígitos a <strong>{email}</strong>
+            <CardTitle className="text-lg sm:text-xl">Ingresa tu código</CardTitle>
+            <p className="text-sm sm:text-base text-gray-600 mt-2">
+              Hemos enviado un código de 6 dígitos a <strong className="break-all">{email}</strong>
             </p>
           </CardHeader>
           <CardContent>
@@ -145,14 +145,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-3 sm:p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
-            <Mail className="w-6 h-6 text-primary-600" />
+        <CardHeader className="text-center p-4 sm:p-6">
+          <div className="mx-auto w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+            <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
           </div>
-          <CardTitle className="text-2xl">Bienvenido a moviGo</CardTitle>
-          <p className="text-gray-600 mt-2">
+          <CardTitle className="text-xl sm:text-2xl">Bienvenido a moviGo</CardTitle>
+          <p className="text-sm sm:text-base text-gray-600 mt-2">
             Ingresa tu email para acceder a tu cuenta
           </p>
         </CardHeader>

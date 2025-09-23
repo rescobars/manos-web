@@ -32,7 +32,7 @@ export function StatCard({
   const { colors } = useDynamicTheme();
   
   const cardClasses = `
-    theme-bg-3 rounded-2xl shadow-sm border theme-border p-6 
+    theme-bg-3 rounded-2xl shadow-sm border theme-border p-4 sm:p-6 
     hover:shadow-md transition-all duration-200 cursor-pointer
     ${onClick ? 'hover:scale-105' : ''}
     ${className}
@@ -48,19 +48,19 @@ export function StatCard({
       }}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center">
+        <div className="flex items-center min-w-0 flex-1">
           <div 
-            className="p-3 rounded-xl"
+            className="p-2 sm:p-3 rounded-xl flex-shrink-0"
             style={{ 
               backgroundColor: iconBgColor,
               color: iconColor
             }}
           >
-            <Icon className="w-6 h-6" />
+            <Icon className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div className="ml-4">
-            <p className="text-sm font-medium theme-text-secondary">{title}</p>
-            <p className="text-2xl font-bold theme-text-primary">{value}</p>
+          <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+            <p className="text-xs sm:text-sm font-medium theme-text-secondary truncate">{title}</p>
+            <p className="text-lg sm:text-2xl font-bold theme-text-primary">{value}</p>
           </div>
         </div>
         

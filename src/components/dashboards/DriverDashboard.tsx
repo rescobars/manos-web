@@ -27,19 +27,21 @@ export default function DriverDashboard() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-2 sm:p-4 lg:p-6">
       {/* Header específico para conductores */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+      <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center mx-auto sm:mx-0">
-            <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center mx-auto sm:mx-0">
+            <Truck className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-white" />
           </div>
           
           <div className="text-center sm:text-left">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Dashboard de Conductor - {currentOrganization.name}
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+              <span className="hidden sm:inline">Dashboard de Conductor - </span>
+              <span className="sm:hidden">Conductor - </span>
+              {currentOrganization.name}
             </h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">
+            <p className="text-xs sm:text-sm lg:text-base text-gray-600 mt-1">
               Gestiona tus entregas y rutas diarias
             </p>
           </div>
@@ -47,7 +49,7 @@ export default function DriverDashboard() {
       </div>
 
       {/* Stats específicos para conductores */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-6">
         <StatCard
           icon={Package}
           title="Entregas Hoy"
@@ -84,26 +86,28 @@ export default function DriverDashboard() {
       {/* Entregas pendientes */}
       <Card>
         <CardHeader>
-          <CardTitle>Entregas Pendientes</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Entregas Pendientes</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {[1, 2].map((delivery) => (
-              <div key={delivery} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <Package className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <h4 className="font-medium text-sm">Pedido #{1000 + delivery}</h4>
-                    <p className="text-xs text-gray-600">Cliente: Cliente {delivery}</p>
+              <div key={delivery} className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-3 border rounded-lg gap-2 sm:gap-0">
+                <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                  <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-medium text-xs sm:text-sm truncate">Pedido #{1000 + delivery}</h4>
+                    <p className="text-xs text-gray-600 truncate">Cliente: Cliente {delivery}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-500">Dirección</p>
-                  <p className="text-sm font-medium">Av. Principal 123</p>
+                <div className="flex items-center justify-between sm:block sm:text-right">
+                  <div className="text-left sm:text-right">
+                    <p className="text-xs text-gray-500">Dirección</p>
+                    <p className="text-xs sm:text-sm font-medium truncate">Av. Principal 123</p>
+                  </div>
+                  <button className="px-2 sm:px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 ml-2 sm:ml-0 sm:mt-1">
+                    Ver Ruta
+                  </button>
                 </div>
-                <button className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700">
-                  Ver Ruta
-                </button>
               </div>
             ))}
           </div>
@@ -113,25 +117,25 @@ export default function DriverDashboard() {
       {/* Acciones rápidas para conductores */}
       <Card>
         <CardHeader>
-          <CardTitle>Acciones Rápidas</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Acciones Rápidas</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <button className="p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
-              <Navigation className="w-6 h-6 text-blue-600 mb-2 mx-auto" />
-              <h4 className="font-medium text-sm">Iniciar Ruta</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+            <button className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <Navigation className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mb-2 mx-auto" />
+              <h4 className="font-medium text-xs sm:text-sm">Iniciar Ruta</h4>
               <p className="text-xs text-gray-600">Comenzar entregas</p>
             </button>
             
-            <button className="p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
-              <Clock className="w-6 h-6 text-green-600 mb-2 mx-auto" />
-              <h4 className="font-medium text-sm">Reportar Entrega</h4>
+            <button className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 mb-2 mx-auto" />
+              <h4 className="font-medium text-xs sm:text-sm">Reportar Entrega</h4>
               <p className="text-xs text-gray-600">Marcar como completada</p>
             </button>
             
-            <button className="p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
-              <AlertCircle className="w-6 h-6 text-orange-600 mb-2 mx-auto" />
-              <h4 className="font-medium text-sm">Reportar Problema</h4>
+            <button className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors sm:col-span-2 lg:col-span-1">
+              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 mb-2 mx-auto" />
+              <h4 className="font-medium text-xs sm:text-sm">Reportar Problema</h4>
               <p className="text-xs text-gray-600">Incidente en entrega</p>
             </button>
           </div>
