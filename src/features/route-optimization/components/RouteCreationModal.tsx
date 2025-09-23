@@ -12,6 +12,9 @@ import { ordersApiService } from '@/lib/api/orders';
 import { BRANCH_LOCATION } from '@/lib/constants';
 import TrafficOptimizedRouteMap from '@/components/ui/TrafficOptimizedRouteMap';
 import { IndividualRoutesMap } from '@/components/ui/IndividualRoutesMap';
+import { useDrivers } from '@/hooks/useDrivers';
+import { organizationMembersApiService } from '@/lib/api/organization-members';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 
 interface PickupLocation {
   lat: number;
@@ -24,9 +27,10 @@ type FlowStep = 'select' | 'review' | 'assign';
 interface RouteCreationModalProps {
   onClose: () => void;
   onRouteCreated: () => void;
+  asPage?: boolean;
 }
 
-export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationModalProps) {
+export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: RouteCreationModalProps) {
   const { colors } = useDynamicTheme();
   const { currentOrganization } = useAuth();
   const { success, error: showError, toasts, removeToast } = useToast();
@@ -45,10 +49,11 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
   const [createdRouteUuid, setCreatedRouteUuid] = useState<string>('');
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
-  const [drivers, setDrivers] = useState<any[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<string>('');
   const [driverNotes, setDriverNotes] = useState<string>('');
   const [optimizationMode, setOptimizationMode] = useState<'efficiency' | 'order'>('efficiency');
+  const [assigning, setAssigning] = useState<boolean>(false);
+  const [assignmentSuccess, setAssignmentSuccess] = useState<boolean>(false);
 
   // Hooks
   const { 
@@ -92,27 +97,15 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
     fetchOrders();
   }, [currentOrganization]);
 
-  // Cargar conductores
-  useEffect(() => {
-    const fetchDrivers = async () => {
-      if (!currentOrganization) return;
-      
-      try {
-        // Simular carga de conductores - aquí deberías llamar a tu API real
-        const mockDrivers = [
-          { id: '1', name: 'Juan Pérez', phone: '+502 1234-5678', status: 'available' },
-          { id: '2', name: 'María García', phone: '+502 8765-4321', status: 'available' },
-          { id: '3', name: 'Carlos López', phone: '+502 5555-1234', status: 'busy' },
-          { id: '4', name: 'Ana Martínez', phone: '+502 9999-8888', status: 'available' }
-        ];
-        setDrivers(mockDrivers);
-      } catch (error) {
-        console.error('Error fetching drivers:', error);
-      }
-    };
+  // Drivers hook
+  const { drivers, isLoading: driversLoading, error: driversError, fetchDrivers } = useDrivers();
 
-    fetchDrivers();
-  }, [currentOrganization]);
+  // Cargar conductores reales de la organización
+  useEffect(() => {
+    if (currentOrganization?.uuid) {
+      fetchDrivers(currentOrganization.uuid);
+    }
+  }, [currentOrganization, fetchDrivers]);
 
   // Función para obtener pedidos formateados para el mapa
   const getOrdersForMap = useCallback(() => {
@@ -339,25 +332,41 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
     if (!selectedDriver || !createdRouteUuid) return;
     
     try {
-      // Aquí deberías llamar a tu API para asignar la ruta al conductor
-      console.log('Asignando ruta:', {
-        routeId: createdRouteUuid,
-        driverId: selectedDriver,
-        notes: driverNotes
-      });
-      
-      // Simular asignación exitosa
-      success(
-        '¡Ruta asignada exitosamente!',
-        `La ruta ha sido asignada al conductor ${drivers.find(d => d.id === selectedDriver)?.name}`,
-        5000
+      setAssigning(true);
+      setAssignmentSuccess(false);
+
+      const assignmentData = {
+        start_time: startTime || new Date().toISOString(),
+        end_time: endTime || '',
+        driver_notes: driverNotes || undefined,
+        driver_instructions: undefined as Record<string, any> | undefined,
+      };
+
+      const response = await organizationMembersApiService.assignRouteToDriver(
+        createdRouteUuid,
+        selectedDriver,
+        assignmentData,
+        currentOrganization?.uuid
       );
-      
-      // Cerrar el modal después de un delay
-      setTimeout(() => {
-        onRouteCreated();
-        onClose();
-      }, 2000);
+
+      if (response.success) {
+        setAssignmentSuccess(true);
+        success(
+          '¡Ruta asignada!',
+          `Asignada a ${drivers.find(d => d.organization_membership_uuid === selectedDriver)?.name}`,
+          4000
+        );
+        if (!asPage) {
+          onRouteCreated();
+          onClose();
+        }
+      } else {
+        showError(
+          'No se pudo asignar',
+          response.error || 'Intenta de nuevo más tarde',
+          6000
+        );
+      }
       
     } catch (error) {
       showError(
@@ -365,6 +374,8 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
         'No se pudo asignar la ruta al conductor. Por favor, inténtalo de nuevo.',
         6000
       );
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -401,126 +412,195 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
 
   if (!pickupLocation) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-center">
-          <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-yellow-800 mb-2">Ubicación no configurada</h3>
-          <p className="text-yellow-700 mb-4">Configura la ubicación de tu sucursal para continuar.</p>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Cerrar
-          </button>
+      asPage ? (
+        <div className="p-4 sm:p-6 md:p-8">
+          <div className="rounded-xl shadow max-w-xl w-full mx-auto p-6 text-center theme-bg-3" style={{ backgroundColor: colors.background3 }}>
+            <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
+            <h3 className="text-lg font-semibold mb-2 theme-text-primary">Ubicación no configurada</h3>
+            <p className="mb-4 theme-text-secondary">Configura la ubicación de tu sucursal para continuar.</p>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg"
+              style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="rounded-xl shadow-2xl max-w-md w-full p-6 text-center theme-bg-3" style={{ backgroundColor: colors.background3 }}>
+            <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
+            <h3 className="text-lg font-semibold mb-2 theme-text-primary">Ubicación no configurada</h3>
+            <p className="mb-4 theme-text-secondary">Configura la ubicación de tu sucursal para continuar.</p>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg"
+              style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )
     );
   }
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando pedidos...</p>
+      asPage ? (
+        <div className="p-4 sm:p-6 md:p-8">
+          <div className="rounded-xl shadow max-w-xl w-full mx-auto p-6 text-center theme-bg-3" style={{ backgroundColor: colors.background3 }}>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
+            <p className="theme-text-secondary">Cargando pedidos...</p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="rounded-xl shadow-2xl max-w-md w-full p-6 text-center theme-bg-3" style={{ backgroundColor: colors.background3 }}>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
+            <p className="theme-text-secondary">Cargando pedidos...</p>
+          </div>
+        </div>
+      )
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className={asPage ? "p-4 sm:p-6 md:p-8" : "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"}>
       <div 
-        className="rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] flex flex-col theme-bg-3"
+        className={asPage ? "rounded-xl shadow theme-bg-3 w-full max-w-[1400px] mx-auto flex flex-col" : "rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] flex flex-col theme-bg-3"}
         style={{ backgroundColor: colors.background3 }}
       >
         <div 
-          className="p-6 border-b theme-divider"
+          className={asPage ? "p-4 sm:p-6 border-b theme-divider" : "p-6 border-b theme-divider"}
           style={{ borderColor: colors.divider }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold theme-text-primary">Crear Nueva Ruta</h3>
+              <h3 className={asPage ? "text-xl sm:text-2xl font-semibold theme-text-primary" : "text-lg font-semibold theme-text-primary"}>Crear Nueva Ruta</h3>
               <p className="text-sm theme-text-secondary mt-1">Selecciona pedidos y crea una ruta optimizada</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 theme-text-muted hover:theme-text-primary hover:theme-bg-2 rounded-lg transition-colors"
-            >
-              <XCircle className="w-5 h-5" />
-            </button>
+            {asPage ? (
+              <button
+                onClick={onClose}
+                aria-label="Cerrar"
+                title="Cerrar"
+                className="p-2 rounded-lg transition-colors theme-text-muted hover:theme-text-primary hover:theme-bg-2"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={onClose}
+                className="p-2 theme-text-muted hover:theme-text-primary hover:theme-bg-2 rounded-lg transition-colors"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
         
-        <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className={asPage ? "" : "overflow-y-auto max-h-[calc(90vh-120px)]"}>
           {/* Información del paso actual */}
-          <div className="flex items-center justify-between h-16 px-6 bg-gray-50">
+          <div className={asPage ? "flex items-center justify-between h-14 px-4 sm:px-6 theme-bg-2 sticky top-0 z-20" : "flex items-center justify-between h-16 px-6 theme-bg-2"} style={{ backgroundColor: colors.background2 }}>
             <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <stepInfo.icon className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.buttonPrimary1 }}>
+                <stepInfo.icon className="w-4 h-4" style={{ color: colors.buttonText }} />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">{stepInfo.title}</h1>
-                <p className="text-sm text-gray-500">{stepInfo.description}</p>
+                <h1 className={asPage ? "text-lg sm:text-xl font-semibold theme-text-primary" : "text-xl font-semibold theme-text-primary"}>{stepInfo.title}</h1>
+                <p className="text-sm theme-text-secondary">{stepInfo.description}</p>
               </div>
             </div>
             
-            {/* Progreso minimalista */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-500">Paso {currentStepIndex + 1} de {steps.length}</span>
-              <div className="flex items-center gap-1">
-                {steps.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-2 h-2 rounded-full ${
-                      index <= currentStepIndex ? 'bg-blue-600' : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
+            {/* Progreso + Acciones (arriba) */}
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-3">
+                <span className="text-sm theme-text-secondary">Paso {currentStepIndex + 1} de {steps.length}</span>
+                <div className="flex items-center gap-1">
+                  {steps.map((_, index) => {
+                    const isActive = index <= currentStepIndex;
+                    return (
+                      <div
+                        key={index}
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: isActive ? colors.buttonPrimary1 : colors.divider }}
+                      />
+                    );
+                  })}
+                </div>
               </div>
+              {asPage && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={goBack}
+                    disabled={!canGoBack}
+                    className={`px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
+                      canGoBack
+                        ? 'theme-text-secondary hover:theme-text-primary hover:theme-bg-2'
+                        : 'text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Atrás
+                  </button>
+              <button
+                onClick={executeCurrentStepAction}
+                disabled={!stepInfo.canNext || (currentStep === 'assign' && assigning)}
+                className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
+                  stepInfo.canNext && !(currentStep === 'assign' && assigning)
+                    ? 'shadow-sm hover:shadow-md theme-btn-primary'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                style={stepInfo.canNext && !(currentStep === 'assign' && assigning) ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
+              >
+                <span className="truncate">{currentStep === 'assign' && assigning ? 'Asignando...' : stepInfo.nextText}</span>
+                <ArrowRight className="w-4 h-4 flex-shrink-0" />
+              </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Contenido del paso actual */}
-          <div className="p-6 overflow-y-auto flex-1">
+          <div className={asPage ? "p-4 sm:p-6" : "p-6 overflow-y-auto flex-1"}>
             {currentStep === 'select' && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Selección del modo de optimización */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Modo de optimización</h3>
+                <div className="space-y-3 sm:space-y-4">
+                  <h3 className="text-lg font-semibold theme-text-primary">Modo de optimización</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Modo Eficiencia */}
                     <div 
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                        optimizationMode === 'efficiency'
-                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                          : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                      }`}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200`}
+                      style={{
+                        borderColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : colors.border,
+                        backgroundColor: optimizationMode === 'efficiency' ? colors.background2 : colors.background3,
+                        boxShadow: optimizationMode === 'efficiency' ? `0 0 0 2px ${colors.buttonPrimary2}33` : undefined
+                      }}
                       onClick={() => setOptimizationMode('efficiency')}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <Route className="w-5 h-5 text-blue-600" />
-                            <h4 className="font-semibold text-gray-900">Mejor Eficiencia</h4>
+                            <Route className="w-5 h-5" style={{ color: colors.buttonPrimary1 }} />
+                            <h4 className="font-semibold theme-text-primary">Mejor Eficiencia</h4>
                             <div className="relative group">
-                              <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                              <Info className="w-4 h-4 theme-text-muted cursor-help" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
+                                   style={{ backgroundColor: colors.background1, color: colors.textPrimary, border: `1px solid ${colors.border}` }}>
                                 Optimiza la ruta para minimizar tiempo y distancia total
                               </div>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm theme-text-secondary">
                             El algoritmo reorganiza los pedidos para encontrar la ruta más corta y eficiente, reduciendo tiempo de entrega y combustible.
                           </p>
                         </div>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          optimizationMode === 'efficiency'
-                            ? 'bg-blue-600 border-blue-600'
-                            : 'border-gray-300'
-                        }`}>
+                        <div className="w-5 h-5 rounded border-2 flex items-center justify-center" style={{ borderColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : colors.border, backgroundColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : 'transparent' }}>
                           {optimizationMode === 'efficiency' && (
-                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.buttonText }}></div>
                           )}
                         </div>
                       </div>
@@ -528,36 +608,34 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
 
                     {/* Modo Orden */}
                     <div 
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                        optimizationMode === 'order'
-                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                          : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                      }`}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200`}
+                      style={{
+                        borderColor: optimizationMode === 'order' ? colors.buttonPrimary1 : colors.border,
+                        backgroundColor: optimizationMode === 'order' ? colors.background2 : colors.background3,
+                        boxShadow: optimizationMode === 'order' ? `0 0 0 2px ${colors.buttonPrimary2}33` : undefined
+                      }}
                       onClick={() => setOptimizationMode('order')}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <Clock className="w-5 h-5 text-green-600" />
-                            <h4 className="font-semibold text-gray-900">Orden de Llegada</h4>
+                            <Clock className="w-5 h-5" style={{ color: colors.buttonPrimary1 }} />
+                            <h4 className="font-semibold theme-text-primary">Orden de Llegada</h4>
                             <div className="relative group">
-                              <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                              <Info className="w-4 h-4 theme-text-muted cursor-help" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
+                                   style={{ backgroundColor: colors.background1, color: colors.textPrimary, border: `1px solid ${colors.border}` }}>
                                 Mantiene el orden en que llegaron los pedidos
                               </div>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm theme-text-secondary">
                             Respeta el orden cronológico de los pedidos, entregando primero los que llegaron antes.
                           </p>
                         </div>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          optimizationMode === 'order'
-                            ? 'bg-blue-600 border-blue-600'
-                            : 'border-gray-300'
-                        }`}>
+                        <div className="w-5 h-5 rounded border-2 flex items-center justify-center" style={{ borderColor: optimizationMode === 'order' ? colors.buttonPrimary1 : colors.border, backgroundColor: optimizationMode === 'order' ? colors.buttonPrimary1 : 'transparent' }}>
                           {optimizationMode === 'order' && (
-                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.buttonText }}></div>
                           )}
                         </div>
                       </div>
@@ -568,7 +646,7 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
                 {/* Mapa básico de pedidos seleccionados */}
                 {selectedOrders.length > 0 && pickupLocation && (
                   <div className="space-y-4">
-                    <div className="h-[28rem] rounded-lg overflow-hidden shadow-sm">
+                    <div className={asPage ? "h-[60vh] rounded-lg overflow-hidden shadow-sm" : "h-[28rem] rounded-lg overflow-hidden shadow-sm"}>
                       <IndividualRoutesMap
                         pickupLocation={pickupLocation}
                         orders={ordersForMap}
@@ -589,30 +667,21 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
               <div className="space-y-6">
                 {optimizationLoading ? (
                   <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Optimizando ruta...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
+                    <p className="theme-text-secondary">Optimizando ruta...</p>
                   </div>
                 ) : trafficOptimizedRoute ? (
-                  <div className="space-y-4">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        <span className="font-medium text-green-900">Ruta optimizada exitosamente</span>
-                      </div>
-                    </div>
-                    
-                    <div className="h-96">
-                      <TrafficOptimizedRouteMap
-                        trafficOptimizedRoute={trafficOptimizedRoute}
-                        showAlternatives={true}
-                      />
-                    </div>
+                  <div className={asPage ? "h-[60vh]" : "h-96"}>
+                    <TrafficOptimizedRouteMap
+                      trafficOptimizedRoute={trafficOptimizedRoute}
+                      showAlternatives={true}
+                    />
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Error en la optimización</h3>
-                    <p className="text-gray-600">No se pudo optimizar la ruta. Inténtalo de nuevo.</p>
+                    <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
+                    <h3 className="text-lg font-semibold theme-text-primary mb-2">Error en la optimización</h3>
+                    <p className="theme-text-secondary">No se pudo optimizar la ruta. Inténtalo de nuevo.</p>
                   </div>
                 )}
               </div>
@@ -620,53 +689,49 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
 
             {currentStep === 'assign' && (
               <div className="space-y-6">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="rounded-lg p-4" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.success}33` }}>
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <span className="font-medium text-green-900">Ruta creada exitosamente</span>
+                    <CheckCircle className="w-5 h-5" style={{ color: colors.success }} />
+                    <span className="font-medium" style={{ color: colors.textPrimary }}>Ruta creada exitosamente</span>
                   </div>
                   <p className="text-sm text-green-700 mt-1">
                     La ruta con {selectedOrders.length} pedidos ha sido guardada. Ahora asigna un conductor.
                   </p>
                 </div>
 
-                {/* Selección de conductor */}
+                {/* Selección de conductor */
+                }
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Seleccionar Conductor</h3>
+                  <h3 className="text-lg font-semibold theme-text-primary">Seleccionar Conductor</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {drivers.map((driver) => (
                       <div
-                        key={driver.id}
-                        onClick={() => setSelectedDriver(driver.id)}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-                          selectedDriver === driver.id
-                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                            : driver.status === 'available'
-                            ? 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                            : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
-                        }`}
+                        key={driver.organization_membership_uuid}
+                        onClick={() => setSelectedDriver(driver.organization_membership_uuid)}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all duration-200`}
+                        style={{
+                          borderColor: selectedDriver === driver.organization_membership_uuid ? colors.buttonPrimary1 : colors.border,
+                          backgroundColor: selectedDriver === driver.organization_membership_uuid ? colors.background2 : (driver.status === 'ACTIVE' ? colors.background3 : colors.background2),
+                          opacity: driver.status === 'ACTIVE' ? 1 : 0.6,
+                          boxShadow: selectedDriver === driver.organization_membership_uuid ? `0 0 0 2px ${colors.buttonPrimary2}33` : undefined,
+                          cursor: driver.status === 'ACTIVE' ? 'pointer' as const : 'not-allowed'
+                        }}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{driver.name}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{driver.phone}</p>
+                            <h4 className="font-medium theme-text-primary">{driver.name}</h4>
+                            <p className="text-sm theme-text-secondary mt-1">{driver.email}</p>
                             <div className="flex items-center gap-2 mt-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                driver.status === 'available' ? 'bg-green-400' : 'bg-red-400'
-                              }`}></div>
-                              <span className="text-xs text-gray-500">
-                                {driver.status === 'available' ? 'Disponible' : 'Ocupado'}
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driver.status === 'ACTIVE' ? colors.success : colors.error }}></div>
+                              <span className="text-xs theme-text-secondary">
+                                {driver.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                               </span>
                             </div>
                           </div>
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                            selectedDriver === driver.id
-                              ? 'bg-blue-600 border-blue-600'
-                              : 'border-gray-300'
-                          }`}>
-                            {selectedDriver === driver.id && (
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                          <div className="w-5 h-5 rounded border-2 flex items-center justify-center" style={{ borderColor: selectedDriver === driver.organization_membership_uuid ? colors.buttonPrimary1 : colors.border, backgroundColor: selectedDriver === driver.organization_membership_uuid ? colors.buttonPrimary1 : 'transparent' }}>
+                            {selectedDriver === driver.organization_membership_uuid && (
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.buttonText }}></div>
                             )}
                           </div>
                         </div>
@@ -677,30 +742,44 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
 
                 {/* Notas adicionales */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label className="text-sm font-medium theme-text-primary">
                     Notas adicionales (opcional)
                   </label>
                   <textarea
                     value={driverNotes}
                     onChange={(e) => setDriverNotes(e.target.value)}
                     placeholder="Instrucciones especiales para el conductor..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent resize-none theme-text-primary"
+                    style={{ 
+                      borderColor: colors.border, 
+                      backgroundColor: colors.background3,
+                      color: colors.textPrimary,
+                      boxShadow: `0 0 0 2px transparent` 
+                    }}
                     rows={3}
                   />
                 </div>
 
                 {/* Resumen de la asignación */}
                 {selectedDriver && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="rounded-lg p-4" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.info}33` }}>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                      <span className="font-medium text-blue-900">Resumen de asignación</span>
+                      <Clock className="w-5 h-5" style={{ color: colors.info }} />
+                      <span className="font-medium" style={{ color: colors.textPrimary }}>Resumen de asignación</span>
                     </div>
-                    <div className="mt-2 text-sm text-blue-700">
-                      <p>Conductor: <strong>{drivers.find(d => d.id === selectedDriver)?.name}</strong></p>
+                    <div className="mt-2 text-sm theme-text-secondary">
+                      <p>Conductor: <strong>{drivers.find(d => d.organization_membership_uuid === selectedDriver)?.name}</strong></p>
                       <p>Pedidos: <strong>{selectedOrders.length}</strong></p>
                       <p>Ruta: <strong>{createdRouteUuid}</strong></p>
                     </div>
+                    {assignmentSuccess && (
+                      <div className="mt-3 rounded-md p-3" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.success}66` }}>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4" style={{ color: colors.success }} />
+                          <span className="text-sm" style={{ color: colors.textPrimary }}>Ruta asignada correctamente</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -708,43 +787,48 @@ export function RouteCreationModal({ onClose, onRouteCreated }: RouteCreationMod
           </div>
         </div>
 
-        {/* Botones de navegación */}
-        <div 
-          className="p-6 border-t theme-divider"
-          style={{ 
-            borderColor: colors.divider,
-            backgroundColor: colors.background2 
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <button
-              onClick={goBack}
-              disabled={!canGoBack}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                canGoBack
-                  ? 'theme-text-secondary hover:theme-text-primary hover:theme-bg-2'
-                  : 'text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Atrás
-            </button>
-            
-            <button
-              onClick={executeCurrentStepAction}
-              disabled={!stepInfo.canNext}
-              className={`px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
-                stepInfo.canNext
-                  ? 'text-white shadow-lg hover:shadow-xl theme-btn-primary'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <span className="truncate">{stepInfo.nextText}</span>
-              <ArrowRight className="w-4 h-4 flex-shrink-0" />
-            </button>
+        {/* Botones de navegación inferiores: solo en modal */}
+        {!asPage && (
+          <div 
+            className="p-6 border-t theme-divider"
+            style={{ 
+              borderColor: colors.divider,
+              backgroundColor: colors.background2 
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <button
+                onClick={goBack}
+                disabled={!canGoBack}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  canGoBack
+                    ? 'theme-text-secondary hover:theme-text-primary hover:theme-bg-2'
+                    : 'text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Atrás
+              </button>
+              
+              <button
+                onClick={executeCurrentStepAction}
+                disabled={!stepInfo.canNext}
+                className={`px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
+                  stepInfo.canNext
+                    ? 'shadow-lg hover:shadow-xl theme-btn-primary'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                style={stepInfo.canNext ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
+              >
+                <span className="truncate">{stepInfo.nextText}</span>
+                <ArrowRight className="w-4 h-4 flex-shrink-0" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
+      {/* Toasts locales */}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
 }

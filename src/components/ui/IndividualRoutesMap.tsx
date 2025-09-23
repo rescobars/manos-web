@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { Checkbox } from './Checkbox';
 import { isMapboxConfigured } from '@/lib/mapbox';
 import { Location, Order } from './mapbox/types';
+import { useDynamicTheme } from '@/contexts/DynamicThemeContext';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -32,6 +33,7 @@ export function IndividualRoutesMap({
   searchTerm,
   onSearchChange
 }: IndividualRoutesMapProps) {
+  const { colors } = useDynamicTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [routesLoaded, setRoutesLoaded] = useState(false);
@@ -43,7 +45,7 @@ export function IndividualRoutesMap({
   const routesRef = useRef<Map<string, any>>(new Map());
 
   const generateRouteColor = (orderId: string) => {
-    const colors = [
+    const routeColors = [
       '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
       '#F97316', '#06B6D4', '#84CC16', '#EC4899', '#6366F1'
     ];
@@ -55,8 +57,8 @@ export function IndividualRoutesMap({
       hash = hash & hash;
     }
     
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
+    const index = Math.abs(hash) % routeColors.length;
+    return routeColors[index];
   };
 
   const handleRouteLoaded = () => {
@@ -422,10 +424,10 @@ export function IndividualRoutesMap({
 
   if (!isMapboxConfigured()) {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-        <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-yellow-800 mb-2">Mapbox no configurado</h3>
-        <p className="text-yellow-700">Configura tu token de Mapbox para usar la visualización de rutas.</p>
+      <div className="rounded-lg p-6 text-center" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.warning}33` }}>
+        <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
+        <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>Mapbox no configurado</h3>
+        <p className="" style={{ color: colors.textSecondary }}>Configura tu token de Mapbox para usar la visualización de rutas.</p>
       </div>
     );
   }
@@ -434,8 +436,8 @@ export function IndividualRoutesMap({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Mapa de Pedidos Individuales</h3>
-          <p className="text-sm text-gray-600">
+          <h3 className="text-lg font-semibold theme-text-primary">Mapa de Pedidos Individuales</h3>
+          <p className="text-sm theme-text-secondary">
             {selectedOrders.length > 0 
               ? `${selectedOrders.length} pedido(s) seleccionado(s)`
               : 'Selecciona pedidos para ver sus rutas'
@@ -447,35 +449,35 @@ export function IndividualRoutesMap({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="relative">
-            <div className="w-full h-[600px] rounded-lg border border-gray-200 overflow-hidden">
+            <div className="w-full h-[600px] rounded-lg overflow-hidden" style={{ border: `1px solid ${colors.border}` }}>
               <div 
                 ref={mapContainer} 
                 className="w-full h-full"
               />
               {!isMapReady && (
-                <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+                <div className="absolute inset-0 flex items-center justify-center z-10" style={{ backgroundColor: colors.background2 }}>
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-600">Inicializando mapa...</p>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2" style={{ borderColor: colors.buttonPrimary1 }}></div>
+                    <p className="text-sm theme-text-secondary">Inicializando mapa...</p>
                   </div>
                 </div>
               )}
             </div>
             
             {isLoading && (
-              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-20">
+              <div className="absolute inset-0 flex items-center justify-center rounded-lg z-20" style={{ backgroundColor: `${colors.background3}BF` }}>
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-sm text-gray-600">Cargando rutas...</p>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2" style={{ borderColor: colors.buttonPrimary1 }}></div>
+                  <p className="text-sm theme-text-secondary">Cargando rutas...</p>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="absolute inset-0 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center z-20">
+              <div className="absolute inset-0 rounded-lg flex items-center justify-center z-20" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.error}33` }}>
                 <div className="text-center p-4">
-                  <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                  <p className="text-sm text-red-700 mb-2">{error}</p>
+                  <AlertCircle className="w-8 h-8 mx-auto mb-2" style={{ color: colors.error }} />
+                  <p className="text-sm mb-2" style={{ color: colors.textSecondary }}>{error}</p>
                   <Button onClick={clearError} size="sm" variant="outline">
                     Cerrar
                   </Button>
@@ -486,11 +488,11 @@ export function IndividualRoutesMap({
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg border border-gray-200 p-4 h-[600px] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
-              <h4 className="text-sm font-medium text-gray-900">Pedidos</h4>
+          <div className="rounded-lg p-4 h-[600px] overflow-hidden flex flex-col theme-bg-3" style={{ backgroundColor: colors.background3, border: `1px solid ${colors.border}` }}>
+            <div className="flex items-center justify-between pb-3 mb-3 theme-divider" style={{ borderBottom: `1px solid ${colors.divider}` }}>
+              <h4 className="text-sm font-medium theme-text-primary">Pedidos</h4>
               <div className="text-right">
-                <div className="text-xs text-gray-500">
+                <div className="text-xs theme-text-secondary">
                   {selectedOrders.length} de {orders.length}
                 </div>
               </div>
@@ -502,21 +504,30 @@ export function IndividualRoutesMap({
                 placeholder="Buscar pedidos..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm rounded-md focus:outline-none"
+                style={{
+                  border: `1px solid ${colors.border}`,
+                  backgroundColor: colors.background3,
+                  color: colors.textPrimary,
+                  boxShadow: '0 0 0 2px transparent'
+                }}
               />
             </div>
 
             <div className="mb-3">
               <Button
-                onClick={onSelectAll}
+                onClick={() => {
+                  if (selectedOrders.length === orders.length) {
+                    onClearAll();
+                  } else {
+                    onSelectAll();
+                  }
+                }}
                 variant="outline"
                 size="sm"
                 className="w-full text-xs"
               >
-                {selectedOrders.length === orders.length 
-                  ? 'Deseleccionar Todo' 
-                  : 'Seleccionar Todo'
-                }
+                {selectedOrders.length === orders.length ? 'Deseleccionar Todo' : 'Seleccionar Todo'}
               </Button>
             </div>
 
@@ -527,11 +538,11 @@ export function IndividualRoutesMap({
                 return (
                   <div
                     key={order.id}
-                    className={`p-3 rounded-lg border transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
+                    className={`p-3 rounded-lg border transition-colors cursor-pointer`}
+                    style={{
+                      borderColor: isSelected ? colors.buttonPrimary1 : colors.border,
+                      backgroundColor: isSelected ? colors.background2 : colors.background3
+                    }}
                     onClick={(e) => {
                       if ((e.target as HTMLElement).closest('.checkbox-container')) {
                         return;
@@ -550,22 +561,22 @@ export function IndividualRoutesMap({
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm text-gray-900">#{order.orderNumber}</span>
+                          <span className="font-medium text-sm theme-text-primary">#{order.orderNumber}</span>
                         </div>
                         
                         {order.description && (
-                          <p className="text-xs text-gray-600 mb-1 line-clamp-2">
+                          <p className="text-xs theme-text-secondary mb-1 line-clamp-2">
                             {order.description}
                           </p>
                         )}
                         
-                        <div className="text-xs text-gray-500 mb-1">
+                        <div className="text-xs theme-text-secondary mb-1">
                           <MapPin className="w-3 h-3 inline mr-1" />
                           <span className="line-clamp-1">{order.deliveryLocation.address}</span>
                         </div>
                         
                         {order.totalAmount && (
-                          <div className="text-xs font-medium text-gray-900">
+                          <div className="text-xs font-medium theme-text-primary">
                             {formatCurrency(order.totalAmount)}
                           </div>
                         )}
@@ -580,8 +591,8 @@ export function IndividualRoutesMap({
       </div>
 
       {selectedOrders.length > 0 && (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Leyenda de Rutas:</h4>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.background2 }}>
+          <h4 className="text-sm font-medium theme-text-primary mb-3">Leyenda de Rutas:</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {orders.filter(order => selectedOrders.includes(order.id)).map((order) => (
               <div key={order.id} className="flex items-center gap-2">
@@ -589,7 +600,7 @@ export function IndividualRoutesMap({
                   className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: generateRouteColor(order.id) }}
                 />
-                <span className="text-sm text-gray-700">
+                <span className="text-sm theme-text-secondary">
                   Pedido #{order.orderNumber}
                 </span>
               </div>

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { useDynamicTheme } from '@/contexts/DynamicThemeContext';
 import { 
   Point, 
   RoutePoint,
@@ -25,6 +26,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   trafficOptimizedRoute,
   showAlternatives = true,
 }) => {
+  const { colors } = useDynamicTheme();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null);
@@ -43,20 +45,55 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   const isSimulatingRef = useRef<boolean>(false);
   const simulationSpeedRef = useRef<number>(1);
 
-  // Colores modernos y elegantes para las rutas
-  const primaryColor = '#10b981'; // Verde esmeralda moderno
-  const alternativeColors = [
-    '#3b82f6', // Azul moderno
-    '#8b5cf6', // Violeta moderno
-    '#f59e0b', // Ámbar moderno
-    '#ef4444', // Rojo moderno
-    '#06b6d4', // Cian moderno
-    '#84cc16', // Verde lima moderno
-    '#f97316', // Naranja moderno
-    '#ec4899', // Rosa moderno
-    '#6366f1', // Índigo moderno
-    '#14b8a6', // Teal moderno
-  ];
+  // Usar color primario del tema para todas las rutas; diferenciación por opacidad/espesor
+  const primaryColor = colors.buttonPrimary1;
+
+  // Utilidades simples para generar variaciones del color primario (paleta armónica)
+  const hexToRgb = (hex: string) => {
+    const clean = hex.replace('#', '');
+    const bigint = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return { r, g, b };
+  };
+
+  const rgbToHex = (r: number, g: number, b: number) => {
+    const toHex = (x: number) => x.toString(16).padStart(2, '0');
+    return `#${toHex(Math.max(0, Math.min(255, Math.round(r))))}${toHex(Math.max(0, Math.min(255, Math.round(g))))}${toHex(Math.max(0, Math.min(255, Math.round(b))))}`;
+  };
+
+  const lighten = (hex: string, amount: number) => {
+    const { r, g, b } = hexToRgb(hex);
+    const nr = r + (255 - r) * amount;
+    const ng = g + (255 - g) * amount;
+    const nb = b + (255 - b) * amount;
+    return rgbToHex(nr, ng, nb);
+  };
+
+  const darken = (hex: string, amount: number) => {
+    const { r, g, b } = hexToRgb(hex);
+    const nr = r * (1 - amount);
+    const ng = g * (1 - amount);
+    const nb = b * (1 - amount);
+    return rgbToHex(nr, ng, nb);
+  };
+
+  // Generar una paleta de 8 colores derivados del primario (variaciones de luminosidad)
+  const getRouteColorByIndex = (index: number): string => {
+    if (index === 0) return primaryColor; // Principal
+    const palette = [
+      lighten(primaryColor, 0.15),
+      darken(primaryColor, 0.15),
+      lighten(primaryColor, 0.3),
+      darken(primaryColor, 0.3),
+      lighten(primaryColor, 0.45),
+      darken(primaryColor, 0.45),
+      lighten(primaryColor, 0.6),
+      darken(primaryColor, 0.6),
+    ];
+    return palette[(index - 1) % palette.length];
+  };
 
   // Obtener todas las rutas disponibles
   const getAvailableRoutes = (): RouteType[] => {
@@ -541,7 +578,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
 
     const routeId = `route-${routeIndex}`;
     const isPrimary = routeIndex === 0;
-    const color = isPrimary ? primaryColor : alternativeColors[routeIndex % alternativeColors.length];
+    const color = getRouteColorByIndex(routeIndex);
     
     console.log('🎨 Color de ruta:', { routeId, isPrimary, color });
     console.log('📍 Puntos de ruta:', route.points.length, route.points.slice(0, 3));
@@ -582,7 +619,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
         paint: {
           'line-color': color,
           'line-width': isPrimary ? 6 : 4,
-          'line-opacity': 0.8,
+          'line-opacity': isPrimary ? 0.9 : 0.35,
         },
       });
       console.log('✅ Capa agregada:', `${routeId}-line`);
@@ -633,7 +670,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
       markerElement.className = 'waypoint-marker';
       markerElement.innerHTML = `
         <div style="
-          background: ${routeColor};
+          background: ${getRouteColorByIndex(routeIndex)};
           color: white;
           border-radius: 50%;
           width: 32px;
@@ -657,7 +694,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             height: 8px;
             background: white;
             border-radius: 50%;
-            border: 2px solid ${routeColor};
+            border: 2px solid ${getRouteColorByIndex(routeIndex)};
           "></div>
         </div>
       `;
@@ -711,7 +748,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     const originMarkerElement = document.createElement('div');
     originMarkerElement.className = 'origin-marker';
     originMarkerElement.innerHTML = `
-      <div class="w-8 h-8 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center cursor-pointer">
+      <div class="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center cursor-pointer" style="background: ${primaryColor}">
         <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
           <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
         </svg>
@@ -735,11 +772,11 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     }).setHTML(`
       <div style="padding: 12px; min-width: 200px;">
         <div style="display: flex; align-items: center; margin-bottom: 8px;">
-          <div style="width: 16px; height: 16px; background: #2563eb; border-radius: 50%; margin-right: 8px;"></div>
-          <h4 style="margin: 0; color: #1f2937; font-weight: 600;">🏢 Sucursal</h4>
+          <div style="width: 16px; height: 16px; background: ${primaryColor}; border-radius: 50%; margin-right: 8px;"></div>
+          <h4 style="margin: 0; color: ${colors.textPrimary}; font-weight: 600;">🏢 Sucursal</h4>
         </div>
-        <p style="margin: 0 0 8px 0; color: #374151; font-weight: 500;">${origin.name}</p>
-        <div style="font-size: 12px; color: #6b7280;">
+        <p style="margin: 0 0 8px 0; color: ${colors.textSecondary}; font-weight: 500;">${origin.name}</p>
+        <div style="font-size: 12px; color: ${colors.textSecondary};">
           <p style="margin: 2px 0;">📍 Coordenadas: ${origin.lat.toFixed(4)}, ${origin.lon.toFixed(4)}</p>
           <p style="margin: 2px 0;">🚚 Punto de partida y llegada</p>
         </div>
@@ -780,10 +817,10 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
           if (!waypoint) return null;
 
           const visitNumber = index + 1;
-          const color = index === 0 ? primaryColor : alternativeColors[index % alternativeColors.length];
+          const color = getRouteColorByIndex(index);
 
           return (
-            <div key={index} className="flex items-center p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-gray-200 transition-all duration-200 hover:shadow-sm">
+            <div key={index} className="flex items-center p-3 sm:p-4 rounded-xl transition-all duration-200 hover:shadow-sm" style={{ backgroundColor: colors.background3, border: `1px solid ${colors.border}` }}>
               {/* Número de orden */}
               <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg shadow-lg mr-2 sm:mr-3 md:mr-4"
                    style={{ backgroundColor: color }}>
@@ -792,14 +829,14 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
               
               {/* Información de la parada */}
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-gray-900 text-sm sm:text-base md:text-lg mb-1">{waypoint.name}</div>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-xs sm:text-sm text-gray-600">
+                <div className="font-semibold theme-text-primary text-sm sm:text-base md:text-lg mb-1">{waypoint.name}</div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-xs sm:text-sm theme-text-secondary">
                   <span className="flex items-center">
-                    <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                    <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: colors.divider }}></span>
                     {waypoint.lat.toFixed(4)}
                   </span>
                   <span className="flex items-center">
-                    <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                    <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: colors.divider }}></span>
                     {waypoint.lon.toFixed(4)}
                   </span>
                 </div>
@@ -807,7 +844,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
               
               {/* Indicador de estado */}
               <div className="flex-shrink-0">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full animate-pulse" style={{ backgroundColor: colors.success }}></div>
               </div>
             </div>
           );
@@ -829,12 +866,12 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   return (
     <div className="space-y-3 sm:space-y-4">
       {/* Mapa */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-50 to-gray-100 p-3 sm:p-4 md:p-6 border-b">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-4 lg:space-y-0">
+      <div className="rounded-lg shadow-md overflow-hidden" style={{ backgroundColor: colors.background3 }}>
+        <div className="p-3 sm:p-4 md:p-6" style={{ backgroundColor: colors.background2, borderBottom: `1px solid ${colors.divider}` }}>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-3 sm:mb-4 space-y-2 sm:space-y-3 lg:space-y-0">
             <div>
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">Mapa de Ruta Optimizada</h2>
-              <p className="text-sm sm:text-base text-gray-600">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold theme-text-primary mb-1">Mapa de Ruta Optimizada</h2>
+              <p className="text-sm sm:text-base theme-text-secondary">
                 Ruta {selectedRouteIndex === 0 ? 'Principal' : `Alternativa ${selectedRouteIndex}`}
               </p>
             </div>
@@ -842,45 +879,44 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             {/* Stats de la ruta seleccionada */}
             {selectedRoute && (
               <div className="flex items-center justify-center sm:justify-start lg:justify-end space-x-2 sm:space-x-3 lg:space-x-4 xl:space-x-6">
-                <div className="text-center">
-                  <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
+                <div className="text-center rounded-lg px-3 py-2" style={{ backgroundColor: colors.background3, border: `1px solid ${colors.border}` }}>
+                  <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold theme-text-primary">
                     {Math.round(selectedRoute.summary.total_time / 60)}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-600 font-medium">Min</div>
+                  <div className="text-xs sm:text-sm theme-text-secondary font-medium">Min</div>
                 </div>
-                <div className="w-px h-8 sm:h-10 lg:h-12 bg-gray-300"></div>
-                <div className="text-center">
-                  <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
+                <div className="w-px h-8 sm:h-10 lg:h-12" style={{ backgroundColor: colors.divider }}></div>
+                <div className="text-center rounded-lg px-3 py-2" style={{ backgroundColor: colors.background3, border: `1px solid ${colors.border}` }}>
+                  <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold theme-text-primary">
                     {(selectedRoute.summary.total_distance / 1000).toFixed(1)}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-600 font-medium">Km</div>
+                  <div className="text-xs sm:text-sm theme-text-secondary font-medium">Km</div>
                 </div>
                 {selectedRoute.summary.traffic_delay > 0 && (
                   <>
-                    <div className="w-px h-8 sm:h-10 lg:h-12 bg-gray-300"></div>
-                    <div className="text-center">
-                      <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-red-600">
+                    <div className="w-px h-8 sm:h-10 lg:h-12" style={{ backgroundColor: colors.divider }}></div>
+                    <div className="text-center rounded-lg px-3 py-2" style={{ backgroundColor: colors.background3, border: `1px solid ${colors.border}` }}>
+                      <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold" style={{ color: colors.error }}>
                         +{Math.round(selectedRoute.summary.traffic_delay / 60)}
                       </div>
-                      <div className="text-xs sm:text-sm text-red-600 font-medium">Min tráfico</div>
+                      <div className="text-xs sm:text-sm font-medium" style={{ color: colors.error }}>Min tráfico</div>
                     </div>
                   </>
                 )}
               </div>
             )}
           </div>
-          
           {/* Selector de Rutas con Diseño Card */}
           <div className="mb-4 sm:mb-6">
             <h3 className="text-base sm:text-lg font-semibold theme-text-primary mb-3 sm:mb-4 flex items-center">
               <span className="w-2 h-2 rounded-full mr-2 sm:mr-3" style={{ backgroundColor: colors.info }}></span>
               Seleccionar Ruta
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
               {getAvailableRoutes().map((route, index) => {
                 const isSelected = index === selectedRouteIndex;
                 const isPrimary = index === 0;
-                const routeColor = isPrimary ? primaryColor : alternativeColors[index % alternativeColors.length];
+                const routeColor = getRouteColorByIndex(index);
                 
                 return (
                   <button
@@ -899,11 +935,9 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                       }`}
                       style={{
                         borderColor: isSelected ? colors.buttonPrimary1 : colors.border,
-                        ringColor: isSelected ? colors.buttonPrimary1 : 'transparent',
                         backgroundColor: isSelected ? routeColor : colors.background3,
                         color: isSelected ? 'white' : colors.textPrimary,
-                      }}
-                    >
+                      }}>
                       {/* Header del card */}
                       <div className="flex items-center justify-between mb-1">
                         <div 
@@ -925,21 +959,21 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                       {/* Título del card */}
                       <div className="text-center mb-1">
                         <div className={`font-semibold text-xs sm:text-sm mb-0.5 ${
-                          isSelected ? 'text-white' : 'text-gray-800'
-                        }`}>
+                          isSelected ? 'text-white' : ''
+                        }`} style={{ color: isSelected ? undefined : colors.textPrimary }}>
                           {isPrimary ? 'Principal' : `Ruta ${index}`}
                         </div>
                         <div className={`text-xs ${
-                          isSelected ? 'text-white text-opacity-90' : 'text-gray-500'
-                        }`}>
+                          isSelected ? 'text-white text-opacity-90' : ''
+                        }`} style={{ color: isSelected ? undefined : colors.textSecondary }}>
                           {isPrimary ? 'Recomendada' : 'Alternativa'}
                         </div>
                       </div>
                       
                       {/* Información de la ruta */}
                       <div className={`space-y-0.5 text-center ${
-                        isSelected ? 'text-white' : 'text-gray-700'
-                      }`}>
+                        isSelected ? 'text-white' : ''
+                      }`} style={{ color: isSelected ? undefined : colors.textPrimary }}>
                         <div className="flex items-center justify-center space-x-1">
                           <span className="text-xs">⏱️</span>
                           <span className="text-xs sm:text-sm font-medium">
@@ -986,8 +1020,8 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
 
           {/* Controles de Simulación */}
           <div className="mb-4 sm:mb-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
-              <span className="w-2 h-2 bg-red-500 rounded-full mr-2 sm:mr-3"></span>
+            <h3 className="text-base sm:text-lg font-semibold theme-text-primary mb-3 sm:mb-4 flex items-center">
+              <span className="w-2 h-2 rounded-full mr-2 sm:mr-3" style={{ backgroundColor: colors.error }}></span>
               Simulación de Recorrido
             </h3>
             
@@ -1050,20 +1084,20 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
 
             {/* Barra de Progreso */}
             {isSimulating && (
-              <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+              <div className="rounded-lg p-4 shadow-sm" style={{ backgroundColor: colors.background3, border: `1px solid ${colors.border}` }}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Progreso del recorrido</span>
-                  <span className="text-sm font-bold text-gray-900">
+                  <span className="text-sm font-medium theme-text-primary">Progreso del recorrido</span>
+                  <span className="text-sm font-bold theme-text-primary">
                     {Math.round(simulationProgress * 100)}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full rounded-full h-3" style={{ backgroundColor: colors.background2 }}>
                   <div 
-                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${simulationProgress * 100}%` }}
+                    className="h-3 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${simulationProgress * 100}%`, background: colors.success }}
                   ></div>
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <div className="flex justify-between text-xs theme-text-secondary mt-1">
                   <span>Inicio</span>
                   <span>Final</span>
                 </div>
@@ -1071,18 +1105,18 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             )}
           </div>
       {/* Orden de visita con diseño moderno */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-800 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+      <div className="rounded-xl shadow-lg overflow-hidden" style={{ backgroundColor: colors.background3 }}>
+        <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4" style={{ backgroundColor: colors.background2, borderBottom: `1px solid ${colors.divider}` }}>
+          <h3 className="text-base sm:text-lg font-semibold theme-text-primary flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
             <div className="flex items-center">
-              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 sm:mr-3"></span>
+              <span className="w-2 h-2 rounded-full mr-2 sm:mr-3" style={{ backgroundColor: colors.info }}></span>
               Orden de Visita de la Ruta {selectedRouteIndex === 0 ? 'Principal' : `Alternativa ${selectedRouteIndex}`}
             </div>
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full self-start sm:self-auto sm:ml-auto">
+            <span className="text-xs font-medium px-2 py-1 rounded-full self-start sm:self-auto sm:ml-auto" style={{ backgroundColor: colors.background1, color: colors.textPrimary, border: `1px solid ${colors.border}` }}>
               {selectedRoute?.visit_order.length || 0} paradas
             </span>
           </h3>
-          <p className="text-xs sm:text-sm text-blue-700 mt-2">
+          <p className="text-xs sm:text-sm theme-text-secondary mt-2">
             🎯 Mostrando el orden específico de la ruta seleccionada
           </p>
         </div>

@@ -13,7 +13,7 @@ import { ToastContainer } from '@/components/ui/ToastContainer';
 import { StatCard } from '@/components/ui/StatCard';
 import { RouteAssignmentModal } from './RouteAssignmentModal';
 import { RouteViewModal } from './RouteViewModal';
-import { RouteCreationModal } from './RouteCreationModal';
+import Link from 'next/link';
 
 export default function RoutesPage() {
   const { colors } = useDynamicTheme();
@@ -450,10 +450,12 @@ export default function RoutesPage() {
               <h1 className="text-2xl font-bold theme-text-primary">Mis Rutas</h1>
               <p className="theme-text-secondary">Administra y visualiza las rutas de {currentOrganization.name}</p>
             </div>
-            <Button onClick={handleCreateRoute}>
-              <Plus className="w-4 h-4 mr-2" />
-              Crear Ruta
-            </Button>
+            <Link href={{ pathname: './route-optimization/create' }}>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Crear Ruta
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -580,12 +582,7 @@ export default function RoutesPage() {
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       
       {/* Modales */}
-      {showCreateRouteModal && (
-        <RouteCreationModal
-          onClose={handleCloseCreateRouteModal}
-          onRouteCreated={handleRouteCreated}
-        />
-      )}
+      {/* Creación ahora es una página dedicada */}
 
       {showAssignModal && selectedRoute && (
         <RouteAssignmentModal
