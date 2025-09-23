@@ -296,15 +296,15 @@ export function DataTable<T extends Record<string, any>>({
 
     const gridCols = {
       1: 'grid-cols-1',
-      2: 'grid-cols-1 md:grid-cols-2',
-      3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-      4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
-      5: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
-      6: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
+      2: 'grid-cols-1 sm:grid-cols-2',
+      3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+      4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+      5: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+      6: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
     };
 
     return (
-      <div className={`grid ${gridCols[gridColumns as keyof typeof gridCols] || gridCols[3]} gap-6 p-6`}>
+      <div className={`grid ${gridCols[gridColumns as keyof typeof gridCols] || gridCols[3]} gap-3 sm:gap-4 lg:gap-6 p-3 sm:p-4 lg:p-6`}>
         {data.map((item, index) => (
           <div key={index}>
             {gridItemRender(item, index)}
@@ -326,12 +326,12 @@ export function DataTable<T extends Record<string, any>>({
       {renderPagination()}
       
       {/* Contenido según el modo de vista */}
-      {viewMode === 'table' ? (
-        <div className="overflow-x-auto">
-          <table 
-            className="w-full table-fixed min-w-[600px]"
-            style={{ borderColor: colors.tableBorder }}
-          >
+    {viewMode === 'table' ? (
+      <div className="overflow-x-auto mobile-scroll">
+        <table 
+          className="w-full table-fixed min-w-[800px] sm:min-w-[600px]"
+          style={{ borderColor: colors.tableBorder }}
+        >
             <thead 
               className="theme-table-header"
               style={{ backgroundColor: colors.tableHeader }}
@@ -340,7 +340,7 @@ export function DataTable<T extends Record<string, any>>({
                 {columns.map((column) => (
                   <th
                     key={String(column.key)}
-                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    className={`px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       column.sortable ? 'cursor-pointer hover:opacity-80' : ''
                     } ${column.className || ''}`}
                     style={{
@@ -349,7 +349,7 @@ export function DataTable<T extends Record<string, any>>({
                     onClick={() => column.sortable && handleSort(column.key)}
                   >
                     <div className="flex items-center space-x-1">
-                      <span>{column.label}</span>
+                      <span className="truncate">{column.label}</span>
                       {column.sortable && (
                         <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                           {getSortIcon(column.key)}
@@ -378,12 +378,14 @@ export function DataTable<T extends Record<string, any>>({
                   {columns.map((column) => (
                     <td
                       key={String(column.key)}
-                      className={`px-6 py-4 whitespace-nowrap text-sm theme-text-primary ${column.className || ''}`}
+                      className={`px-2 sm:px-4 lg:px-6 py-3 sm:py-4 text-xs sm:text-sm theme-text-primary ${column.className || ''}`}
                     >
-                      {column.render 
-                        ? column.render(item[column.key], item)
-                        : String(item[column.key] || '')
-                      }
+                      <div className="truncate">
+                        {column.render 
+                          ? column.render(item[column.key], item)
+                          : String(item[column.key] || '')
+                        }
+                      </div>
                     </td>
                   ))}
                 </tr>

@@ -252,19 +252,20 @@ export default function RoutesPage() {
       key: 'route_name' as keyof SavedRoute,
       label: 'Nombre',
       sortable: true,
-      className: 'w-48',
+      className: 'w-24 sm:w-32 lg:w-48',
       render: (value: any) => (
-        <div className="font-medium theme-text-primary truncate">{value}</div>
+        <div className="font-medium theme-text-primary truncate text-xs sm:text-sm">{value}</div>
       )
     },
     {
       key: 'status' as keyof SavedRoute,
       label: 'Estado',
       sortable: true,
-      className: 'w-32',
+      className: 'w-16 sm:w-20 lg:w-32',
       render: (value: any) => (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(value)}`}>
-          {getRouteStatusText(value)}
+        <span className={`inline-flex items-center gap-1 px-1 sm:px-1.5 lg:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(value)}`}>
+          <span className="hidden sm:inline">{getRouteStatusText(value)}</span>
+          <span className="sm:hidden">{getRouteStatusText(value).charAt(0)}</span>
         </span>
       )
     },
@@ -272,10 +273,11 @@ export default function RoutesPage() {
       key: 'priority' as keyof SavedRoute,
       label: 'Prioridad',
       sortable: true,
-      className: 'w-32',
+      className: 'w-16 sm:w-20 lg:w-32',
       render: (value: any) => (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(value)}`}>
-          {getPriorityText(value)}
+        <span className={`inline-flex items-center gap-1 px-1 sm:px-1.5 lg:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium border ${getPriorityColor(value)}`}>
+          <span className="hidden sm:inline">{getPriorityText(value)}</span>
+          <span className="sm:hidden">{getPriorityText(value).charAt(0)}</span>
         </span>
       )
     },
@@ -283,10 +285,10 @@ export default function RoutesPage() {
       key: 'origin_name' as keyof SavedRoute,
       label: 'Origen',
       sortable: true,
-      className: 'w-48',
+      className: 'w-24 sm:w-32 lg:w-48',
       render: (value: any) => (
-        <div className="flex items-center gap-2 text-sm theme-text-secondary">
-          <MapPin className="w-4 h-4" style={{ color: colors.buttonPrimary1 }} />
+        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm theme-text-secondary">
+          <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
           <span className="truncate">{value}</span>
         </div>
       )
@@ -295,10 +297,10 @@ export default function RoutesPage() {
       key: 'orders' as keyof SavedRoute,
       label: 'Pedidos',
       sortable: true,
-      className: 'w-24',
+      className: 'w-12 sm:w-16 lg:w-24',
       render: (value: any) => (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Package className="w-4 h-4 text-green-500" />
+        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
+          <Package className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
           <span>{value?.length || 0}</span>
         </div>
       )
@@ -307,10 +309,10 @@ export default function RoutesPage() {
       key: 'traffic_delay' as keyof SavedRoute,
       label: 'Retraso',
       sortable: true,
-      className: 'w-24',
+      className: 'w-12 sm:w-16 lg:w-24',
       render: (value: any) => (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Clock className="w-4 h-4 text-orange-500" />
+        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
+          <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500 flex-shrink-0" />
           <span>{Math.round((value || 0) / 60)}min</span>
         </div>
       )
@@ -319,26 +321,26 @@ export default function RoutesPage() {
       key: 'actions' as keyof SavedRoute,
       label: 'Acciones',
       sortable: false,
-      className: 'w-32',
+      className: 'w-16 sm:w-20 lg:w-32',
       render: (value: any, route: SavedRoute) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={() => handleViewRoute(route)}
-            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+            className="px-1.5 sm:px-2 lg:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
             title="Ver detalles"
           >
             <Eye className="w-3 h-3" />
-            Ver
+            <span className="hidden sm:inline">Ver</span>
           </button>
           
           {route.status === 'PLANNED' && (
             <button
               onClick={() => handleAssignRoute(route)}
-              className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+              className="px-1.5 sm:px-2 lg:px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
               title="Asignar ruta"
             >
               <UserPlus className="w-3 h-3" />
-              Asignar
+              <span className="hidden sm:inline">Asignar</span>
             </button>
           )}
         </div>
@@ -350,42 +352,43 @@ export default function RoutesPage() {
   const gridItemRender = (route: SavedRoute, index: number) => (
     <div
       key={route.id}
-      className="rounded-lg p-4 hover:shadow-md transition-shadow duration-200 theme-bg-3 border"
+      className="rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow duration-200 theme-bg-3 border"
       style={{
         backgroundColor: colors.background3,
         borderColor: colors.border
       }}
     >
       {/* Header con título y estado */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-2 sm:mb-3">
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold theme-text-primary truncate mb-1">{route.route_name}</h4>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(route.status)}`}>
-              {getRouteStatusText(route.status)}
+          <h4 className="text-xs sm:text-sm font-semibold theme-text-primary truncate mb-1">{route.route_name}</h4>
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+            <span className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(route.status)}`}>
+              <span className="hidden sm:inline">{getRouteStatusText(route.status)}</span>
+              <span className="sm:hidden">{getRouteStatusText(route.status).charAt(0)}</span>
             </span>
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(route.priority)}`}>
-              {getPriorityText(route.priority)}
+            <span className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(route.priority)}`}>
+              <span className="hidden sm:inline">{getPriorityText(route.priority)}</span>
+              <span className="sm:hidden">{getPriorityText(route.priority).charAt(0)}</span>
             </span>
           </div>
         </div>
-        
       </div>
 
       {/* Información básica compacta */}
-      <div className="space-y-2 mb-3">
-        <div className="flex items-center gap-2 text-xs theme-text-secondary">
+      <div className="space-y-1.5 sm:space-y-2 mb-2 sm:mb-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs theme-text-secondary">
           <MapPin className="w-3 h-3 theme-info flex-shrink-0" />
           <span className="truncate">{route.origin_name}</span>
         </div>
         
         <div className="flex items-center justify-between text-xs theme-text-secondary">
-          <div className="flex items-center gap-2">
-            <Package className="w-3 h-3 theme-success" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Package className="w-3 h-3 theme-success flex-shrink-0" />
             <span>{route.orders.length} pedidos</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-3 h-3 theme-warning" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Clock className="w-3 h-3 theme-warning flex-shrink-0" />
             <span>{Math.round(route.traffic_delay / 60)}min</span>
           </div>
         </div>
@@ -393,7 +396,7 @@ export default function RoutesPage() {
 
       {/* Acciones compactas */}
       <div className="flex items-center justify-between pt-2 border-t theme-divider">
-        <span className="text-xs theme-text-muted">ID: {route.uuid.slice(0, 8)}</span>
+        <span className="text-xs theme-text-muted truncate">ID: {route.uuid.slice(0, 8)}</span>
         
         <div className="flex items-center gap-1">
           <button
@@ -401,7 +404,7 @@ export default function RoutesPage() {
             className="px-2 py-1 text-white text-xs font-medium rounded transition-colors flex items-center gap-1 theme-btn-primary"
           >
             <Eye className="w-3 h-3" />
-            Ver
+            <span className="hidden sm:inline">Ver</span>
           </button>
           
           {route.status === 'PLANNED' && (
@@ -411,7 +414,7 @@ export default function RoutesPage() {
               style={{ backgroundColor: colors.info }}
             >
               <UserPlus className="w-3 h-3" />
-              Asignar
+              <span className="hidden sm:inline">Asignar</span>
             </button>
           )}
         </div>
@@ -443,24 +446,21 @@ export default function RoutesPage() {
         title="Gestión de Rutas"
         subtitle={`Administra las rutas de ${currentOrganization.name}`}
       >
-        {/* Header con botón de crear ruta */}
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold theme-text-primary">Mis Rutas</h1>
-              <p className="theme-text-secondary">Administra y visualiza las rutas de {currentOrganization.name}</p>
-            </div>
+        {/* Header con botón de crear ruta - Ya está en Page, pero mantenemos el botón adicional */}
+        <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8 py-2 sm:py-3">
+          <div className="flex justify-end">
             <Link href={{ pathname: './route-optimization/create' }}>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
-                Crear Ruta
+                <span className="hidden sm:inline">Crear Ruta</span>
+                <span className="sm:hidden">Crear</span>
               </Button>
             </Link>
           </div>
         </div>
 
         {/* Stats Cards - Clickables para filtrar */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div 
             onClick={() => handleFilterChange('all')}
             className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
@@ -553,12 +553,12 @@ export default function RoutesPage() {
         </div>
 
         {/* DataTable con paginación */}
-        <div className="px-4 sm:px-6 lg:px-8">
+        <div className="px-2 sm:px-4 lg:px-6 xl:px-8">
           {routesError ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-              <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-red-800 mb-2">Error al cargar rutas</h3>
-              <p className="text-red-700">{routesError}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-6 text-center">
+              <AlertCircle className="w-8 h-8 sm:w-12 sm:h-12 text-red-600 mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-semibold text-red-800 mb-2">Error al cargar rutas</h3>
+              <p className="text-sm sm:text-base text-red-700">{routesError}</p>
             </div>
           ) : (
             <DataTable
@@ -571,7 +571,7 @@ export default function RoutesPage() {
               emptyMessage="No hay rutas disponibles"
               viewMode={viewMode}
               onViewModeChange={setViewMode}
-              gridColumns={3}
+              gridColumns={2}
               gridItemRender={gridItemRender}
             />
           )}

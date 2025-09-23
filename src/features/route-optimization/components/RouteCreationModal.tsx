@@ -473,13 +473,13 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         style={{ backgroundColor: colors.background3 }}
       >
         <div 
-          className={asPage ? "p-4 sm:p-6 border-b theme-divider" : "p-6 border-b theme-divider"}
+          className={asPage ? "p-3 sm:p-4 lg:p-6 border-b theme-divider" : "p-4 sm:p-6 border-b theme-divider"}
           style={{ borderColor: colors.divider }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className={asPage ? "text-xl sm:text-2xl font-semibold theme-text-primary" : "text-lg font-semibold theme-text-primary"}>Crear Nueva Ruta</h3>
-              <p className="text-sm theme-text-secondary mt-1">Selecciona pedidos y crea una ruta optimizada</p>
+            <div className="min-w-0 flex-1">
+              <h3 className={asPage ? "text-lg sm:text-xl lg:text-2xl font-semibold theme-text-primary" : "text-base sm:text-lg font-semibold theme-text-primary"}>Crear Nueva Ruta</h3>
+              <p className="text-xs sm:text-sm theme-text-secondary mt-1">Selecciona pedidos y crea una ruta optimizada</p>
             </div>
             {asPage ? (
               <button
@@ -503,28 +503,28 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         
         <div className={asPage ? "" : "overflow-y-auto max-h-[calc(90vh-120px)]"}>
           {/* Información del paso actual */}
-          <div className={asPage ? "flex items-center justify-between h-14 px-4 sm:px-6 theme-bg-2 sticky top-0 z-20" : "flex items-center justify-between h-16 px-6 theme-bg-2"} style={{ backgroundColor: colors.background2 }}>
-            <div className="flex items-center gap-4">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.buttonPrimary1 }}>
-                <stepInfo.icon className="w-4 h-4" style={{ color: colors.buttonText }} />
+          <div className={asPage ? "flex items-center justify-between h-12 sm:h-14 px-3 sm:px-4 lg:px-6 theme-bg-2 sticky top-0 z-20" : "flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6 theme-bg-2"} style={{ backgroundColor: colors.background2 }}>
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.buttonPrimary1 }}>
+                <stepInfo.icon className="w-3 h-3 sm:w-4 sm:h-4" style={{ color: colors.buttonText }} />
               </div>
-              <div>
-                <h1 className={asPage ? "text-lg sm:text-xl font-semibold theme-text-primary" : "text-xl font-semibold theme-text-primary"}>{stepInfo.title}</h1>
-                <p className="text-sm theme-text-secondary">{stepInfo.description}</p>
+              <div className="min-w-0 flex-1">
+                <h1 className={asPage ? "text-base sm:text-lg lg:text-xl font-semibold theme-text-primary truncate" : "text-lg sm:text-xl font-semibold theme-text-primary truncate"}>{stepInfo.title}</h1>
+                <p className="text-xs sm:text-sm theme-text-secondary truncate">{stepInfo.description}</p>
               </div>
             </div>
             
             {/* Progreso + Acciones (arriba) */}
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-3">
-                <span className="text-sm theme-text-secondary">Paso {currentStepIndex + 1} de {steps.length}</span>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="hidden sm:flex items-center gap-2 sm:gap-3">
+                <span className="text-xs sm:text-sm theme-text-secondary">Paso {currentStepIndex + 1} de {steps.length}</span>
                 <div className="flex items-center gap-1">
                   {steps.map((_, index) => {
                     const isActive = index <= currentStepIndex;
                     return (
                       <div
                         key={index}
-                        className="w-2 h-2 rounded-full"
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full"
                         style={{ backgroundColor: isActive ? colors.buttonPrimary1 : colors.divider }}
                       />
                     );
@@ -532,31 +532,31 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                 </div>
               </div>
               {asPage && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={goBack}
                     disabled={!canGoBack}
-                    className={`px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
+                    className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md font-medium text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
                       canGoBack
                         ? 'theme-text-secondary hover:theme-text-primary hover:theme-bg-2'
                         : 'text-gray-400 cursor-not-allowed'
                     }`}
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                    Atrás
+                    <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Atrás</span>
                   </button>
               <button
                 onClick={executeCurrentStepAction}
                 disabled={!stepInfo.canNext || (currentStep === 'assign' && assigning)}
-                className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md font-medium text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
                   stepInfo.canNext && !(currentStep === 'assign' && assigning)
                     ? 'shadow-sm hover:shadow-md theme-btn-primary'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
                 style={stepInfo.canNext && !(currentStep === 'assign' && assigning) ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
               >
-                <span className="truncate">{currentStep === 'assign' && assigning ? 'Asignando...' : stepInfo.nextText}</span>
-                <ArrowRight className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate text-xs sm:text-sm">{currentStep === 'assign' && assigning ? 'Asignando...' : stepInfo.nextText}</span>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
               </button>
                 </div>
               )}
@@ -564,16 +564,16 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           </div>
 
           {/* Contenido del paso actual */}
-          <div className={asPage ? "p-4 sm:p-6" : "p-6 overflow-y-auto flex-1"}>
+          <div className={asPage ? "p-3 sm:p-4 lg:p-6" : "p-4 sm:p-6 overflow-y-auto flex-1"}>
             {currentStep === 'select' && (
-              <div className="space-y-4 sm:space-y-6">
+              <div className="space-y-3 sm:space-y-4 lg:space-y-6">
                 {/* Selección del modo de optimización */}
-                <div className="space-y-3 sm:space-y-4">
-                  <h3 className="text-lg font-semibold theme-text-primary">Modo de optimización</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold theme-text-primary">Modo de optimización</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {/* Modo Eficiencia */}
                     <div 
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200`}
+                      className={`p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all duration-200`}
                       style={{
                         borderColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : colors.border,
                         backgroundColor: optimizationMode === 'efficiency' ? colors.background2 : colors.background3,
@@ -582,19 +582,19 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                       onClick={() => setOptimizationMode('efficiency')}
                     >
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Route className="w-5 h-5" style={{ color: colors.buttonPrimary1 }} />
-                            <h4 className="font-semibold theme-text-primary">Mejor Eficiencia</h4>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                            <Route className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
+                            <h4 className="font-semibold theme-text-primary text-sm sm:text-base">Mejor Eficiencia</h4>
                             <div className="relative group">
-                              <Info className="w-4 h-4 theme-text-muted cursor-help" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
+                              <Info className="w-3 h-3 sm:w-4 sm:h-4 theme-text-muted cursor-help flex-shrink-0" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
                                    style={{ backgroundColor: colors.background1, color: colors.textPrimary, border: `1px solid ${colors.border}` }}>
                                 Optimiza la ruta para minimizar tiempo y distancia total
                               </div>
                             </div>
                           </div>
-                          <p className="text-sm theme-text-secondary">
+                          <p className="text-xs sm:text-sm theme-text-secondary">
                             El algoritmo reorganiza los pedidos para encontrar la ruta más corta y eficiente, reduciendo tiempo de entrega y combustible.
                           </p>
                         </div>
@@ -608,7 +608,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
 
                     {/* Modo Orden */}
                     <div 
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200`}
+                      className={`p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all duration-200`}
                       style={{
                         borderColor: optimizationMode === 'order' ? colors.buttonPrimary1 : colors.border,
                         backgroundColor: optimizationMode === 'order' ? colors.background2 : colors.background3,
@@ -617,19 +617,19 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                       onClick={() => setOptimizationMode('order')}
                     >
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Clock className="w-5 h-5" style={{ color: colors.buttonPrimary1 }} />
-                            <h4 className="font-semibold theme-text-primary">Orden de Llegada</h4>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                            <Clock className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
+                            <h4 className="font-semibold theme-text-primary text-sm sm:text-base">Orden de Llegada</h4>
                             <div className="relative group">
-                              <Info className="w-4 h-4 theme-text-muted cursor-help" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
+                              <Info className="w-3 h-3 sm:w-4 sm:h-4 theme-text-muted cursor-help flex-shrink-0" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
                                    style={{ backgroundColor: colors.background1, color: colors.textPrimary, border: `1px solid ${colors.border}` }}>
                                 Mantiene el orden en que llegaron los pedidos
                               </div>
                             </div>
                           </div>
-                          <p className="text-sm theme-text-secondary">
+                          <p className="text-xs sm:text-sm theme-text-secondary">
                             Respeta el orden cronológico de los pedidos, entregando primero los que llegaron antes.
                           </p>
                         </div>
@@ -699,17 +699,16 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                   </p>
                 </div>
 
-                {/* Selección de conductor */
-                }
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold theme-text-primary">Seleccionar Conductor</h3>
+                {/* Selección de conductor */}
+                <div className="space-y-3 sm:space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold theme-text-primary">Seleccionar Conductor</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {drivers.map((driver) => (
                       <div
                         key={driver.organization_membership_uuid}
                         onClick={() => setSelectedDriver(driver.organization_membership_uuid)}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all duration-200`}
+                        className={`p-3 sm:p-4 border rounded-lg cursor-pointer transition-all duration-200`}
                         style={{
                           borderColor: selectedDriver === driver.organization_membership_uuid ? colors.buttonPrimary1 : colors.border,
                           backgroundColor: selectedDriver === driver.organization_membership_uuid ? colors.background2 : (driver.status === 'ACTIVE' ? colors.background3 : colors.background2),
@@ -719,11 +718,11 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                         }}
                       >
                         <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium theme-text-primary">{driver.name}</h4>
-                            <p className="text-sm theme-text-secondary mt-1">{driver.email}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driver.status === 'ACTIVE' ? colors.success : colors.error }}></div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium theme-text-primary text-sm sm:text-base truncate">{driver.name}</h4>
+                            <p className="text-xs sm:text-sm theme-text-secondary mt-1 truncate">{driver.email}</p>
+                            <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
+                              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0" style={{ backgroundColor: driver.status === 'ACTIVE' ? colors.success : colors.error }}></div>
                               <span className="text-xs theme-text-secondary">
                                 {driver.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                               </span>
@@ -741,36 +740,36 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                 </div>
 
                 {/* Notas adicionales */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium theme-text-primary">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-medium theme-text-primary">
                     Notas adicionales (opcional)
                   </label>
                   <textarea
                     value={driverNotes}
                     onChange={(e) => setDriverNotes(e.target.value)}
                     placeholder="Instrucciones especiales para el conductor..."
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent resize-none theme-text-primary"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg focus:ring-2 focus:border-transparent resize-none theme-text-primary text-xs sm:text-sm"
                     style={{ 
                       borderColor: colors.border, 
                       backgroundColor: colors.background3,
                       color: colors.textPrimary,
                       boxShadow: `0 0 0 2px transparent` 
                     }}
-                    rows={3}
+                    rows={2}
                   />
                 </div>
 
                 {/* Resumen de la asignación */}
                 {selectedDriver && (
-                  <div className="rounded-lg p-4" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.info}33` }}>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5" style={{ color: colors.info }} />
-                      <span className="font-medium" style={{ color: colors.textPrimary }}>Resumen de asignación</span>
+                  <div className="rounded-lg p-3 sm:p-4" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.info}33` }}>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: colors.info }} />
+                      <span className="font-medium text-sm sm:text-base" style={{ color: colors.textPrimary }}>Resumen de asignación</span>
                     </div>
-                    <div className="mt-2 text-sm theme-text-secondary">
-                      <p>Conductor: <strong>{drivers.find(d => d.organization_membership_uuid === selectedDriver)?.name}</strong></p>
+                    <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm theme-text-secondary space-y-1">
+                      <p className="truncate">Conductor: <strong>{drivers.find(d => d.organization_membership_uuid === selectedDriver)?.name}</strong></p>
                       <p>Pedidos: <strong>{selectedOrders.length}</strong></p>
-                      <p>Ruta: <strong>{createdRouteUuid}</strong></p>
+                      <p className="truncate">Ruta: <strong>{createdRouteUuid}</strong></p>
                     </div>
                     {assignmentSuccess && (
                       <div className="mt-3 rounded-md p-3" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.success}66` }}>
@@ -790,30 +789,30 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         {/* Botones de navegación inferiores: solo en modal */}
         {!asPage && (
           <div 
-            className="p-6 border-t theme-divider"
+            className="p-4 sm:p-6 border-t theme-divider"
             style={{ 
               borderColor: colors.divider,
               backgroundColor: colors.background2 
             }}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
               <button
                 onClick={goBack}
                 disabled={!canGoBack}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
                   canGoBack
                     ? 'theme-text-secondary hover:theme-text-primary hover:theme-bg-2'
                     : 'text-gray-400 cursor-not-allowed'
                 }`}
               >
-                <ArrowLeft className="w-4 h-4" />
-                Atrás
+                <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Atrás</span>
               </button>
               
               <button
                 onClick={executeCurrentStepAction}
                 disabled={!stepInfo.canNext}
-                className={`px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
+                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
                   stepInfo.canNext
                     ? 'shadow-lg hover:shadow-xl theme-btn-primary'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -821,7 +820,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                 style={stepInfo.canNext ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
               >
                 <span className="truncate">{stepInfo.nextText}</span>
-                <ArrowRight className="w-4 h-4 flex-shrink-0" />
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
               </button>
             </div>
           </div>
