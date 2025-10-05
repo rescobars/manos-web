@@ -57,6 +57,8 @@ export default function PublicOrderPage() {
   const [totalAmount, setTotalAmount] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [specialInstructions, setSpecialInstructions] = useState('');
+  const [pickupAddress, setPickupAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -270,23 +272,30 @@ export default function PublicOrderPage() {
       return;
     }
 
+    if (!pickupAddress.trim()) {
+      setError('Por favor ingresa la dirección de recogida');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       
       const orderData = {
         organization_uuid: orgUuid,
-        description: description || 'Pedido público',
-        total_amount: parseFloat(totalAmount) || 0,
-        customer_name: customerName,
-        customer_phone: customerPhone,
         delivery_address: deliveryLocation.address,
-        delivery_lat: deliveryLocation.lat,
-        delivery_lng: deliveryLocation.lng,
+        pickup_address: pickupAddress.trim(),
+        total_amount: parseFloat(totalAmount) || 0,
+        description: description || 'Pedido público',
+        details: {
+          customer_name: customerName.trim(),
+          phone: customerPhone.trim(),
+          special_instructions: specialInstructions.trim()
+        }
       };
 
-      // Enviar a la API pública
-      const response = await fetch('/api/orders/public-create', {
+      // Enviar a la API externa
+      const response = await fetch('/api/orders/public-external', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -294,7 +303,9 @@ export default function PublicOrderPage() {
         body: JSON.stringify(orderData),
       });
 
-      if (response.ok) {
+      const responseData = await response.json();
+
+      if (response.ok && responseData.success) {
         // Mostrar mensaje de éxito
         alert('¡Pedido creado exitosamente!');
         // Resetear formulario
@@ -302,11 +313,12 @@ export default function PublicOrderPage() {
         setTotalAmount('');
         setCustomerName('');
         setCustomerPhone('');
+        setSpecialInstructions('');
+        setPickupAddress('');
         setDeliveryLocation(null);
         setSearchQuery('');
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Error al crear el pedido');
+        setError(responseData.error || 'Error al crear el pedido');
       }
     } catch (err) {
       console.error('Error creating order:', err);
@@ -484,7 +496,7 @@ export default function PublicOrderPage() {
               <div className="flex items-end">
                 <Button
                   onClick={handleSubmit}
-                  disabled={loading || !deliveryLocation || !customerName || !customerPhone}
+                  disabled={loading || !deliveryLocation || !customerName || !customerPhone || !pickupAddress}
                   className="w-full theme-btn-primary"
                   style={{ 
                     backgroundColor: colors.buttonPrimary1, 
@@ -506,13 +518,36 @@ export default function PublicOrderPage() {
               </div>
             </div>
 
+            {/* Dirección de recogida */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                Dirección de recogida *
+              </label>
+              <Input
+                value={pickupAddress}
+                onChange={(e) => setPickupAddress(e.target.value)}
+                placeholder="¿Dónde se debe recoger el pedido?"
+              />
+            </div>
+
             {/* Descripción - Ancho completo */}
-            <div>
+            <div className="mb-4">
               <TextAreaField
                 label="Descripción del pedido"
                 value={description}
                 onChange={setDescription}
                 placeholder="¿Qué contiene el pedido?"
+                rows={2}
+              />
+            </div>
+
+            {/* Instrucciones especiales */}
+            <div>
+              <TextAreaField
+                label="Instrucciones especiales"
+                value={specialInstructions}
+                onChange={setSpecialInstructions}
+                placeholder="Instrucciones adicionales para la entrega (opcional)"
                 rows={2}
               />
             </div>
