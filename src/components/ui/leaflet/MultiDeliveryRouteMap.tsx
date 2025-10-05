@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useMap } from 'react-leaflet';
+import { RoutePoint } from '@/hooks/useMultiDeliveryOptimization';
 
 // Importar Leaflet dinámicamente
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
@@ -42,15 +43,7 @@ interface DeliveryOrder {
   estimated_delivery_time: number;
 }
 
-interface RoutePoint {
-  lat: number;
-  lng: number;
-  sequence: number;
-  distance_from_previous: number | null;
-  instruction: string;
-  street_name: string;
-  traffic_delay: number;
-}
+// RoutePoint interface is imported from useMultiDeliveryOptimization hook
 
 interface OptimizedRoute {
   total_distance: number;
@@ -188,47 +181,61 @@ function MapContent({
       console.log('✅ Stops polyline added');
     }
 
-    // Crear marcadores para puntos de ruta intermedios (opcional)
+    // Crear un solo marcador en el centro de la ruta para mostrar detalles
     if (optimizedRoute.route_points && optimizedRoute.route_points.length > 0) {
-      optimizedRoute.route_points.forEach((point, index) => {
-        // Solo mostrar cada 5to punto para no saturar el mapa
-        if (index % 5 === 0 || index === optimizedRoute.route_points.length - 1) {
-          const marker = L.marker([point.lat, point.lng], {
-            icon: L.divIcon({
-              className: 'route-point-marker',
-              html: `
-                <div class="bg-blue-500 border-2 border-white rounded-full w-3 h-3 flex items-center justify-center text-white text-xs font-bold shadow-lg">
-                  ${index + 1}
-                </div>
-              `,
-              iconSize: [12, 12],
-              iconAnchor: [6, 6]
-            })
-          }).addTo(map);
-
-          // Crear popup con información del punto
-          let popupContent = `
-            <div class="text-center min-w-[200px]">
-              <div class="font-semibold text-sm mb-1">Punto ${point.sequence + 1}</div>
-              <div class="text-xs text-gray-600 mb-2">${point.street_name}</div>
-              <div class="text-xs text-blue-600 font-medium">${point.instruction}</div>
-          `;
-
-          if (point.distance_from_previous) {
-            popupContent += `
-              <div class="border-t pt-2 mt-2 text-xs text-gray-500">
-                <div>Distancia: ${point.distance_from_previous.toFixed(1)}m</div>
-                <div>Retraso: ${point.traffic_delay}s</div>
+      // Calcular el punto medio de la ruta
+      const midIndex = Math.floor(optimizedRoute.route_points.length / 2);
+      const midPoint = optimizedRoute.route_points[midIndex];
+      
+      if (midPoint && midPoint.lat && midPoint.lng) {
+        const marker = L.marker([midPoint.lat, midPoint.lng], {
+          icon: L.divIcon({
+            className: 'route-point-marker',
+            html: `
+              <div class="bg-blue-500 border-2 border-white rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold shadow-lg">
+                🛣️
               </div>
-            `;
-          }
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          })
+        }).addTo(map);
 
-          popupContent += `</div>`;
+        // Crear popup con información de la ruta
+        const totalPoints = optimizedRoute.route_points.length;
+        const totalDistance = optimizedRoute.total_distance;
+        const totalTime = optimizedRoute.total_time;
+        
+        let popupContent = `
+          <div class="text-center min-w-[250px]">
+            <div class="font-semibold text-sm mb-2">📋 Detalles de la Ruta</div>
+            <div class="text-xs text-gray-600 mb-2">Punto ${midPoint.sequence + 1} de ${totalPoints}</div>
+            <div class="text-xs text-blue-600 font-medium mb-2">${midPoint.instruction || 'Punto de navegación'}</div>
+            <div class="text-xs text-gray-500 mb-1">Calle: ${midPoint.street_name || 'N/A'}</div>
+        `;
 
-          marker.bindPopup(popupContent);
-          newLayers.push(marker);
+        if (midPoint.distance_from_previous) {
+          popupContent += `
+            <div class="border-t pt-2 mt-2 text-xs text-gray-500">
+              <div>Distancia desde anterior: ${midPoint.distance_from_previous.toFixed(0)}m</div>
+              <div>Retraso tráfico: ${midPoint.traffic_delay || 0}s</div>
+            </div>
+          `;
         }
-      });
+
+        popupContent += `
+            <div class="border-t pt-2 mt-2 text-xs text-gray-500">
+              <div>📏 Distancia total: ${totalDistance.toFixed(1)}km</div>
+              <div>⏱️ Tiempo total: ${Math.round(totalTime)}min</div>
+              <div>🚦 Retraso total: ${Math.round(optimizedRoute.total_traffic_delay / 60)}min</div>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+        newLayers.push(marker);
+        console.log('✅ Route details marker added');
+      }
     }
 
     // Crear marcadores para cada parada
@@ -256,24 +263,25 @@ function MapContent({
       let popupContent = `
         <div class="text-center min-w-[250px]">
           <div class="font-semibold text-sm mb-2">Parada #${stop.stop_number}</div>
-          <div class="text-xs text-gray-600 mb-2">${stop.location.address}</div>
+          <div class="text-xs text-gray-600 mb-2">${stop.location.address || 'Dirección no disponible'}</div>
       `;
 
       if (stop.order) {
         popupContent += `
           <div class="border-t pt-2 mt-2">
-            <div class="font-medium text-xs">Pedido: ${stop.order.order_number}</div>
-            <div class="text-xs text-gray-600">${stop.order.description}</div>
-            <div class="text-xs text-green-600 font-medium">$${stop.order.total_amount}</div>
+            <div class="font-medium text-xs">Pedido: ${stop.order.order_number || 'N/A'}</div>
+            <div class="text-xs text-gray-600">${stop.order.description || 'Sin descripción'}</div>
+            <div class="text-xs text-green-600 font-medium">$${stop.order.total_amount || 0}</div>
           </div>
         `;
       }
 
       popupContent += `
           <div class="border-t pt-2 mt-2 text-xs text-gray-500">
-            <div>Distancia: ${stop.distance_from_previous.toFixed(1)} km</div>
-            <div>Tiempo: ${stop.estimated_time.toFixed(1)} min</div>
-            <div>Total: ${stop.cumulative_time.toFixed(1)} min</div>
+            <div>Distancia: ${(stop.distance_from_previous || 0).toFixed(1)} km</div>
+            <div>Tiempo: ${(stop.estimated_time || 0).toFixed(1)} min</div>
+            <div>Total: ${(stop.cumulative_time || 0).toFixed(1)} min</div>
+            <div>Retraso: ${stop.traffic_delay || 0}s</div>
           </div>
         </div>
       `;

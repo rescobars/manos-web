@@ -18,6 +18,16 @@ interface DeliveryOrder {
   estimated_delivery_time: number;
 }
 
+export interface RoutePoint {
+  lat: number;
+  lng: number;
+  sequence: number;
+  distance_from_previous: number | null;
+  instruction: string;
+  street_name: string;
+  traffic_delay: number;
+}
+
 interface OptimizedRoute {
   total_distance: number;
   total_time: number;
@@ -33,6 +43,7 @@ interface OptimizedRoute {
     cumulative_time: number;
     traffic_delay: number;
   }>;
+  route_points: RoutePoint[];
   orders_delivered: number;
   optimization_metrics: {
     algorithm: string;
