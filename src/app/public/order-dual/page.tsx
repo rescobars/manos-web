@@ -357,17 +357,6 @@ export default function PublicOrderDualPage() {
             </h2>
           </div>
           
-          {/* URL para compartir */}
-          <div className="bg-white rounded-lg border theme-border p-3" style={{ borderColor: colors.border }}>
-            <PublicOrderUrl
-              orgUuid={orgUuid}
-              onCopyUrl={(url) => {
-                alert('URL copiada al portapapeles');
-              }}
-              showLabels={true}
-              compact={false}
-            />
-          </div>
         </div>
 
         <div className="flex-1 flex flex-col">
@@ -376,7 +365,7 @@ export default function PublicOrderDualPage() {
             <div className="flex space-x-4">
               <Button
                 onClick={() => setActiveMap('pickup')}
-                variant={activeMap === 'pickup' ? 'default' : 'outline'}
+                variant={activeMap === 'pickup' ? 'primary' : 'outline'}
                 className="flex items-center"
                 style={{ 
                   backgroundColor: activeMap === 'pickup' ? colors.buttonPrimary1 : 'transparent',
@@ -389,7 +378,7 @@ export default function PublicOrderDualPage() {
               </Button>
               <Button
                 onClick={() => setActiveMap('delivery')}
-                variant={activeMap === 'delivery' ? 'default' : 'outline'}
+                variant={activeMap === 'delivery' ? 'primary' : 'outline'}
                 className="flex items-center"
                 style={{ 
                   backgroundColor: activeMap === 'delivery' ? colors.buttonPrimary1 : 'transparent',
