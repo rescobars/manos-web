@@ -106,7 +106,11 @@ function MapContent({
 
     clearMap();
 
-    const routesToShow = showAlternatives ? trafficOptimizedRoute.routes : [trafficOptimizedRoute.routes[0]];
+    const routesToShow = showAlternatives && trafficOptimizedRoute?.routes?.length > 1 
+      ? trafficOptimizedRoute.routes 
+      : trafficOptimizedRoute?.routes?.length > 0 
+        ? [trafficOptimizedRoute.routes[0]] 
+        : [];
     const newLayers: L.Layer[] = [];
 
     routesToShow.forEach((route, routeIndex) => {
@@ -157,10 +161,10 @@ function MapContent({
     setAddedLayers(newLayers);
 
     // Ajustar vista para mostrar todas las rutas
-    if (trafficOptimizedRoute.routes.length > 0) {
+    if (trafficOptimizedRoute?.routes?.length > 0 && trafficOptimizedRoute.routes[0]?.points?.length > 0) {
       const allPoints = trafficOptimizedRoute.routes[0].points;
       if (allPoints.length > 0) {
-        const group = new L.featureGroup(newLayers);
+        const group = L.featureGroup(newLayers);
         map.fitBounds(group.getBounds().pad(0.1));
       }
     }
@@ -206,7 +210,11 @@ export default function TrafficOptimizedRouteMap({
 
   // Calcular centro del mapa
   const getMapCenter = (): [number, number] => {
-    if (trafficOptimizedRoute.routes.length > 0 && trafficOptimizedRoute.routes[0].points.length > 0) {
+    if (trafficOptimizedRoute && 
+        trafficOptimizedRoute.routes && 
+        trafficOptimizedRoute.routes.length > 0 && 
+        trafficOptimizedRoute.routes[0].points && 
+        trafficOptimizedRoute.routes[0].points.length > 0) {
       const points = trafficOptimizedRoute.routes[0].points;
       const avgLat = points.reduce((sum, point) => sum + point.lat, 0) / points.length;
       const avgLng = points.reduce((sum, point) => sum + point.lng, 0) / points.length;
@@ -225,14 +233,14 @@ export default function TrafficOptimizedRouteMap({
           <h3 className="text-lg font-semibold">Rutas Optimizadas</h3>
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <Clock className="w-4 h-4" />
-            <span>{formatDuration(trafficOptimizedRoute.summary.total_duration)}</span>
+            <span>{formatDuration(trafficOptimizedRoute?.summary?.total_duration || 0)}</span>
             <Navigation className="w-4 h-4 ml-2" />
-            <span>{formatDistance(trafficOptimizedRoute.summary.total_distance)}</span>
+            <span>{formatDistance(trafficOptimizedRoute?.summary?.total_distance || 0)}</span>
           </div>
         </div>
 
         {/* Selector de rutas alternativas */}
-        {showAlternatives && trafficOptimizedRoute.routes.length > 1 && (
+        {showAlternatives && trafficOptimizedRoute?.routes?.length > 1 && (
           <div className="flex space-x-2">
             {trafficOptimizedRoute.routes.map((route, index) => (
               <button
@@ -272,7 +280,7 @@ export default function TrafficOptimizedRouteMap({
       </div>
 
       {/* Estadísticas de la ruta seleccionada */}
-      {trafficOptimizedRoute.routes[selectedRoute] && (
+      {trafficOptimizedRoute?.routes?.[selectedRoute] && (
         <div className="bg-white p-4 border-t">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>

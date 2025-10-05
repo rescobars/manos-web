@@ -103,16 +103,12 @@ export function IndividualRoutesMap({
     return colors[Math.abs(hash) % colors.length];
   };
 
+  // Solo mostrar pedidos seleccionados que tengan tanto delivery como pickup location
   const filteredOrders = orders.filter(order => {
-    // Solo mostrar pedidos que tengan tanto delivery como pickup location
+    const isSelected = selectedOrders.includes(order.id);
     const hasBothLocations = order.deliveryLocation && order.pickupLocation;
     
-    const matchesSearch = searchTerm === '' || 
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.deliveryLocation.address.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return hasBothLocations && matchesSearch;
+    return isSelected && hasBothLocations;
   });
 
 
@@ -141,15 +137,21 @@ export function IndividualRoutesMap({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Controles superiores */}
-      <div className="p-4 border-b bg-white">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Pedidos con Pickup y Delivery</h3>
+      {/* Header mejorado */}
+      <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Rutas de Pedidos</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {selectedOrders.length} de {orders.filter(order => order.deliveryLocation && order.pickupLocation).length} pedidos seleccionados
+            </p>
+          </div>
           <div className="flex space-x-2">
             <Button
               onClick={onSelectAll}
               variant="outline"
               size="sm"
+              className="text-blue-600 border-blue-200 hover:bg-blue-50"
             >
               Seleccionar Todos
             </Button>
@@ -157,32 +159,33 @@ export function IndividualRoutesMap({
               onClick={onClearAll}
               variant="outline"
               size="sm"
+              className="text-gray-600 border-gray-200 hover:bg-gray-50"
             >
               Limpiar
             </Button>
           </div>
         </div>
-
-        {/* Búsqueda */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Buscar pedidos..."
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
       </div>
 
       {/* Mapa */}
-      <div className="flex-1 relative">
-        <MapContainer
-          center={mapCenter}
-          zoom={13}
-          style={{ height: '100%', width: '100%', minHeight: '400px' }}
-          className="z-0"
-        >
+      <div className="flex-1 relative bg-gray-100">
+        {filteredOrders.length === 0 ? (
+          <div className="flex items-center justify-center h-full bg-gray-50">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-200 flex items-center justify-center">
+                <MapPin className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay pedidos seleccionados</h3>
+              <p className="text-sm text-gray-600">Selecciona pedidos de la lista para ver sus rutas en el mapa</p>
+            </div>
+          </div>
+        ) : (
+          <MapContainer
+            center={mapCenter}
+            zoom={13}
+            style={{ height: '100%', width: '100%', minHeight: '400px' }}
+            className="z-0"
+          >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -288,54 +291,67 @@ export function IndividualRoutesMap({
             );
           })}
 
-        </MapContainer>
+          </MapContainer>
+        )}
       </div>
 
       {/* Lista de pedidos */}
-      <div className="p-4 border-t bg-white max-h-48 overflow-y-auto">
-        <h4 className="font-medium mb-3">Pedidos ({filteredOrders.length})</h4>
+      <div className="p-4 border-t bg-white">
+        <h4 className="font-medium mb-3">
+          Últimos Pedidos ({Math.min(orders.filter(order => order.deliveryLocation && order.pickupLocation).length, 20)} de {orders.filter(order => order.deliveryLocation && order.pickupLocation).length})
+        </h4>
         <div className="space-y-2">
-          {filteredOrders.map((order) => {
-            const isSelected = selectedOrders.includes(order.id);
-            const orderColor = getOrderColor(order.id);
-            
-            return (
-              <div
-                key={order.id}
-                className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors ${
-                  isSelected 
-                    ? 'bg-blue-50 border-blue-200' 
-                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                }`}
-                onClick={() => onOrderSelection(order.id)}
-              >
-                <div className="flex items-center space-x-3">
-                  <Checkbox checked={isSelected} onChange={() => onOrderSelection(order.id)} />
-                  <div className="flex items-center space-x-2">
-                    <div 
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: orderColor }}
-                    ></div>
-                    <div>
-                      <p className="font-medium text-sm">#{order.orderNumber}</p>
-                      <p className="text-xs text-gray-600">{order.deliveryLocation.address}</p>
-                      {order.pickupLocation && (
-                        <p className="text-xs text-gray-500">
-                          Recogida: {order.pickupLocation.address}
-                        </p>
-                      )}
+          {orders
+            .filter(order => order.deliveryLocation && order.pickupLocation)
+            .slice(-20) // Mostrar solo los últimos 20 pedidos
+            .map((order) => {
+              const isSelected = selectedOrders.includes(order.id);
+              const orderColor = getOrderColor(order.id);
+              
+              return (
+                <div
+                  key={order.id}
+                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+                    isSelected 
+                      ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                  }`}
+                  onClick={() => onOrderSelection(order.id)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Checkbox 
+                      checked={isSelected} 
+                      onChange={() => onOrderSelection(order.id)}
+                      className="flex-shrink-0"
+                    />
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className="w-4 h-4 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: orderColor }}
+                      ></div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm text-gray-900">#{order.orderNumber}</p>
+                        <p className="text-xs text-gray-600 truncate">{order.deliveryLocation.address}</p>
+                        {order.pickupLocation && (
+                          <p className="text-xs text-gray-500 truncate">
+                            Recogida: {order.pickupLocation.address}
+                          </p>
+                        )}
+                        {order.description && (
+                          <p className="text-xs text-gray-500 truncate mt-1">{order.description}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-semibold text-sm text-green-600">
+                      {formatCurrency(order.totalAmount)}
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize">{order.status}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium text-sm text-green-600">
-                    {formatCurrency(order.totalAmount)}
-                  </p>
-                  <p className="text-xs text-gray-500">{order.status}</p>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
     </div>
