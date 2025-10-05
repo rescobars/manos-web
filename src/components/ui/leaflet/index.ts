@@ -10,3 +10,7 @@ export { default as TrafficOptimizedRouteMap } from './TrafficOptimizedRouteMap'
 
 // Simple components
 export { SimpleMap } from './SimpleMap';
+
+// Multi-delivery components
+export { LocationSelectorMap } from './LocationSelectorMap';
+export { MultiDeliveryRouteMap } from './MultiDeliveryRouteMap';

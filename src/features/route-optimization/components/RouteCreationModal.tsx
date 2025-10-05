@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Order } from '@/types';
-import { XCircle, Route, AlertCircle, MapPin, Package, Clock, ArrowLeft, ArrowRight, CheckCircle, Info } from 'lucide-react';
+import { XCircle, Route, AlertCircle, MapPin, Package, Clock, ArrowLeft, ArrowRight, CheckCircle, Info, Truck } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
-import { useTrafficOptimization } from '@/hooks/useTrafficOptimization';
+import { useMultiDeliveryOptimization } from '@/hooks/useMultiDeliveryOptimization';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { useRouteCreation } from '@/hooks/useRouteCreation';
 import { ordersApiService } from '@/lib/api/orders';
 import { BRANCH_LOCATION } from '@/lib/constants';
-import { TrafficOptimizedRouteMap } from '@/components/ui/leaflet';
+import { LocationSelectorMap, MultiDeliveryRouteMap } from '@/components/ui/leaflet';
 import { IndividualRoutesMap } from '@/components/ui/leaflet/IndividualRoutesMap';
 import { useDrivers } from '@/hooks/useDrivers';
 import { organizationMembersApiService } from '@/lib/api/organization-members';
@@ -22,7 +22,7 @@ interface PickupLocation {
   address: string;
 }
 
-type FlowStep = 'select' | 'review' | 'assign';
+type FlowStep = 'select' | 'locations' | 'review' | 'assign';
 
 interface RouteCreationModalProps {
   onClose: () => void;
@@ -54,13 +54,29 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const [optimizationMode, setOptimizationMode] = useState<'efficiency' | 'order'>('efficiency');
   const [assigning, setAssigning] = useState<boolean>(false);
   const [assignmentSuccess, setAssignmentSuccess] = useState<boolean>(false);
+  
+  // Estados para multi-delivery
+  const [startLocation, setStartLocation] = useState<PickupLocation | null>(null);
+  const [endLocation, setEndLocation] = useState<PickupLocation | null>(null);
+  const [useMultiDelivery, setUseMultiDelivery] = useState<boolean>(true);
+
+  // Callbacks con logs para debug
+  const handleStartLocationSelect = (location: PickupLocation) => {
+    console.log('🎯 Start location selected:', location);
+    setStartLocation(location);
+  };
+
+  const handleEndLocationSelect = (location: PickupLocation) => {
+    console.log('🎯 End location selected:', location);
+    setEndLocation(location);
+  };
 
   // Hooks
-  const { 
-    data: trafficOptimizedRoute, 
-    optimizeRoute, 
-    isLoading: optimizationLoading 
-  } = useTrafficOptimization();
+  const {
+    data: multiDeliveryData,
+    optimizeRoute: optimizeMultiDelivery,
+    isLoading: multiDeliveryLoading
+  } = useMultiDeliveryOptimization();
   
   const { createRoute } = useRouteCreation();
 
@@ -124,7 +140,8 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
       },
       description: order.description,
       totalAmount: parseFloat(String(order.total_amount || '0')),
-      createdAt: order.created_at
+      createdAt: order.created_at,
+      status: order.status || 'PENDING'
     }));
   }, [orders]);
 
@@ -146,6 +163,14 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
       description: 'Elige los pedidos que quieres incluir en la ruta',
       icon: Package,
       canNext: selectedOrders.length > 0,
+      nextText: 'Continuar'
+    },
+    {
+      key: 'locations',
+      title: 'Seleccionar Ubicaciones',
+      description: 'Elige el punto de inicio y fin de la ruta',
+      icon: MapPin,
+      canNext: !!(startLocation && endLocation),
       nextText: 'Optimizar Ruta'
     },
     {
@@ -153,7 +178,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
       title: 'Revisar Ruta',
       description: 'Revisa la ruta optimizada antes de guardarla',
       icon: Route,
-      canNext: !!trafficOptimizedRoute && !routeSaved,
+      canNext: !!(multiDeliveryData && !routeSaved),
       nextText: routeSaved ? 'Ruta Guardada' : 'Guardar Ruta'
     },
     {
@@ -191,18 +216,27 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     console.log('🎯 executeCurrentStepAction called, currentStep:', currentStep);
     switch (currentStep) {
       case 'select':
-        console.log('📝 Moving to review step and calling handleOptimizeRoute');
-        setCurrentStep('review');
-        setTimeout(() => {
-          handleOptimizeRoute();
-        }, 100);
+        console.log('📝 Moving to locations step for multi-delivery');
+        setCurrentStep('locations');
+        break;
+        
+      case 'locations':
+        if (startLocation && endLocation) {
+          console.log('📝 Moving to review step for multi-delivery');
+          setCurrentStep('review');
+          setTimeout(() => {
+            handleOptimizeMultiDelivery();
+          }, 100);
+        } else {
+          showError('Ubicaciones requeridas', 'Debes seleccionar tanto la ubicación de inicio como la de fin para continuar.', 3000);
+        }
         break;
         
       case 'review':
-        if (trafficOptimizedRoute && !routeSaved) {
+        if (multiDeliveryData && !routeSaved) {
           await handleSaveRoute();
-        } else if (!trafficOptimizedRoute) {
-          await handleOptimizeRoute();
+        } else if (!multiDeliveryData) {
+          await handleOptimizeMultiDelivery();
         }
         break;
         
@@ -213,13 +247,17 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     }
   };
 
-  const handleOptimizeRoute = async () => {
-    console.log('🚀 handleOptimizeRoute called');
+
+  const handleOptimizeMultiDelivery = async () => {
+    console.log('🚀 handleOptimizeMultiDelivery called');
     console.log('🔍 selectedOrders:', selectedOrders);
-    console.log('🔍 pickupLocation:', pickupLocation);
+    console.log('🔍 startLocation:', startLocation);
+    console.log('🔍 endLocation:', endLocation);
+    console.log('🔍 startLocation lat/lng:', startLocation?.lat, startLocation?.lng);
+    console.log('🔍 endLocation lat/lng:', endLocation?.lat, endLocation?.lng);
     
-    if (selectedOrders.length < 1 || !pickupLocation) {
-      console.log('❌ Early return: selectedOrders.length =', selectedOrders.length, 'pickupLocation =', pickupLocation);
+    if (selectedOrders.length < 1 || !startLocation || !endLocation) {
+      console.log('❌ Early return: missing required data');
       return;
     }
     
@@ -227,76 +265,136 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
       selectedOrders.includes(order.id)
     );
     
-    console.log('🔍 selectedOrdersData:', selectedOrdersData);
-
-    const origin = {
-      lat: pickupLocation.lat,
-      lon: pickupLocation.lng,
-      name: pickupLocation.address
-    };
-
-    const destination = {
-      lat: pickupLocation.lat,
-      lon: pickupLocation.lng,
-      name: pickupLocation.address
-    };
-
-    // Filtrar y validar waypoints con coordenadas válidas
-    const waypoints = selectedOrdersData
-      .map(order => ({
+    // Convertir pedidos al formato multi-delivery
+    const deliveryOrders = selectedOrdersData.map(order => ({
+      id: order.id,
+      order_number: order.orderNumber,
+      origin: {
+        lat: order.pickupLocation?.lat || order.deliveryLocation.lat,
+        lng: order.pickupLocation?.lng || order.deliveryLocation.lng,
+        address: order.pickupLocation?.address || order.deliveryLocation.address
+      },
+      destination: {
         lat: order.deliveryLocation.lat,
-        lon: order.deliveryLocation.lng,
-        name: order.deliveryLocation.address
-      }))
-      .filter(waypoint => 
-        !isNaN(waypoint.lat) && 
-        !isNaN(waypoint.lon) && 
-        waypoint.lat !== 0 && 
-        waypoint.lon !== 0
-      );
+        lng: order.deliveryLocation.lng,
+        address: order.deliveryLocation.address
+      },
+      description: order.description || '',
+      total_amount: order.totalAmount,
+      priority: 1,
+      estimated_pickup_time: 5,
+      estimated_delivery_time: 3
+    }));
 
-    // Verificar que tenemos waypoints válidos
-    if (waypoints.length === 0) {
-      showError(
-        'Error de coordenadas',
-        'No se encontraron coordenadas válidas para los pedidos seleccionados. Verifica que los pedidos tengan direcciones de entrega válidas.',
-        5000
-      );
-      return;
-    }
+    console.log('🔍 Delivery orders:', deliveryOrders);
+    console.log('🔍 Sending to API - startLocation:', startLocation);
+    console.log('🔍 Sending to API - endLocation:', endLocation);
 
-    // Mostrar advertencia si se filtraron algunos pedidos
-    if (waypoints.length < selectedOrdersData.length) {
-      const filteredCount = selectedOrdersData.length - waypoints.length;
-      showError(
-        'Algunos pedidos excluidos',
-        `${filteredCount} pedido(s) fueron excluidos por tener coordenadas inválidas. Solo se optimizarán ${waypoints.length} pedido(s).`,
-        5000
-      );
-    }
-
-    console.log('🔍 Waypoints válidos:', waypoints);
-    console.log('⚙️ Modo de optimización:', optimizationMode);
-
-    const result = await optimizeRoute(origin, destination, waypoints, true, queueMode, optimizationMode);
+    const result = await optimizeMultiDelivery(
+      startLocation,
+      endLocation,
+      deliveryOrders,
+      {
+        include_traffic: true,
+        departure_time: 'now',
+        travel_mode: 'car',
+        route_type: 'fastest',
+        max_orders_per_trip: 10
+      }
+    );
     
     if (result.success) {
-      // La optimización se mantiene en el paso de review
+      console.log('✅ Multi-delivery optimization successful');
     } else {
-      console.error('❌ Error optimizing route with traffic:', result.error);
+      console.error('❌ Error optimizing multi-delivery route:', result.error);
+      showError('Error en optimización', result.error || 'No se pudo optimizar la ruta multi-delivery', 5000);
     }
   };
 
   const handleSaveRoute = async () => {
-    if (!trafficOptimizedRoute || !currentOrganization) return;
+    if (!currentOrganization || !multiDeliveryData?.optimized_route) return;
+    
+    // Convertir datos multi-delivery al formato esperado por createRoute
+    const routeData = {
+      route_info: {
+        total_distance: multiDeliveryData.optimized_route.total_distance,
+        total_time: multiDeliveryData.optimized_route.total_time,
+        orders_count: multiDeliveryData.optimized_route.orders_delivered,
+        origin: startLocation ? {
+          lat: startLocation.lat,
+          lon: startLocation.lng,
+          name: startLocation.address
+        } : null,
+        destination: endLocation ? {
+          lat: endLocation.lat,
+          lon: endLocation.lng,
+          name: endLocation.address
+        } : null,
+        waypoints: selectedOrders.map(id => {
+          const order = orders.find(o => o.uuid === id);
+          return order ? {
+            lat: parseFloat(String(order.delivery_lat || '0')),
+            lon: parseFloat(String(order.delivery_lng || '0')),
+            name: order.delivery_address
+          } : null;
+        }).filter(Boolean),
+        total_waypoints: selectedOrders.length,
+        optimization_mode: 'efficiency'
+      },
+      primary_route: {
+        points: multiDeliveryData.optimized_route.stops.map(stop => ({
+          lat: stop.location.lat,
+          lng: stop.location.lng,
+          name: stop.location.address
+        })),
+        total_distance: multiDeliveryData.optimized_route.total_distance,
+        total_duration: multiDeliveryData.optimized_route.total_time,
+        waypoints: multiDeliveryData.optimized_route.stops
+          .filter(stop => stop.order)
+          .map(stop => ({
+            lat: stop.location.lat,
+            lng: stop.location.lng,
+            name: stop.location.address
+          })),
+        visit_order: multiDeliveryData.optimized_route.stops
+          .filter(stop => stop.order)
+          .map((_, index) => index + 1)
+      },
+      alternative_routes: [],
+      request_info: {
+        origin: startLocation ? {
+          lat: startLocation.lat,
+          lon: startLocation.lng,
+          name: startLocation.address
+        } : null,
+        destination: endLocation ? {
+          lat: endLocation.lat,
+          lon: endLocation.lng,
+          name: endLocation.address
+        } : null,
+        waypoints: selectedOrders.map(id => {
+          const order = orders.find(o => o.uuid === id);
+          return order ? {
+            lat: parseFloat(String(order.delivery_lat || '0')),
+            lon: parseFloat(String(order.delivery_lng || '0')),
+            name: order.delivery_address
+          } : null;
+        }).filter(Boolean)
+      },
+      traffic_conditions: {
+        overall_congestion: multiDeliveryData.traffic_conditions?.overall_congestion || 'low',
+        total_traffic_delay: multiDeliveryData.traffic_conditions?.total_traffic_delay || 0,
+        traffic_enabled: multiDeliveryData.traffic_conditions?.traffic_enabled || true
+      }
+    } as any;
     
     try {
       const result = await createRoute({
-        routeData: trafficOptimizedRoute,
+        routeData: routeData,
         selectedOrders: selectedOrders,
         organizationId: currentOrganization.uuid,
-        routeName: `Ruta ${currentOrganization.name} - ${new Date().toLocaleDateString()}`,
-        description: `Ruta optimizada con ${selectedOrders.length} pedidos`
+        routeName: `Multi-Delivery ${currentOrganization.name} - ${new Date().toLocaleDateString()}`,
+        description: `Ruta optimizada multi-delivery con ${selectedOrders.length} pedidos`
       });
       
       if (result.success) {
@@ -567,6 +665,17 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           <div className={asPage ? "p-3 sm:p-4 lg:p-6" : "p-4 sm:p-6 overflow-y-auto flex-1"}>
             {currentStep === 'select' && (
               <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+                {/* Información del tipo de ruta */}
+                <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Truck className="w-5 h-5" style={{ color: colors.buttonPrimary1 }} />
+                    <h3 className="text-lg font-semibold theme-text-primary">Multi-Delivery</h3>
+                  </div>
+                  <p className="text-sm theme-text-secondary">
+                    Optimización punto a punto con ubicaciones de inicio y fin personalizadas
+                  </p>
+                </div>
+
                 {/* Selección del modo de optimización */}
                 <div className="space-y-2 sm:space-y-3 lg:space-y-4">
                   <h3 className="text-base sm:text-lg font-semibold theme-text-primary">Modo de optimización</h3>
@@ -663,25 +772,73 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
               </div>
             )}
 
+            {currentStep === 'locations' && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold theme-text-primary mb-2">Seleccionar Ubicaciones</h3>
+                  <p className="text-sm theme-text-secondary">
+                    Haz clic en el mapa para seleccionar el punto de inicio y fin de la ruta
+                  </p>
+                </div>
+
+                <div className="h-96 rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
+                  <LocationSelectorMap
+                    startLocation={startLocation}
+                    endLocation={endLocation}
+                    onStartLocationSelect={handleStartLocationSelect}
+                    onEndLocationSelect={handleEndLocationSelect}
+                    className="w-full h-full"
+                  />
+                </div>
+
+                {/* Información de ubicaciones seleccionadas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
+                    <h4 className="font-medium theme-text-primary mb-2 flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      Punto de Inicio
+                    </h4>
+                    {startLocation ? (
+                      <p className="text-sm theme-text-secondary">{startLocation.address}</p>
+                    ) : (
+                      <p className="text-sm theme-text-muted">No seleccionado</p>
+                    )}
+                  </div>
+
+                  <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
+                    <h4 className="font-medium theme-text-primary mb-2 flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      Punto de Fin
+                    </h4>
+                    {endLocation ? (
+                      <p className="text-sm theme-text-secondary">{endLocation.address}</p>
+                    ) : (
+                      <p className="text-sm theme-text-muted">No seleccionado</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {currentStep === 'review' && (
               <div className="space-y-6">
-                {optimizationLoading ? (
+                {multiDeliveryLoading ? (
                   <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
-                    <p className="theme-text-secondary">Optimizando ruta...</p>
+                    <p className="theme-text-secondary">Optimizando ruta multi-delivery...</p>
                   </div>
-                ) : trafficOptimizedRoute ? (
+                ) : multiDeliveryData?.optimized_route ? (
                   <div className={asPage ? "h-[60vh]" : "h-96"}>
-                    <TrafficOptimizedRouteMap
-                      trafficOptimizedRoute={trafficOptimizedRoute}
-                      showAlternatives={true}
+                    <MultiDeliveryRouteMap
+                      optimizedRoute={multiDeliveryData.optimized_route}
+                      className="w-full h-full"
                     />
                   </div>
                 ) : (
                   <div className="text-center py-12">
                     <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
                     <h3 className="text-lg font-semibold theme-text-primary mb-2">Error en la optimización</h3>
-                    <p className="theme-text-secondary">No se pudo optimizar la ruta. Inténtalo de nuevo.</p>
+                    <p className="theme-text-secondary">No se pudo optimizar la ruta multi-delivery. Inténtalo de nuevo.</p>
                   </div>
                 )}
               </div>
