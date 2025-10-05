@@ -50,36 +50,6 @@ export default function PublicOrderPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mostrar loading mientras se carga el tema
-  if (themeLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background1 }}>
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: colors.buttonPrimary1 }} />
-          <p className="text-sm" style={{ color: colors.textSecondary }}>Cargando tema de la organización...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Validar org_uuid
-  if (!orgUuid) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background1 }}>
-        <div className="text-center p-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-            <Package className="w-8 h-8 text-red-600" />
-          </div>
-          <h1 className="text-xl font-semibold mb-2" style={{ color: colors.textPrimary }}>
-            Error: Organización no encontrada
-          </h1>
-          <p style={{ color: colors.textSecondary }}>
-            El parámetro org_uuid es requerido para crear pedidos públicos.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   // Obtener ubicación actual al montar el componente
   useEffect(() => {
@@ -331,6 +301,37 @@ export default function PublicOrderPage() {
       setLoading(false);
     }
   };
+
+  // Mostrar loading mientras se carga el tema
+  if (themeLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background1 }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: colors.buttonPrimary1 }} />
+          <p className="text-sm" style={{ color: colors.textSecondary }}>Cargando tema de la organización...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Validar org_uuid
+  if (!orgUuid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background1 }}>
+        <div className="text-center p-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+            <Package className="w-8 h-8 text-red-600" />
+          </div>
+          <h1 className="text-xl font-semibold mb-2" style={{ color: colors.textPrimary }}>
+            Error: Organización no encontrada
+          </h1>
+          <p style={{ color: colors.textSecondary }}>
+            El parámetro org_uuid es requerido para crear pedidos públicos.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen theme-bg-1 flex flex-col" style={{ backgroundColor: colors.background1 }}>
