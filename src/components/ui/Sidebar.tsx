@@ -10,7 +10,6 @@ import {
   Palette
 } from 'lucide-react';
 import { Button } from './Button';
-import { ThemeToggle } from './ThemeToggle';
 import NavigationSelector, { NavigationItem } from '@/components/navigation/NavigationSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
@@ -177,10 +176,6 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
           className="p-3 border-t theme-divider"
           style={{ borderColor: colors.divider }}
         >
-          {/* Theme Toggle */}
-          <div className="mb-3">
-            <ThemeToggle showLabel={true} className="justify-start" />
-          </div>
 
           {/* Theme Selector */}
           <div className="mb-3">
