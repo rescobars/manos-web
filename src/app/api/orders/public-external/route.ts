@@ -8,8 +8,12 @@ export async function POST(request: NextRequest) {
     // Validar datos requeridos
     const { 
       organization_uuid,
-      delivery_address, 
+      delivery_address,
+      delivery_lat,
+      delivery_lng,
       pickup_address,
+      pickup_lat,
+      pickup_lng,
       total_amount,
       description,
       details
@@ -25,6 +29,13 @@ export async function POST(request: NextRequest) {
     if (!delivery_address?.trim()) {
       return NextResponse.json(
         { success: false, error: 'Delivery address is required' },
+        { status: 400 }
+      );
+    }
+
+    if (delivery_lat === undefined || delivery_lng === undefined) {
+      return NextResponse.json(
+        { success: false, error: 'Delivery coordinates are required' },
         { status: 400 }
       );
     }
@@ -55,7 +66,11 @@ export async function POST(request: NextRequest) {
     // Preparar datos para la API externa
     const externalOrderData = {
       delivery_address: delivery_address.trim(),
+      delivery_lat: parseFloat(delivery_lat),
+      delivery_lng: parseFloat(delivery_lng),
       pickup_address: pickup_address.trim(),
+      pickup_lat: pickup_lat ? parseFloat(pickup_lat) : undefined,
+      pickup_lng: pickup_lng ? parseFloat(pickup_lng) : undefined,
       total_amount: parseFloat(total_amount) || 0,
       description: description?.trim() || 'Pedido público',
       details: {

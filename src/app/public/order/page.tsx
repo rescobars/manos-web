@@ -284,7 +284,11 @@ export default function PublicOrderPage() {
       const orderData = {
         organization_uuid: orgUuid,
         delivery_address: deliveryLocation.address,
+        delivery_lat: deliveryLocation.lat,
+        delivery_lng: deliveryLocation.lng,
         pickup_address: pickupAddress.trim(),
+        pickup_lat: undefined, // Placeholder - will be updated when we add pickup map
+        pickup_lng: undefined, // Placeholder - will be updated when we add pickup map
         total_amount: parseFloat(totalAmount) || 0,
         description: description || 'Pedido público',
         details: {

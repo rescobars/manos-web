@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { Button } from './Button';
 import { AuthenticationUrls } from './AuthenticationUrls';
 import { PublicOrderUrl } from './PublicOrderUrl';
+import { PublicOrderDualUrl } from './PublicOrderDualUrl';
 import { 
   Building2, 
   Globe, 
@@ -298,6 +299,16 @@ export function OrganizationDetail({
           <div>
             <h3 className="text-lg font-medium theme-text-primary mb-3">URL de Pedidos Públicos</h3>
             <PublicOrderUrl
+              orgUuid={organization.uuid}
+              showLabels={false}
+              compact={false}
+            />
+          </div>
+
+          {/* URL de Pedidos Públicos (Mapa Dual) */}
+          <div>
+            <h3 className="text-lg font-medium theme-text-primary mb-3">URL de Pedidos Públicos (Mapa Dual)</h3>
+            <PublicOrderDualUrl
               orgUuid={organization.uuid}
               showLabels={false}
               compact={false}

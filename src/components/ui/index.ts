@@ -15,6 +15,7 @@ export { OrganizationInfo } from './OrganizationInfo';
 export { OrganizationModal } from './OrganizationModal';
 export { OrganizationSelector } from './OrganizationSelector';
 export { PublicOrderUrl } from './PublicOrderUrl';
+export { PublicOrderDualUrl } from './PublicOrderDualUrl';
 export { Page, PageHeader, PageContent } from './Page';
 export { RoleBadge } from './RoleBadge';
 export { Select } from './Select';
