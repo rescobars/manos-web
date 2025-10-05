@@ -14,6 +14,7 @@ export { OrganizationFiltersComponent as OrganizationFilters } from './Organizat
 export { OrganizationInfo } from './OrganizationInfo';
 export { OrganizationModal } from './OrganizationModal';
 export { OrganizationSelector } from './OrganizationSelector';
+export { PublicOrderUrl } from './PublicOrderUrl';
 export { Page, PageHeader, PageContent } from './Page';
 export { RoleBadge } from './RoleBadge';
 export { Select } from './Select';

@@ -5,6 +5,7 @@ import { Organization } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { Button } from './Button';
 import { AuthenticationUrls } from './AuthenticationUrls';
+import { PublicOrderUrl } from './PublicOrderUrl';
 import { 
   Building2, 
   Globe, 
@@ -288,6 +289,16 @@ export function OrganizationDetail({
             <AuthenticationUrls
               orgUuid={organization.uuid}
               role="DRIVER"
+              showLabels={false}
+              compact={false}
+            />
+          </div>
+
+          {/* URL de Pedidos Públicos */}
+          <div>
+            <h3 className="text-lg font-medium theme-text-primary mb-3">URL de Pedidos Públicos</h3>
+            <PublicOrderUrl
+              orgUuid={organization.uuid}
               showLabels={false}
               compact={false}
             />

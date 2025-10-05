@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, Package } from 'lucide-react';
+import { Search, Package, MapPin, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { useDynamicTheme } from '@/hooks/useDynamicTheme';
-import { BaseMap } from '@/components/map/leaflet/base/BaseMap';
-import L from 'leaflet';
-import { createOrderIcon } from '@/lib/leaflet/utils';
+import { TextAreaField } from '@/components/ui/FormField';
+import { OrdersMap } from '@/components/ui/leaflet/orders';
+import { useDebounce } from '@/hooks/useDebounce';
+import { PublicOrderUrl } from '@/components/ui/PublicOrderUrl';
 
 interface Location {
   lat: number;
@@ -19,220 +19,513 @@ interface Location {
 export default function PublicOrderPage() {
   const searchParams = useSearchParams();
   const orgUuid = searchParams.get('org_uuid');
-  const { colors } = useDynamicTheme();
+  
+  // Colores por defecto para la página pública
+  const colors = {
+    background1: '#ffffff',
+    background2: '#f8fafc',
+    background3: '#f1f5f9',
+    textPrimary: '#1f2937',
+    textSecondary: '#6b7280',
+    border: '#e5e7eb',
+    buttonPrimary1: '#3b82f6',
+    buttonText: '#ffffff',
+    success: '#10b981',
+    warning: '#f59e0b',
+    error: '#ef4444',
+    divider: '#f3f4f6'
+  };
 
-  const mapRef = useRef<L.Map | null>(null);
-  const pickupMarkerRef = useRef<L.Marker | null>(null);
-  const deliveryMarkerRef = useRef<L.Marker | null>(null);
-  const routeRef = useRef<L.Polyline | null>(null);
+  // Estados del mapa
+  const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
+  const [deliveryLocation, setDeliveryLocation] = useState<Location | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([14.6349, -90.5069]); // Guatemala City por defecto
+  const [mapKey, setMapKey] = useState(0);
+  const [locationLoading, setLocationLoading] = useState(true);
 
-  const [pickup, setPickup] = useState<Location | null>(null);
-  const [delivery, setDelivery] = useState<Location | null>(null);
-  const [active, setActive] = useState<'pickup' | 'delivery'>('pickup');
-  const [step, setStep] = useState<'selectA' | 'selectB' | 'done'>('selectA');
-
+  // Estados del buscador
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<Location[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
-  const center: [number, number] = [14.6349, -90.5069];
+  // Debounce para la búsqueda (500ms de delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  const placeMarker = (type: 'pickup' | 'delivery', loc: Location) => {
-    if (!mapRef.current) return;
-    const icon = createOrderIcon(type === 'pickup' ? 'A' : 'B', type === 'pickup' ? colors.info : colors.success, true);
-    if (type === 'pickup') {
-      setPickup(loc);
-      if (pickupMarkerRef.current) pickupMarkerRef.current.setLatLng([loc.lat, loc.lng]).setIcon(icon);
-      else pickupMarkerRef.current = L.marker([loc.lat, loc.lng], { icon }).addTo(mapRef.current);
-    } else {
-      setDelivery(loc);
-      if (deliveryMarkerRef.current) deliveryMarkerRef.current.setLatLng([loc.lat, loc.lng]).setIcon(icon);
-      else deliveryMarkerRef.current = L.marker([loc.lat, loc.lng], { icon }).addTo(mapRef.current);
-    }
-    mapRef.current.setView([loc.lat, loc.lng], 14);
-    drawRoute();
+  // Estados del formulario
+  const [description, setDescription] = useState('');
+  const [totalAmount, setTotalAmount] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    // Flujo tipo Google Maps: al seleccionar A, pasar a B automáticamente
-    if (type === 'pickup') {
-      setActive('delivery');
-      setStep('selectB');
-    } else if (pickup && delivery) {
-      setStep('done');
-    }
-  };
+  // Validar org_uuid
+  if (!orgUuid) {
+    return (
+      <div className="min-h-screen theme-bg-1 flex items-center justify-center" style={{ backgroundColor: colors.background1 }}>
+        <div className="text-center p-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+            <Package className="w-8 h-8 text-red-600" />
+          </div>
+          <h1 className="text-xl font-semibold theme-text-primary mb-2" style={{ color: colors.textPrimary }}>
+            Error: Organización no encontrada
+          </h1>
+          <p className="theme-text-secondary" style={{ color: colors.textSecondary }}>
+            El parámetro org_uuid es requerido para crear pedidos públicos.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  const drawRoute = () => {
-    if (!mapRef.current) return;
-    if (routeRef.current) {
-      routeRef.current.remove();
-      routeRef.current = null;
-    }
-    if (pickup && delivery) {
-      routeRef.current = L.polyline([[pickup.lat, pickup.lng], [delivery.lat, delivery.lng]], { color: colors.info, weight: 3 }).addTo(mapRef.current);
-    }
-  };
-
-  const computeDistanceKm = (): number | null => {
-    if (!pickup || !delivery) return null;
-    const a = L.latLng(pickup.lat, pickup.lng);
-    const b = L.latLng(delivery.lat, delivery.lng);
-    return a.distanceTo(b) / 1000; // km
-  };
-
-  const searchMapbox = async (q: string) => {
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&country=GT&limit=5`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data.features || [];
-  };
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    setSearchLoading(true);
-    try {
-      const results = await searchMapbox(searchQuery);
-      setSearchResults(results);
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const selectResult = (type: 'pickup' | 'delivery', feature: any) => {
-    const [lng, lat] = feature.center;
-    placeMarker(type, { lat, lng, address: feature.place_name });
-    setSearchResults([]);
-    setSearchQuery('');
-  };
-
-  const handleMapClick = (e: L.LeafletMouseEvent) => {
-    const { lat, lng } = e.latlng;
-    placeMarker(active, { lat, lng, address: `${lat.toFixed(6)}, ${lng.toFixed(6)}` });
-  };
-
+  // Obtener ubicación actual al montar el componente
   useEffect(() => {
-    // Mantener markers sincronizados siempre
-    const map = mapRef.current;
-    if (!map) return;
-    // Pickup
-    if (pickup) {
-      const iconA = createOrderIcon('A', colors.info, true);
-      if (pickupMarkerRef.current) pickupMarkerRef.current.setLatLng([pickup.lat, pickup.lng]).setIcon(iconA);
-      else pickupMarkerRef.current = L.marker([pickup.lat, pickup.lng], { icon: iconA }).addTo(map);
-    } else if (pickupMarkerRef.current) {
-      pickupMarkerRef.current.remove();
-      pickupMarkerRef.current = null;
+    getCurrentLocation();
+    
+    // Timeout de respaldo para mostrar el mapa aunque falle la geolocalización
+    const fallbackTimeout = setTimeout(() => {
+      if (locationLoading) {
+        setLocationLoading(false);
+      }
+    }, 8000); // 8 segundos de timeout
+
+    return () => clearTimeout(fallbackTimeout);
+  }, []);
+
+  // Cerrar resultados de búsqueda al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showSearchResults) {
+        // Verificar si el clic fue en los resultados de búsqueda
+        const searchResults = document.querySelector('[data-search-results]');
+        if (searchResults && !searchResults.contains(event.target as Node)) {
+          setShowSearchResults(false);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showSearchResults]);
+
+  // Ejecutar búsqueda cuando cambie el debouncedSearchQuery
+  useEffect(() => {
+    if (debouncedSearchQuery.trim()) {
+      handleSearch(debouncedSearchQuery);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
     }
-    // Delivery
-    if (delivery) {
-      const iconB = createOrderIcon('B', colors.success, true);
-      if (deliveryMarkerRef.current) deliveryMarkerRef.current.setLatLng([delivery.lat, delivery.lng]).setIcon(iconB);
-      else deliveryMarkerRef.current = L.marker([delivery.lat, delivery.lng], { icon: iconB }).addTo(map);
-    } else if (deliveryMarkerRef.current) {
-      deliveryMarkerRef.current.remove();
-      deliveryMarkerRef.current = null;
+  }, [debouncedSearchQuery]);
+
+  // Obtener ubicación actual
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocalización no soportada por este navegador');
+      setLocationLoading(false);
+      return;
     }
-    drawRoute();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickup, delivery, colors.info, colors.success]);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const newLocation: Location = {
+          lat: latitude,
+          lng: longitude,
+          address: 'Tu ubicación actual'
+        };
+        setCurrentLocation(newLocation);
+        setMapCenter([latitude, longitude]);
+        setMapKey(prev => prev + 1); // Forzar re-render del mapa
+        
+        // Intentar obtener dirección legible
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'MovigoApp/1.0'
+              }
+            }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            newLocation.address = data.display_name || 'Tu ubicación actual';
+            setCurrentLocation({ ...newLocation });
+          }
+        } catch (err) {
+          console.error('Error getting current location address:', err);
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      (err) => {
+        console.error('Error getting current location:', err);
+        setError('No se pudo obtener tu ubicación actual. Por favor, actívala en tu navegador.');
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000, // Reducir timeout
+        maximumAge: 300000
+      }
+    );
+  };
+
+  // Buscar direcciones
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Agregar "Guatemala" a la búsqueda para limitar resultados
+      const fullSearchQuery = `${query} Guatemala`;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullSearchQuery)}&limit=5&addressdetails=1&countrycodes=gt`,
+        {
+          headers: {
+            'User-Agent': 'MovigoApp/1.0'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const results: Location[] = data.map((item: any) => ({
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lon),
+          address: item.display_name
+        }));
+        
+        setSearchResults(results);
+        setShowSearchResults(true);
+      }
+    } catch (err) {
+      console.error('Error searching addresses:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Seleccionar resultado de búsqueda
+  const handleSelectSearchResult = (location: Location) => {
+    setDeliveryLocation(location);
+    setMapCenter([location.lat, location.lng]);
+    setMapKey(prev => prev + 1);
+    setSearchQuery(location.address);
+    setShowSearchResults(false);
+  };
+
+  // Manejar clic en el mapa para seleccionar punto de entrega
+  const handleMapClick = async (lat: number, lng: number) => {
+    // Crear ubicación básica primero
+    const location: Location = {
+      lat,
+      lng,
+      address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+    };
+    
+    setDeliveryLocation(location);
+    setSearchQuery(location.address);
+    
+    // Intentar obtener dirección usando reverse geocoding
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'MovigoApp/1.0'
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const address = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        
+        const locationWithAddress: Location = {
+          lat,
+          lng,
+          address
+        };
+        
+        setDeliveryLocation(locationWithAddress);
+        setSearchQuery(address);
+      }
+    } catch (err) {
+      // Ya tenemos la ubicación básica, no es crítico
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!deliveryLocation) {
+      setError('Por favor selecciona una ubicación de entrega');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const orderData = {
+        organization_uuid: orgUuid,
+        description: description || 'Pedido público',
+        total_amount: parseFloat(totalAmount) || 0,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        delivery_address: deliveryLocation.address,
+        delivery_lat: deliveryLocation.lat,
+        delivery_lng: deliveryLocation.lng,
+      };
+
+      // Enviar a la API pública
+      const response = await fetch('/api/orders/public-create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (response.ok) {
+        // Mostrar mensaje de éxito
+        alert('¡Pedido creado exitosamente!');
+        // Resetear formulario
+        setDescription('');
+        setTotalAmount('');
+        setCustomerName('');
+        setCustomerPhone('');
+        setDeliveryLocation(null);
+        setSearchQuery('');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Error al crear el pedido');
+      }
+    } catch (err) {
+      console.error('Error creating order:', err);
+      setError('Error al crear el pedido. Inténtalo de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen theme-bg-1" style={{ backgroundColor: colors.background1 }}>
-      <div className="px-4 py-4 max-w-5xl mx-auto">
-        {/* Header simple */}
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-lg font-semibold theme-text-primary" style={{ color: colors.textPrimary }}>
-            Crear pedido {orgUuid ? '' : '(sin organización)'}
-          </h1>
+    <div className="min-h-screen theme-bg-1 flex flex-col" style={{ backgroundColor: colors.background1 }}>
+      {/* Container con ancho responsivo */}
+      <div className="w-full max-w-none mx-auto lg:max-w-[80%] xl:max-w-[80%] 2xl:max-w-[80%]">
+        {/* Header */}
+        <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-semibold theme-text-primary" style={{ color: colors.textPrimary }}>
+              Crear Pedido Público
+            </h2>
+          </div>
         </div>
 
-        {/* Mapa con controles */}
-        <div className="relative rounded-lg border theme-border overflow-hidden" style={{ borderColor: colors.border }}>
-          {/* Controles flotantes (un solo buscador dependiente del paso) */}
-          <div className="absolute z-[1000] top-3 left-1/2 -translate-x-1/2 w-[95%] md:w-[85%]">
-            <div className="relative">
-              <div className="flex gap-2">
-                <Input
-                  placeholder={active === 'pickup' ? 'Buscar Origen (A)...' : 'Buscar Destino (B)...'}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="flex-1"
+        <div className="flex-1 flex flex-col">
+        {/* Mapa - 100% horizontal */}
+        <div className="flex-1 p-4 relative">
+          {/* Buscador sobre el mapa */}
+          <div className="absolute top-4 left-4 right-4 z-50" style={{ zIndex: 9999 }}>
+            <div className="bg-white rounded-lg shadow-lg border theme-border p-3" style={{ borderColor: colors.border }}>
+              <h3 className="font-semibold theme-text-primary flex items-center mb-3" style={{ color: colors.textPrimary }}>
+                <MapPin className="w-5 h-5 mr-2" />
+                Ubicación de entrega
+              </h3>
+              
+              {/* Buscador de direcciones */}
+              <div className="relative">
+                <div className="flex">
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar dirección de entrega..."
+                    className="flex-1"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="w-4 h-4 animate-spin" style={{ color: colors.buttonPrimary1 }} />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Resultados de búsqueda */}
+                {showSearchResults && searchResults.length > 0 && (
+                  <div 
+                    data-search-results
+                    className="absolute z-50 w-full mt-1 bg-white border theme-border rounded-lg shadow-lg max-h-60 overflow-y-auto" 
+                    style={{ borderColor: colors.border, zIndex: 10000 }}
+                  >
+                    {searchResults.map((result, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSelectSearchResult(result);
+                        }}
+                        className="w-full p-3 text-left hover:bg-gray-50 border-b theme-border last:border-b-0"
+                        style={{ borderColor: colors.border }}
+                      >
+                        <div className="flex items-start">
+                          <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
+                              {result.address}
+                            </p>
+                            <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
+                              {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg border theme-border overflow-hidden h-full" style={{ borderColor: colors.border }}>
+            <div className="h-[calc(100vh-200px)] relative">
+              {locationLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: colors.buttonPrimary1 }} />
+                    <p className="text-sm theme-text-secondary">Obteniendo tu ubicación...</p>
+                  </div>
+                </div>
+              ) : (
+                <OrdersMap
+                  key={mapKey}
+                  center={mapCenter}
+                  zoom={15}
+                  deliveryLocation={deliveryLocation}
+                  onMapClick={handleMapClick}
+                  colors={colors}
                 />
-                <Button onClick={handleSearch} disabled={searchLoading} className="px-3 theme-btn-primary" style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}>
-                  {searchLoading ? '...' : <Search className="w-4 h-4" />}
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Formulario - Abajo, optimizado */}
+        <div className="p-4 border-t theme-border bg-white" style={{ borderColor: colors.border, backgroundColor: colors.background1 }}>
+          <div className="max-w-4xl mx-auto">
+            <h3 className="font-semibold theme-text-primary mb-4" style={{ color: colors.textPrimary }}>
+              Información del pedido
+            </h3>
+            
+            {/* Información del punto de entrega */}
+            <div className="mb-4">
+              <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
+                <div className="flex items-start">
+                  <Package className="w-5 h-5 mr-3 mt-0.5" style={{ color: colors.success }} />
+                  <div className="flex-1">
+                    <p className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>Punto de entrega</p>
+                    <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
+                      {deliveryLocation ? deliveryLocation.address : 'Busca una dirección o haz clic en el mapa'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Formulario en grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {/* Nombre del cliente */}
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                  Nombre del cliente *
+                </label>
+                <Input
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Nombre completo"
+                />
+              </div>
+
+              {/* Teléfono del cliente */}
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                  Teléfono del cliente *
+                </label>
+                <Input
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="Número de teléfono"
+                  type="tel"
+                />
+              </div>
+
+              {/* Monto total */}
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                  Monto total (Q)
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+
+              {/* Botón de envío */}
+              <div className="flex items-end">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading || !deliveryLocation || !customerName || !customerPhone}
+                  className="w-full theme-btn-primary"
+                  style={{ 
+                    backgroundColor: colors.buttonPrimary1, 
+                    color: colors.buttonText 
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creando...
+                    </>
+                  ) : (
+                    <>
+                      <Package className="w-4 h-4 mr-2" />
+                      Crear pedido
+                    </>
+                  )}
                 </Button>
               </div>
-              {searchResults.length > 0 && (
-                <div className="absolute mt-1 w-full rounded-lg shadow-lg theme-bg-3 border theme-border max-h-56 overflow-auto" style={{ backgroundColor: colors.background3, borderColor: colors.border }}>
-                  {searchResults.map((f, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => selectResult(active, f)}
-                      className="w-full text-left px-3 py-2 border-b last:border-b-0 hover:opacity-80"
-                      style={{ borderColor: colors.divider, color: colors.textPrimary }}
-                    >
-                      {f.place_name}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          </div>
 
-          <div className="h-[420px]">
-            <BaseMap
-              center={center}
-              zoom={13}
-              onMapReady={(map) => {
-                mapRef.current = map;
-                map.on('click', handleMapClick);
-              }}
-            >
-              {null}
-            </BaseMap>
-            {/* Indicadores de paso y distancia */}
-            <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-              <div className="rounded-full px-3 py-1 text-xs shadow theme-bg-3 border theme-border" style={{ backgroundColor: colors.background3, color: colors.textSecondary, borderColor: colors.border }}>
-                {step === 'selectA' && 'Selecciona el Origen (A) en el mapa o búscalo arriba'}
-                {step === 'selectB' && 'Ahora selecciona el Destino (B)'}
-                {step === 'done' && 'Origen y destino definidos'}
+            {/* Descripción - Ancho completo */}
+            <div>
+              <TextAreaField
+                label="Descripción del pedido"
+                value={description}
+                onChange={setDescription}
+                placeholder="¿Qué contiene el pedido?"
+                rows={2}
+              />
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
-              {computeDistanceKm() !== null && (
-                <div className="rounded-full px-3 py-1 text-xs shadow theme-bg-3 border theme-border" style={{ backgroundColor: colors.background3, color: colors.textPrimary, borderColor: colors.border }}>
-                  Distancia (línea recta): {computeDistanceKm()?.toFixed(2)} km
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
-
-        {/* Formulario básico */}
-        <div className="mt-4 theme-bg-2 border theme-border rounded-lg p-4" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm mb-1" style={{ color: colors.textSecondary }}>Nombre *</label>
-              <Input placeholder="Tu nombre" className="w-full" />
-            </div>
-            <div>
-              <label className="block text-sm mb-1" style={{ color: colors.textSecondary }}>Teléfono *</label>
-              <Input placeholder="Tu teléfono" className="w-full" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm mb-1" style={{ color: colors.textSecondary }}>Descripción (opcional)</label>
-              <Input placeholder="¿Qué contiene el pedido?" className="w-full" />
-            </div>
-          </div>
-
-          <div className="flex justify-end mt-4">
-            <Button
-              className="px-6 py-2 theme-btn-primary"
-              style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
-              disabled={!pickup || !delivery}
-            >
-              <Package className="w-4 h-4 mr-2" /> Crear pedido
-            </Button>
-          </div>
-        </div>
+      </div>
       </div>
     </div>
   );

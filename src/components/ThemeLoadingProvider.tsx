@@ -13,10 +13,10 @@ export function ThemeLoadingProvider({ children }: ThemeLoadingProviderProps) {
 
   useEffect(() => {
     // Mostrar contenido solo cuando el theme esté listo
-    if (themeReady) {
+    if (themeReady && !isLoading) {
       setShowContent(true);
     }
-  }, [themeReady]);
+  }, [themeReady, isLoading]);
 
   // Mostrar loading screen mientras se carga el theme
   if (!showContent) {

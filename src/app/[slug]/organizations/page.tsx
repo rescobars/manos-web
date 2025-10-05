@@ -16,6 +16,7 @@ import { OrganizationFiltersComponent } from '@/components/ui/OrganizationFilter
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { AuthenticationUrls } from '@/components/ui/AuthenticationUrls';
+import { PublicOrderUrl } from '@/components/ui/PublicOrderUrl';
 import { 
   Building2, 
   Plus,
@@ -404,6 +405,18 @@ export default function OrganizationsPage() {
                     role="DRIVER"
                     onCopyUrl={(url) => {
                       success('URL copiada', 'La URL de login se ha copiado al portapapeles');
+                    }}
+                    showLabels={true}
+                    compact={false}
+                  />
+                </div>
+
+                {/* URL de Pedidos Públicos */}
+                <div className="border-t border-gray-200 pt-3">
+                  <PublicOrderUrl
+                    orgUuid={org.uuid}
+                    onCopyUrl={(url) => {
+                      success('URL copiada', 'La URL de pedidos públicos se ha copiado al portapapeles');
                     }}
                     showLabels={true}
                     compact={false}
