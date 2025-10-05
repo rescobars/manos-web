@@ -14,6 +14,7 @@ import NavigationSelector, { NavigationItem } from '@/components/navigation/Navi
 import { useAuth } from '@/contexts/AuthContext';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { organizationThemes } from '@/lib/themes/organizationThemes';
+import { OrganizationDarkThemeToggle } from './OrganizationDarkThemeToggle';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -206,6 +207,11 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
                 <span>Cambiando...</span>
               </div>
             )}
+          </div>
+
+          {/* Organization Dark Theme Toggle */}
+          <div className="mb-3">
+            <OrganizationDarkThemeToggle />
           </div>
 
           {/* Logout Button */}

@@ -66,6 +66,7 @@ export interface OrganizationThemeConfig {
   organization_uuid: string;
   theme_name: string;
   colors: DynamicThemeColors;
+  colors_dark?: DynamicThemeColors; // Tema dark personalizado de la organización
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -234,6 +235,8 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       // Obtener información pública de la organización desde la API externa
       const response = await fetch(`/api/organizations/public/${organizationUuid}`);
       const organizationData = await response.json();
+
+      console.log('organizationData', organizationData);
       
       if (response.ok && organizationData.success) {
         // Usar theme_config y branding de la API externa

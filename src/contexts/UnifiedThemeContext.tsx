@@ -28,6 +28,7 @@ interface UnifiedThemeContextType {
   isLoading: boolean;
   error: string | null;
   themeReady: boolean;
+  useOrganizationDarkTheme: boolean; // Usar dark theme de la organización
   
   // Actions
   loadOrganizationTheme: (organizationUuid: string) => Promise<void>;
@@ -38,6 +39,7 @@ interface UnifiedThemeContextType {
   // Utilities
   getColor: (colorKey: keyof DynamicThemeColors, fallback?: string) => string;
   applyThemeToElement: (element: HTMLElement, styles: Record<string, string>) => void;
+  toggleOrganizationDarkTheme: () => void; // Toggle para usar dark theme de la organización
 }
 
 const UnifiedThemeContext = createContext<UnifiedThemeContextType | undefined>(undefined);
@@ -141,6 +143,7 @@ export function UnifiedThemeProvider({ children }: { children: React.ReactNode }
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [themeReady, setThemeReady] = useState(false); // Nuevo estado para controlar cuando el theme está listo
+  const [useOrganizationDarkTheme, setUseOrganizationDarkTheme] = useState(false); // Usar dark theme de la organización
 
   // Manejar hidratación
   useEffect(() => {
@@ -167,8 +170,15 @@ export function UnifiedThemeProvider({ children }: { children: React.ReactNode }
   // Calcular colores actuales
   const currentColors = useMemo(() => {
     const baseColors = organizationTheme?.colors || movigoTheme;
-    return resolvedMode === 'dark' ? applyDarkMode(baseColors) : baseColors;
-  }, [organizationTheme, resolvedMode]);
+    
+    // Si está habilitado el dark theme de la organización Y existe
+    if (useOrganizationDarkTheme && organizationTheme?.colors_dark) {
+      return organizationTheme.colors_dark;
+    }
+    
+    // En todos los demás casos, usar colores normales
+    return baseColors;
+  }, [organizationTheme, useOrganizationDarkTheme]);
 
   // Mapeo de variables CSS
   const cssVarMap: Record<keyof DynamicThemeColors, string> = useMemo(() => ({
@@ -280,13 +290,14 @@ export function UnifiedThemeProvider({ children }: { children: React.ReactNode }
       const organizationData = await response.json();
       
       if (response.ok && organizationData.success) {
-        const { theme_config, branding: orgBranding } = organizationData.data;
+        const { theme_config, theme_config_dark, branding: orgBranding } = organizationData.data;
         
         if (theme_config && theme_config.colors) {
           const themeConfig: OrganizationThemeConfig = {
             organization_uuid: organizationUuid,
             theme_name: theme_config.theme_name || 'Tema Personalizado',
             colors: theme_config.colors,
+            colors_dark: theme_config_dark?.colors || undefined, // Dark theme personalizado viene separado
             is_active: theme_config.metadata?.is_active ?? true,
             created_at: theme_config.metadata?.created_at,
             updated_at: theme_config.metadata?.updated_at,
@@ -404,6 +415,10 @@ export function UnifiedThemeProvider({ children }: { children: React.ReactNode }
     });
   };
 
+  const toggleOrganizationDarkTheme = () => {
+    setUseOrganizationDarkTheme(!useOrganizationDarkTheme);
+  };
+
   const value: UnifiedThemeContextType = {
     mode,
     setMode,
@@ -416,12 +431,14 @@ export function UnifiedThemeProvider({ children }: { children: React.ReactNode }
     isLoading,
     error,
     themeReady,
+    useOrganizationDarkTheme,
     loadOrganizationTheme,
     updateTheme,
     updateBranding,
     resetToDefault,
     getColor,
     applyThemeToElement,
+    toggleOrganizationDarkTheme,
   };
 
   return (
