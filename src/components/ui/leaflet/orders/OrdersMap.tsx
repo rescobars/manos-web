@@ -52,6 +52,7 @@ interface OrdersMapProps {
   center: [number, number];
   zoom?: number;
   deliveryLocation?: Location | null;
+  pickupLocation?: Location | null;
   onMapClick?: (lat: number, lng: number) => void;
   colors: any;
 }
@@ -60,6 +61,7 @@ export function OrdersMap({
   center, 
   zoom = 15, 
   deliveryLocation, 
+  pickupLocation,
   onMapClick, 
   colors 
 }: OrdersMapProps) {
@@ -77,6 +79,19 @@ export function OrdersMap({
         
         <MapClickHandler onMapClick={onMapClick} />
         
+        {/* Marcador de punto de recogida */}
+        {pickupLocation && (
+          <Marker position={[pickupLocation.lat, pickupLocation.lng]}>
+            <Popup>
+              <div className="text-center">
+                <div className="w-4 h-4 mx-auto mb-1 rounded-full" style={{ backgroundColor: colors.warning }}></div>
+                <p className="font-semibold">Punto de recogida</p>
+                <p className="text-xs text-gray-600">{pickupLocation.address}</p>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+
         {/* Marcador de punto de entrega */}
         {deliveryLocation && (
           <Marker position={[deliveryLocation.lat, deliveryLocation.lng]}>

@@ -423,6 +423,7 @@ export default function PublicOrderPage() {
                   key={mapKey}
                   center={mapCenter}
                   zoom={15}
+                  pickupLocation={null}
                   deliveryLocation={deliveryLocation}
                   onMapClick={handleMapClick}
                   colors={colors}

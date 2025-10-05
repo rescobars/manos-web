@@ -469,6 +469,7 @@ export default function PublicOrderDualPage() {
                     key={mapKey}
                     center={mapCenter}
                     zoom={15}
+                    pickupLocation={pickupLocation}
                     deliveryLocation={deliveryLocation}
                     onMapClick={handleMapClick}
                     colors={colors}
