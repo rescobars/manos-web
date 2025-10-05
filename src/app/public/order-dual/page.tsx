@@ -9,6 +9,7 @@ import { TextAreaField } from '@/components/ui/FormField';
 import { OrdersMap } from '@/components/ui/leaflet/orders';
 import { useDebounce } from '@/hooks/useDebounce';
 import { PublicOrderUrl } from '@/components/ui/PublicOrderUrl';
+import { usePublicOrganizationTheme } from '@/hooks/usePublicOrganizationTheme';
 
 interface Location {
   lat: number;
@@ -20,21 +21,8 @@ export default function PublicOrderDualPage() {
   const searchParams = useSearchParams();
   const orgUuid = searchParams.get('org_uuid');
   
-  // Colores por defecto para la página pública
-  const colors = {
-    background1: '#ffffff',
-    background2: '#f8fafc',
-    background3: '#f1f5f9',
-    textPrimary: '#1f2937',
-    textSecondary: '#6b7280',
-    border: '#e5e7eb',
-    buttonPrimary1: '#3b82f6',
-    buttonText: '#ffffff',
-    success: '#10b981',
-    warning: '#f59e0b',
-    error: '#ef4444',
-    divider: '#f3f4f6'
-  };
+  // Obtener tema de la organización
+  const { colors, branding, isLoading: themeLoading, error: themeError } = usePublicOrganizationTheme(orgUuid);
 
   // Estados del mapa
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
@@ -63,18 +51,30 @@ export default function PublicOrderDualPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Mostrar loading mientras se carga el tema
+  if (themeLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background1 }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: colors.buttonPrimary1 }} />
+          <p className="text-sm" style={{ color: colors.textSecondary }}>Cargando tema de la organización...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Validar org_uuid
   if (!orgUuid) {
     return (
-      <div className="min-h-screen theme-bg-1 flex items-center justify-center" style={{ backgroundColor: colors.background1 }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background1 }}>
         <div className="text-center p-8">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
             <Package className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-xl font-semibold theme-text-primary mb-2" style={{ color: colors.textPrimary }}>
+          <h1 className="text-xl font-semibold mb-2" style={{ color: colors.textPrimary }}>
             Error: Organización no encontrada
           </h1>
-          <p className="theme-text-secondary" style={{ color: colors.textSecondary }}>
+          <p style={{ color: colors.textSecondary }}>
             El parámetro org_uuid es requerido para crear pedidos públicos.
           </p>
         </div>
@@ -350,13 +350,22 @@ export default function PublicOrderDualPage() {
       {/* Container con ancho responsivo */}
       <div className="w-full max-w-none mx-auto lg:max-w-[80%] xl:max-w-[80%] 2xl:max-w-[80%]">
         {/* Header */}
-        <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
+        <div className="p-4 border-b" style={{ borderColor: colors.border }}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-semibold theme-text-primary" style={{ color: colors.textPrimary }}>
-              Crear Pedido Público (Dual Map)
-            </h2>
+            <div className="flex items-center space-x-3">
+              {/* Logo de la organización */}
+              {branding?.logo_url && (
+                <img 
+                  src={branding.logo_url} 
+                  alt="Logo de la organización"
+                  className="w-8 h-8 object-contain"
+                />
+              )}
+              <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
+                Crear Encargo
+              </h2>
+            </div>
           </div>
-          
         </div>
 
         <div className="flex-1 flex flex-col">
@@ -483,7 +492,7 @@ export default function PublicOrderDualPage() {
           <div className="p-4 border-t theme-border bg-white" style={{ borderColor: colors.border, backgroundColor: colors.background1 }}>
             <div className="max-w-4xl mx-auto">
               <h3 className="font-semibold theme-text-primary mb-4" style={{ color: colors.textPrimary }}>
-                Información del pedido
+                Información del Encargo
               </h3>
               
               {/* Información de ubicaciones seleccionadas */}
