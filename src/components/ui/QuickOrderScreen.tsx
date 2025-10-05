@@ -7,6 +7,7 @@ import { Input } from './Input';
 import { TextAreaField } from './FormField';
 import { LeafletMap } from './LeafletMap';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface Location {
   lat: number;
@@ -34,6 +35,15 @@ export function QuickOrderScreen({
   const [mapKey, setMapKey] = useState(0);
   const [locationLoading, setLocationLoading] = useState(true);
 
+  // Estados del buscador
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Location[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  // Debounce para la búsqueda (500ms de delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
   // Estados del formulario
   const [description, setDescription] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
@@ -46,6 +56,34 @@ export function QuickOrderScreen({
   useEffect(() => {
     getCurrentLocation();
   }, []);
+
+  // Cerrar resultados de búsqueda al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showSearchResults) {
+        // Verificar si el clic fue en los resultados de búsqueda
+        const searchResults = document.querySelector('[data-search-results]');
+        if (searchResults && !searchResults.contains(event.target as Node)) {
+          setShowSearchResults(false);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showSearchResults]);
+
+  // Ejecutar búsqueda cuando cambie el debouncedSearchQuery
+  useEffect(() => {
+    if (debouncedSearchQuery.trim()) {
+      handleSearch(debouncedSearchQuery);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  }, [debouncedSearchQuery]);
 
   // Obtener ubicación actual
   const getCurrentLocation = () => {
@@ -104,6 +142,52 @@ export function QuickOrderScreen({
     );
   };
 
+  // Buscar direcciones
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'MovigoApp/1.0'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const results: Location[] = data.map((item: any) => ({
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lon),
+          address: item.display_name
+        }));
+        
+        setSearchResults(results);
+        setShowSearchResults(true);
+      }
+    } catch (err) {
+      console.error('Error searching addresses:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Seleccionar resultado de búsqueda
+  const handleSelectSearchResult = (location: Location) => {
+    setDeliveryLocation(location);
+    setMapCenter([location.lat, location.lng]);
+    setMapKey(prev => prev + 1);
+    setSearchQuery(location.address);
+    setShowSearchResults(false);
+  };
+
   // Manejar clic en el mapa para seleccionar punto de entrega
   const handleMapClick = async (lat: number, lng: number) => {
     // Crear ubicación básica primero
@@ -114,6 +198,7 @@ export function QuickOrderScreen({
     };
     
     setDeliveryLocation(location);
+    setSearchQuery(location.address);
     
     // Intentar obtener dirección usando reverse geocoding
     try {
@@ -137,6 +222,7 @@ export function QuickOrderScreen({
         };
         
         setDeliveryLocation(locationWithAddress);
+        setSearchQuery(address);
       }
     } catch (err) {
       // Ya tenemos la ubicación básica, no es crítico
@@ -144,8 +230,8 @@ export function QuickOrderScreen({
   };
 
   const handleSubmit = async () => {
-    if (!currentLocation) {
-      setError('No se pudo obtener tu ubicación actual');
+    if (!deliveryLocation) {
+      setError('Por favor selecciona una ubicación de entrega');
       return;
     }
 
@@ -159,9 +245,9 @@ export function QuickOrderScreen({
         total_amount: parseFloat(totalAmount) || 0,
         customer_name: customerName,
         customer_phone: customerPhone,
-        delivery_address: currentLocation.address,
-        delivery_lat: currentLocation.lat,
-        delivery_lng: currentLocation.lng,
+        delivery_address: deliveryLocation.address,
+        delivery_lat: deliveryLocation.lat,
+        delivery_lng: deliveryLocation.lng,
       };
 
       console.log('Order data:', orderData);
@@ -202,18 +288,69 @@ export function QuickOrderScreen({
       <div className="flex-1 flex flex-col">
         {/* Mapa - 100% horizontal */}
         <div className="flex-1 p-4">
-          <div className="bg-white rounded-lg border theme-border overflow-hidden h-full" style={{ borderColor: colors.border }}>
-            <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
-              <h3 className="font-semibold theme-text-primary flex items-center" style={{ color: colors.textPrimary }}>
-                <MapPin className="w-5 h-5 mr-2" />
-                Ubicación de entrega
-              </h3>
-              <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
-                El pedido se entregará en tu ubicación actual
-              </p>
+          <div className="bg-white rounded-lg border theme-border overflow-hidden h-full relative" style={{ borderColor: colors.border }}>
+            {/* Buscador sobre el mapa */}
+            <div className="absolute top-4 left-4 right-4 z-50" style={{ zIndex: 9999 }}>
+              <div className="bg-white rounded-lg shadow-lg border theme-border p-3" style={{ borderColor: colors.border }}>
+                <h3 className="font-semibold theme-text-primary flex items-center mb-3" style={{ color: colors.textPrimary }}>
+                  <MapPin className="w-5 h-5 mr-2" />
+                  Ubicación de entrega
+                </h3>
+                
+                {/* Buscador de direcciones */}
+                <div className="relative">
+                  <div className="flex">
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Buscar dirección de entrega..."
+                      className="flex-1"
+                    />
+                    {isSearching && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: colors.buttonPrimary1 }} />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Resultados de búsqueda */}
+                  {showSearchResults && searchResults.length > 0 && (
+                    <div 
+                      data-search-results
+                      className="absolute z-50 w-full mt-1 bg-white border theme-border rounded-lg shadow-lg max-h-60 overflow-y-auto" 
+                      style={{ borderColor: colors.border, zIndex: 10000 }}
+                    >
+                      {searchResults.map((result, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSelectSearchResult(result);
+                          }}
+                          className="w-full p-3 text-left hover:bg-gray-50 border-b theme-border last:border-b-0"
+                          style={{ borderColor: colors.border }}
+                        >
+                          <div className="flex items-start">
+                            <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
+                                {result.address}
+                              </p>
+                              <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
+                                {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
-            <div className="h-[calc(100vh-300px)] relative">
+            <div className="h-[calc(100vh-200px)] relative">
               {locationLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -250,7 +387,7 @@ export function QuickOrderScreen({
                   <div className="flex-1">
                     <p className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>Punto de entrega</p>
                     <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
-                      {currentLocation ? currentLocation.address : 'Obteniendo tu ubicación...'}
+                      {deliveryLocation ? deliveryLocation.address : 'Busca una dirección o haz clic en el mapa'}
                     </p>
                   </div>
                 </div>
@@ -303,7 +440,7 @@ export function QuickOrderScreen({
               <div className="flex items-end">
                 <Button
                   onClick={handleSubmit}
-                  disabled={loading || !currentLocation}
+                  disabled={loading || !deliveryLocation}
                   className="w-full theme-btn-primary"
                   style={{ 
                     backgroundColor: colors.buttonPrimary1, 

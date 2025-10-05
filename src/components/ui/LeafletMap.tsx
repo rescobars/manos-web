@@ -28,6 +28,7 @@ const MapClickHandler = dynamic(() =>
   { ssr: false }
 );
 
+
 // Inicializar iconos de Leaflet
 if (typeof window !== 'undefined') {
   import('leaflet').then((L) => {
