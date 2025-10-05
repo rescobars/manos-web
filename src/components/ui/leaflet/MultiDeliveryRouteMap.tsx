@@ -42,6 +42,16 @@ interface DeliveryOrder {
   estimated_delivery_time: number;
 }
 
+interface RoutePoint {
+  lat: number;
+  lng: number;
+  sequence: number;
+  distance_from_previous: number | null;
+  instruction: string;
+  street_name: string;
+  traffic_delay: number;
+}
+
 interface OptimizedRoute {
   total_distance: number;
   total_time: number;
@@ -57,6 +67,7 @@ interface OptimizedRoute {
     cumulative_time: number;
     traffic_delay: number;
   }>;
+  route_points: RoutePoint[];
   orders_delivered: number;
   optimization_metrics: {
     algorithm: string;
@@ -134,31 +145,99 @@ function MapContent({
 
   // Mostrar ruta optimizada
   useEffect(() => {
-    if (!isMapReady || !optimizedRoute || !map) return;
+    if (!isMapReady || !optimizedRoute || !map) {
+      console.log('🔍 Map not ready:', { isMapReady, optimizedRoute: !!optimizedRoute, map: !!map });
+      return;
+    }
+
+    console.log('🎯 Rendering route on map:', optimizedRoute);
 
     clearMap();
 
     const newLayers: L.Layer[] = [];
 
-    // Crear polylines para conectar las paradas
-    if (optimizedRoute.stops.length > 1) {
+    // Crear polylines para la ruta completa usando route_points
+    if (optimizedRoute.route_points && optimizedRoute.route_points.length > 0) {
+      console.log('📍 Using route_points:', optimizedRoute.route_points.length);
+      const routeCoordinates = optimizedRoute.route_points.map(point => 
+        [point.lat, point.lng] as [number, number]
+      );
+      
+      const routePolyline = L.polyline(routeCoordinates, {
+        color: '#3B82F6',
+        weight: 6,
+        opacity: 0.9
+      }).addTo(map);
+
+      newLayers.push(routePolyline);
+      console.log('✅ Route polyline added');
+    } else if (optimizedRoute.stops.length > 1) {
+      console.log('📍 Using stops fallback:', optimizedRoute.stops.length);
+      // Fallback: conectar solo las paradas si no hay route_points
       const coordinates = optimizedRoute.stops.map(stop => 
         [stop.location.lat, stop.location.lng] as [number, number]
       );
       
       const polyline = L.polyline(coordinates, {
         color: '#3B82F6',
-        weight: 4,
-        opacity: 0.8
+        weight: 6,
+        opacity: 0.9
       }).addTo(map);
 
       newLayers.push(polyline);
+      console.log('✅ Stops polyline added');
+    }
+
+    // Crear marcadores para puntos de ruta intermedios (opcional)
+    if (optimizedRoute.route_points && optimizedRoute.route_points.length > 0) {
+      optimizedRoute.route_points.forEach((point, index) => {
+        // Solo mostrar cada 5to punto para no saturar el mapa
+        if (index % 5 === 0 || index === optimizedRoute.route_points.length - 1) {
+          const marker = L.marker([point.lat, point.lng], {
+            icon: L.divIcon({
+              className: 'route-point-marker',
+              html: `
+                <div class="bg-blue-500 border-2 border-white rounded-full w-3 h-3 flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                  ${index + 1}
+                </div>
+              `,
+              iconSize: [12, 12],
+              iconAnchor: [6, 6]
+            })
+          }).addTo(map);
+
+          // Crear popup con información del punto
+          let popupContent = `
+            <div class="text-center min-w-[200px]">
+              <div class="font-semibold text-sm mb-1">Punto ${point.sequence + 1}</div>
+              <div class="text-xs text-gray-600 mb-2">${point.street_name}</div>
+              <div class="text-xs text-blue-600 font-medium">${point.instruction}</div>
+          `;
+
+          if (point.distance_from_previous) {
+            popupContent += `
+              <div class="border-t pt-2 mt-2 text-xs text-gray-500">
+                <div>Distancia: ${point.distance_from_previous.toFixed(1)}m</div>
+                <div>Retraso: ${point.traffic_delay}s</div>
+              </div>
+            `;
+          }
+
+          popupContent += `</div>`;
+
+          marker.bindPopup(popupContent);
+          newLayers.push(marker);
+        }
+      });
     }
 
     // Crear marcadores para cada parada
+    console.log('📍 Creating stop markers:', optimizedRoute.stops.length);
     optimizedRoute.stops.forEach((stop, index) => {
       const color = getStopColor(stop.stop_type);
       const icon = getStopIcon(stop.stop_type);
+      
+      console.log(`📍 Creating marker ${index + 1}:`, stop.location, stop.stop_type);
       
       const marker = L.marker([stop.location.lat, stop.location.lng], {
         icon: L.divIcon({
@@ -207,9 +286,15 @@ function MapContent({
 
     // Ajustar vista para mostrar toda la ruta
     if (optimizedRoute.stops.length > 0) {
+      console.log('🎯 Adjusting map view to show all stops');
       const group = L.featureGroup(newLayers);
-      map.fitBounds(group.getBounds().pad(0.1));
+      const bounds = group.getBounds();
+      console.log('📍 Map bounds:', bounds);
+      map.fitBounds(bounds.pad(0.1));
+      console.log('✅ Map view adjusted');
     }
+
+    console.log('🎯 Route rendering completed. Total layers:', newLayers.length);
   }, [isMapReady, optimizedRoute, map]);
 
   return null; // Este componente no renderiza nada, solo maneja la lógica
@@ -282,21 +367,37 @@ export function MultiDeliveryRouteMap({
           </div>
         </div>
 
-        {/* Eficiencia de la ruta */}
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-blue-800">Eficiencia de la ruta</span>
-            <span className="text-lg font-bold text-blue-600">{optimizedRoute.route_efficiency.toFixed(1)}%</span>
+        {/* Métricas de la ruta */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-blue-800">Eficiencia</span>
+              <span className="text-lg font-bold text-blue-600">{optimizedRoute.route_efficiency.toFixed(1)}%</span>
+            </div>
+          </div>
+          
+          <div className="bg-green-50 p-3 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-green-800">Puntos de Ruta</span>
+              <span className="text-lg font-bold text-green-600">{optimizedRoute.route_points?.length || 0}</span>
+            </div>
+          </div>
+          
+          <div className="bg-orange-50 p-3 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-orange-800">Retraso Tráfico</span>
+              <span className="text-lg font-bold text-orange-600">{Math.round(optimizedRoute.total_traffic_delay / 60)}min</span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Mapa */}
-      <div className="flex-1">
+      <div className="flex-1" style={{ minHeight: '400px' }}>
         <MapContainer
           center={mapCenter}
           zoom={13}
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: '100%', width: '100%', minHeight: '400px' }}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -309,7 +410,7 @@ export function MultiDeliveryRouteMap({
       </div>
 
       {/* Lista de paradas */}
-      <div className="bg-white p-4 border-t max-h-48 overflow-y-auto">
+      <div className="bg-white p-4 border-t overflow-y-auto">
         <h4 className="font-medium mb-3">Paradas de la Ruta ({optimizedRoute.stops.length})</h4>
         <div className="space-y-2">
           {optimizedRoute.stops.map((stop) => (
