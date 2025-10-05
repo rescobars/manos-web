@@ -28,7 +28,7 @@ export function OrganizationSelector({
         <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
           <Building2 className="w-4 h-4 text-white" />
         </div>
-        <span className="font-medium text-gray-900">{organizations[0].name}</span>
+        <span className="font-medium theme-text-primary">{organizations[0].name}</span>
       </div>
     );
   }
@@ -58,7 +58,7 @@ export function OrganizationSelector({
           />
           
           {/* Dropdown */}
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 theme-bg-3 border theme-border rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto">
             {organizations.map((org) => (
               <button
                 key={org.uuid}
@@ -66,7 +66,7 @@ export function OrganizationSelector({
                   onOrganizationChange(org);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:theme-bg-2 transition-colors ${
                   currentOrganization?.uuid === org.uuid ? 'bg-blue-50 border-r-2 border-blue-500' : ''
                 }`}
               >
@@ -76,7 +76,7 @@ export function OrganizationSelector({
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-900 truncate">
+                    <span className="font-medium theme-text-primary truncate">
                       {org.name}
                     </span>
                     {org.is_owner && (
@@ -91,7 +91,7 @@ export function OrganizationSelector({
                     )}
                   </div>
                   {org.description && (
-                    <p className="text-sm text-gray-500 truncate">
+                    <p className="text-sm theme-text-muted truncate">
                       {org.description}
                     </p>
                   )}

@@ -62,7 +62,7 @@ export function ThemeDebugger() {
   }, [colors]);
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white border-2 border-gray-300 rounded-lg p-4 shadow-lg max-w-sm max-h-96 overflow-y-auto z-50">
+    <div className="fixed bottom-4 right-4 theme-bg-3 border-2 theme-border rounded-lg p-4 shadow-lg max-w-sm max-h-96 overflow-y-auto z-50">
       <h3 className="font-bold text-sm mb-2">🎨 Theme Debugger</h3>
       <div className="text-xs space-y-1">
         <div><strong>Theme:</strong> {themeConfig?.theme_name || 'N/A'}</div>

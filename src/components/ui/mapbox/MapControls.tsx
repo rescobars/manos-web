@@ -59,7 +59,7 @@ export function MapControls({
   return (
     <div className="absolute top-4 right-4 z-10 space-y-2">
       {/* Main controls */}
-      <div className="bg-white rounded-lg shadow-lg border p-2 space-y-2">
+      <div className="theme-bg-3 rounded-lg shadow-lg border p-2 space-y-2">
         {/* Refresh button */}
         <button
           onClick={onRefresh}
@@ -74,14 +74,14 @@ export function MapControls({
         <div className="space-y-1">
           <button
             onClick={handleZoomIn}
-            className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-lg theme-bg-3 border theme-border theme-text-primary hover:theme-bg-2 transition-colors"
             title="Acercar"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
           <button
             onClick={handleZoomOut}
-            className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-lg theme-bg-3 border theme-border theme-text-primary hover:theme-bg-2 transition-colors"
             title="Alejar"
           >
             <ZoomOut className="w-4 h-4" />
@@ -101,7 +101,7 @@ export function MapControls({
         {/* Fullscreen */}
         <button
           onClick={handleFullscreen}
-          className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-lg theme-bg-3 border theme-border theme-text-primary hover:theme-bg-2 transition-colors"
           title="Pantalla completa"
         >
           <Maximize2 className="w-4 h-4" />
@@ -109,13 +109,13 @@ export function MapControls({
       </div>
 
       {/* Driver controls */}
-      <div className="bg-white rounded-lg shadow-lg border p-2 space-y-2">
+      <div className="theme-bg-3 rounded-lg shadow-lg border p-2 space-y-2">
         <button
           onClick={onToggleDrivers}
           className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
             showDrivers 
               ? 'bg-blue-600 text-white hover:bg-blue-700' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              : 'theme-bg-2 theme-text-primary hover:theme-bg-1'
           }`}
           title={showDrivers ? 'Ocultar conductores' : 'Mostrar conductores'}
         >
@@ -123,10 +123,10 @@ export function MapControls({
         </button>
 
         <div className="text-center">
-          <div className="text-xs font-medium text-gray-700">
+          <div className="text-xs font-medium theme-text-primary">
             {driverPositions.length}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs theme-text-muted">
             conductores
           </div>
         </div>
@@ -134,10 +134,10 @@ export function MapControls({
 
       {/* Settings button */}
       {onSettingsClick && (
-        <div className="bg-white rounded-lg shadow-lg border p-2">
+        <div className="theme-bg-3 rounded-lg shadow-lg border p-2">
           <button
             onClick={onSettingsClick}
-            className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-600 text-white hover:bg-gray-700 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-lg theme-bg-2 theme-text-primary hover:theme-bg-1 transition-colors"
             title="Configuración del mapa"
           >
             <Settings className="w-4 h-4" />

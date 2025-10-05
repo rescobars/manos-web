@@ -62,7 +62,7 @@ const capabilityConfig = {
     label: 'Gestor de Configuración',
     description: 'Puede modificar configuraciones',
     icon: Settings,
-    color: 'text-gray-600 bg-gray-50 border-gray-200',
+    color: 'theme-text-secondary theme-bg-2 theme-border',
     required: ['settings']
   },
   
@@ -121,12 +121,12 @@ export function UserCapabilities({ permissions, className = '' }: UserCapabiliti
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <h4 className="text-sm font-medium text-gray-900">Capacidades del Usuario</h4>
+      <h4 className="text-sm font-medium theme-text-primary">Capacidades del Usuario</h4>
       
       {/* Capacidades Activas */}
       {activeCapabilities.length > 0 && (
         <div>
-          <h5 className="text-xs font-medium text-gray-700 mb-2">Capacidades Activas</h5>
+          <h5 className="text-xs font-medium theme-text-primary mb-2">Capacidades Activas</h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {activeCapabilities.map((capability) => (
               <div 
@@ -148,12 +148,12 @@ export function UserCapabilities({ permissions, className = '' }: UserCapabiliti
       {/* Capacidades Inactivas (solo mostrar si hay pocas activas) */}
       {inactiveCapabilities.length > 0 && activeCapabilities.length < 3 && (
         <div>
-          <h5 className="text-xs font-medium text-gray-700 mb-2">Otras Capacidades</h5>
+          <h5 className="text-xs font-medium theme-text-primary mb-2">Otras Capacidades</h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {inactiveCapabilities.slice(0, 4).map((capability) => (
               <div 
                 key={capability.key}
-                className="flex items-center p-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-400"
+                className="flex items-center p-3 rounded-lg border theme-border theme-bg-2 theme-text-muted"
               >
                 <capability.IconComponent className="w-4 h-4 mr-3" />
                 <div className="flex-1">
@@ -168,12 +168,12 @@ export function UserCapabilities({ permissions, className = '' }: UserCapabiliti
       )}
 
       {/* Resumen */}
-      <div className="bg-gray-50 rounded-lg p-3">
+      <div className="theme-bg-2 rounded-lg p-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-gray-700">Capacidades Activas</span>
-          <span className="text-gray-900 font-bold">{activeCapabilities.length}</span>
+          <span className="font-medium theme-text-primary">Capacidades Activas</span>
+          <span className="theme-text-primary font-bold">{activeCapabilities.length}</span>
         </div>
-        <div className="text-xs text-gray-500 mt-1">
+        <div className="text-xs theme-text-muted mt-1">
           {activeCapabilities.length > 0 
             ? `Puede realizar ${activeCapabilities.length} tipos de operaciones`
             : 'Sin capacidades específicas activas'

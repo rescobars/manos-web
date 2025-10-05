@@ -128,7 +128,7 @@ export function TextAreaField({
         className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
           error 
             ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
-            : 'border-gray-200'
+            : 'theme-border'
         }`}
       />
       

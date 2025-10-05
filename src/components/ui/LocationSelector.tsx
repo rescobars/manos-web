@@ -131,7 +131,7 @@ export function LocationSelector({
       .setHTML(`
         <div class="text-center">
           <div class="font-semibold text-blue-600">Sucursal</div>
-          <div class="text-sm text-gray-600">${pickupLocation.address}</div>
+          <div class="text-sm theme-text-secondary">${pickupLocation.address}</div>
         </div>
       `);
     pickupMarker.setPopup(pickupPopup);
@@ -208,7 +208,7 @@ export function LocationSelector({
       .setHTML(`
         <div class="text-center">
           <div class="font-semibold text-green-600">Punto de Entrega</div>
-          <div class="text-sm text-gray-600">${location.address}</div>
+          <div class="text-sm theme-text-secondary">${location.address}</div>
         </div>
       `);
     deliveryMarker.setPopup(deliveryPopup);
@@ -270,7 +270,7 @@ export function LocationSelector({
         <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-yellow-800 mb-2">Mapbox no configurado</h3>
         <p className="text-yellow-700 mb-4">{mapboxError}</p>
-        <div className="bg-white border border-yellow-200 rounded-lg p-4 text-left">
+        <div className="theme-bg-3 border border-yellow-200 rounded-lg p-4 text-left">
           <p className="text-sm text-yellow-800 mb-2">Para configurar Mapbox:</p>
           <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1">
             <li>Ve a <a href="https://account.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Mapbox</a></li>

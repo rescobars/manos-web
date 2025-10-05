@@ -21,7 +21,7 @@ export default function DriverDashboard() {
   if (!currentOrganization) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">No se encontró la organización</p>
+        <p className="theme-text-secondary">No se encontró la organización</p>
       </div>
     );
   }
@@ -29,19 +29,19 @@ export default function DriverDashboard() {
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-2 sm:p-4 lg:p-6">
       {/* Header específico para conductores */}
-      <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 lg:p-6">
+      <div className="theme-bg-3 rounded-lg shadow-sm border theme-border p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
           <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center mx-auto sm:mx-0">
             <Truck className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-white" />
           </div>
           
           <div className="text-center sm:text-left">
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold theme-text-primary">
               <span className="hidden sm:inline">Dashboard de Conductor - </span>
               <span className="sm:hidden">Conductor - </span>
               {currentOrganization.name}
             </h1>
-            <p className="text-xs sm:text-sm lg:text-base text-gray-600 mt-1">
+            <p className="text-xs sm:text-sm lg:text-base theme-text-secondary mt-1">
               Gestiona tus entregas y rutas diarias
             </p>
           </div>
@@ -96,12 +96,12 @@ export default function DriverDashboard() {
                   <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <h4 className="font-medium text-xs sm:text-sm truncate">Pedido #{1000 + delivery}</h4>
-                    <p className="text-xs text-gray-600 truncate">Cliente: Cliente {delivery}</p>
+                    <p className="text-xs theme-text-secondary truncate">Cliente: Cliente {delivery}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between sm:block sm:text-right">
                   <div className="text-left sm:text-right">
-                    <p className="text-xs text-gray-500">Dirección</p>
+                    <p className="text-xs theme-text-muted">Dirección</p>
                     <p className="text-xs sm:text-sm font-medium truncate">Av. Principal 123</p>
                   </div>
                   <button className="px-2 sm:px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 ml-2 sm:ml-0 sm:mt-1">
@@ -121,22 +121,22 @@ export default function DriverDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
-            <button className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+            <button className="p-3 sm:p-4 border rounded-lg hover:theme-bg-2 text-center transition-colors">
               <Navigation className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 mb-2 mx-auto" />
               <h4 className="font-medium text-xs sm:text-sm">Iniciar Ruta</h4>
-              <p className="text-xs text-gray-600">Comenzar entregas</p>
+              <p className="text-xs theme-text-secondary">Comenzar entregas</p>
             </button>
             
-            <button className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+            <button className="p-3 sm:p-4 border rounded-lg hover:theme-bg-2 text-center transition-colors">
               <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 mb-2 mx-auto" />
               <h4 className="font-medium text-xs sm:text-sm">Reportar Entrega</h4>
-              <p className="text-xs text-gray-600">Marcar como completada</p>
+              <p className="text-xs theme-text-secondary">Marcar como completada</p>
             </button>
             
-            <button className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors sm:col-span-2 lg:col-span-1">
+            <button className="p-3 sm:p-4 border rounded-lg hover:theme-bg-2 text-center transition-colors sm:col-span-2 lg:col-span-1">
               <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 mb-2 mx-auto" />
               <h4 className="font-medium text-xs sm:text-sm">Reportar Problema</h4>
-              <p className="text-xs text-gray-600">Incidente en entrega</p>
+              <p className="text-xs theme-text-secondary">Incidente en entrega</p>
             </button>
           </div>
         </CardContent>
@@ -151,14 +151,14 @@ export default function DriverDashboard() {
           <div className="space-y-2">
             <div className="flex items-center justify-between p-2 border rounded">
               <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
+                <Calendar className="w-4 h-4 theme-text-muted" />
                 <span className="text-sm">Mañana 9:00 AM</span>
               </div>
               <span className="text-sm font-medium">Pedido #1003 - Centro Comercial</span>
             </div>
             <div className="flex items-center justify-between p-2 border rounded">
               <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
+                <Calendar className="w-4 h-4 theme-text-muted" />
                 <span className="text-sm">Mañana 11:30 AM</span>
               </div>
               <span className="text-sm font-medium">Pedido #1004 - Oficina Norte</span>

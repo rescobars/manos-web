@@ -288,7 +288,7 @@ export function DataTable<T extends Record<string, any>>({
   const renderGrid = () => {
     if (!gridItemRender) {
       return (
-        <div className="p-6 text-center text-gray-500">
+        <div className="p-6 text-center theme-text-muted">
           <p>Función de renderizado de grid no proporcionada</p>
         </div>
       );

@@ -13,9 +13,9 @@ export function DynamicThemeDemo() {
       <Card>
         <div className="p-6">
           <div className="animate-pulse">
-            <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="h-6 theme-bg-2 rounded w-1/3 mb-4"></div>
+            <div className="h-4 theme-bg-2 rounded w-1/2 mb-2"></div>
+            <div className="h-4 theme-bg-2 rounded w-2/3"></div>
           </div>
         </div>
       </Card>
@@ -235,7 +235,7 @@ export function DynamicThemeDemo() {
                   style={{ backgroundColor: value }}
                 ></div>
                 <p className="text-xs font-medium theme-text-primary mb-1">{key}</p>
-                <p className="text-xs theme-text-muted font-mono bg-gray-100 px-2 py-1 rounded">{value}</p>
+                <p className="text-xs theme-text-muted font-mono theme-bg-1 px-2 py-1 rounded">{value}</p>
               </div>
             ))}
           </div>

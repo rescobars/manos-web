@@ -65,8 +65,8 @@ export function OrderCard({ order, onEdit, onView, className = '' }: OrderCardPr
       default:
         return {
           icon: AlertCircle,
-          color: 'bg-gray-100 text-gray-800 border-gray-200',
-          bgColor: 'bg-gray-50',
+          color: 'theme-bg-1 theme-text-primary theme-border',
+          bgColor: 'theme-bg-2',
           text: status
         };
     }
@@ -76,9 +76,9 @@ export function OrderCard({ order, onEdit, onView, className = '' }: OrderCardPr
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 ${className}`}>
+    <div className={`theme-bg-3 rounded-xl shadow-sm border theme-border hover:shadow-md transition-all duration-200 ${className}`}>
       {/* Header de la tarjeta */}
-      <div className="p-4 border-b border-gray-100">
+      <div className="p-4 border-b theme-divider">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}>
@@ -86,24 +86,24 @@ export function OrderCard({ order, onEdit, onView, className = '' }: OrderCardPr
               {statusConfig.text}
             </span>
           </div>
-          <span className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded">
+          <span className="text-xs font-mono theme-text-muted theme-bg-2 px-2 py-1 rounded">
             #{order.order_number}
           </span>
         </div>
         
-        <h3 className="font-medium text-gray-900 text-sm line-clamp-2 mb-2">
+        <h3 className="font-medium theme-text-primary text-sm line-clamp-2 mb-2">
           {order.description || 'Pedido sin descripción'}
         </h3>
         
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+          <div className="flex items-center gap-2 text-sm font-medium theme-text-primary">
             <DollarSign className="w-4 h-4 text-green-600" />
             Q{(() => {
               const amount = parseFloat(order.total_amount?.toString() || '0');
               return isNaN(amount) ? '0.00' : amount.toFixed(2);
             })()}
           </div>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
+          <div className="flex items-center gap-1 text-xs theme-text-muted">
             <Clock className="w-3 h-3" />
             {new Date(order.created_at).toLocaleDateString('es-GT', { 
               day: '2-digit', 
@@ -121,8 +121,8 @@ export function OrderCard({ order, onEdit, onView, className = '' }: OrderCardPr
             <MapPin className="w-3 h-3" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Recogida</p>
-            <p className="text-xs text-gray-700 line-clamp-2">{order.pickup_address}</p>
+            <p className="text-xs font-medium theme-text-muted uppercase tracking-wide mb-1">Recogida</p>
+            <p className="text-xs theme-text-primary line-clamp-2">{order.pickup_address}</p>
           </div>
         </div>
         
@@ -132,20 +132,20 @@ export function OrderCard({ order, onEdit, onView, className = '' }: OrderCardPr
             <MapPin className="w-3 h-3" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Entrega</p>
-            <p className="text-xs text-gray-700 line-clamp-2">{order.delivery_address}</p>
+            <p className="text-xs font-medium theme-text-muted uppercase tracking-wide mb-1">Entrega</p>
+            <p className="text-xs theme-text-primary line-clamp-2">{order.delivery_address}</p>
           </div>
         </div>
       </div>
 
       {/* Footer con acciones */}
-      <div className="px-4 py-3 bg-gray-50 rounded-b-xl flex items-center gap-2">
+      <div className="px-4 py-3 theme-bg-2 rounded-b-xl flex items-center gap-2">
         {onEdit && (
           <Button
             size="sm"
             variant="outline"
             onClick={() => onEdit(order)}
-            className="flex-1 h-8 text-xs border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-700"
+            className="flex-1 h-8 text-xs theme-border hover:border-blue-300 hover:bg-blue-50 theme-text-primary hover:text-blue-700"
           >
             <Edit3 className="w-3 h-3 mr-1" />
             Editar
@@ -156,7 +156,7 @@ export function OrderCard({ order, onEdit, onView, className = '' }: OrderCardPr
             size="sm"
             variant="outline"
             onClick={() => onView(order)}
-            className="flex-1 h-8 text-xs border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+            className="flex-1 h-8 text-xs theme-border hover:theme-border hover:theme-bg-2"
           >
             <Eye className="w-3 h-3 mr-1" />
             Ver

@@ -99,14 +99,14 @@ export function OrganizationThemeSettings() {
             <Palette className="h-5 w-5" />
             Configuración de Tema
           </h3>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm theme-text-secondary mb-4">
             Cargando configuración del tema...
           </p>
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-10 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-10 bg-gray-200 rounded"></div>
+            <div className="h-4 theme-bg-2 rounded w-3/4"></div>
+            <div className="h-10 theme-bg-2 rounded"></div>
+            <div className="h-4 theme-bg-2 rounded w-1/2"></div>
+            <div className="h-10 theme-bg-2 rounded"></div>
           </div>
         </div>
       </Card>
@@ -120,7 +120,7 @@ export function OrganizationThemeSettings() {
           <Palette className="h-5 w-5" />
           Configuración de Tema
         </h3>
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm theme-text-secondary mb-6">
           Personaliza el tema y la apariencia de tu organización
         </p>
         
@@ -142,7 +142,7 @@ export function OrganizationThemeSettings() {
 
           {/* Logo Personalizado */}
           <div className="space-y-2">
-            <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="logo" className="block text-sm font-medium theme-text-primary">
               URL del Logo
             </label>
             <div className="flex gap-2">
@@ -162,7 +162,7 @@ export function OrganizationThemeSettings() {
 
           {/* Favicon Personalizado */}
           <div className="space-y-2">
-            <label htmlFor="favicon" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="favicon" className="block text-sm font-medium theme-text-primary">
               URL del Favicon
             </label>
             <Input
@@ -177,7 +177,7 @@ export function OrganizationThemeSettings() {
 
           {/* CSS Personalizado */}
           <div className="space-y-2">
-            <label htmlFor="css" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="css" className="block text-sm font-medium theme-text-primary">
               CSS Personalizado
             </label>
             <TextArea
@@ -190,7 +190,7 @@ export function OrganizationThemeSettings() {
               rows={6}
               className="font-mono text-sm"
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm theme-text-muted">
               Puedes agregar estilos CSS personalizados para personalizar aún más la apariencia.
             </p>
           </div>

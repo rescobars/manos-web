@@ -145,10 +145,10 @@ export function BaseMap({
       
       {/* Loading overlay */}
       {!isMapReady && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-20">
+        <div className="absolute inset-0 theme-bg-3 bg-opacity-75 flex items-center justify-center z-20">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">Cargando mapa...</p>
+            <p className="text-sm theme-text-secondary">Cargando mapa...</p>
           </div>
         </div>
       )}

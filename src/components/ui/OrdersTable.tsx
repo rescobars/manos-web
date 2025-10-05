@@ -60,7 +60,7 @@ export function OrdersTable({ orders, onEdit, onView, className = '' }: OrdersTa
       default:
         return {
           icon: AlertCircle,
-          color: 'bg-gray-100 text-gray-800 border-gray-200',
+          color: 'theme-bg-1 theme-text-primary theme-border',
           text: status
         };
     }
@@ -84,47 +84,47 @@ export function OrdersTable({ orders, onEdit, onView, className = '' }: OrdersTa
   };
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${className}`}>
+    <div className={`theme-bg-3 rounded-2xl shadow-sm border theme-divider overflow-hidden ${className}`}>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="theme-bg-2 border-b theme-border">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                 Pedido
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                 Estado
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                 Descripción
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                 Recogida
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                 Entrega
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                 Monto
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                 Fecha
               </th>
-              <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-right text-xs font-medium theme-text-muted uppercase tracking-wider">
                 Acciones
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="theme-bg-3 divide-y divide-gray-200">
             {orders.map((order) => {
               const statusConfig = getStatusConfig(order.status);
               const StatusIcon = statusConfig.icon;
               
               return (
-                <tr key={order.uuid} className="hover:bg-gray-50 transition-colors">
+                <tr key={order.uuid} className="hover:theme-bg-2 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium theme-text-primary">
                         #{order.order_number}
                       </div>
                     </div>
@@ -138,7 +138,7 @@ export function OrdersTable({ orders, onEdit, onView, className = '' }: OrdersTa
                   </td>
                   
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 max-w-xs">
+                    <div className="text-sm theme-text-primary max-w-xs">
                       {order.description ? truncateText(order.description) : 'Sin descripción'}
                     </div>
                   </td>
@@ -146,7 +146,7 @@ export function OrdersTable({ orders, onEdit, onView, className = '' }: OrdersTa
                   <td className="px-6 py-4">
                     <div className="flex items-start gap-2 max-w-xs">
                       <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-gray-700">
+                      <div className="text-sm theme-text-primary">
                         {truncateText(order.pickup_address)}
                       </div>
                     </div>
@@ -155,21 +155,21 @@ export function OrdersTable({ orders, onEdit, onView, className = '' }: OrdersTa
                   <td className="px-6 py-4">
                     <div className="flex items-start gap-2 max-w-xs">
                       <MapPin className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-gray-700">
+                      <div className="text-sm theme-text-primary">
                         {truncateText(order.delivery_address)}
                       </div>
                     </div>
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-1 text-sm font-medium text-gray-900">
+                    <div className="flex items-center gap-1 text-sm font-medium theme-text-primary">
                       <DollarSign className="w-4 h-4 text-green-600" />
                       {formatAmount(order.total_amount)}
                     </div>
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-1 text-sm text-gray-500">
+                    <div className="flex items-center gap-1 text-sm theme-text-muted">
                       <Clock className="w-4 h-4" />
                       {formatDate(order.created_at)}
                     </div>
@@ -182,7 +182,7 @@ export function OrdersTable({ orders, onEdit, onView, className = '' }: OrdersTa
                           size="sm"
                           variant="outline"
                           onClick={() => onView(order)}
-                          className="h-8 px-3 text-xs border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                          className="h-8 px-3 text-xs theme-border hover:theme-border hover:theme-bg-2"
                         >
                           <Eye className="w-3 h-3 mr-1" />
                           Ver
@@ -193,7 +193,7 @@ export function OrdersTable({ orders, onEdit, onView, className = '' }: OrdersTa
                           size="sm"
                           variant="outline"
                           onClick={() => onEdit(order)}
-                          className="h-8 px-3 text-xs border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-700"
+                          className="h-8 px-3 text-xs theme-border hover:border-blue-300 hover:bg-blue-50 theme-text-primary hover:text-blue-700"
                         >
                           <Edit3 className="w-3 h-3 mr-1" />
                           Editar
@@ -210,11 +210,11 @@ export function OrdersTable({ orders, onEdit, onView, className = '' }: OrdersTa
       
       {orders.length === 0 && (
         <div className="p-12 text-center">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Package className="w-12 h-12 text-gray-400" />
+          <div className="w-24 h-24 theme-bg-1 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Package className="w-12 h-12 theme-text-muted" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay pedidos</h3>
-          <p className="text-gray-600 max-w-md mx-auto">
+          <h3 className="text-lg font-semibold theme-text-primary mb-2">No hay pedidos</h3>
+          <p className="theme-text-secondary max-w-md mx-auto">
             No se encontraron pedidos para mostrar
           </p>
         </div>

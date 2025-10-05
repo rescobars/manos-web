@@ -186,10 +186,10 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   // Show loading state while auth is loading
   if (authLoading) {
     return (
-      <div className={`${className} flex items-center justify-center bg-gray-50`}>
+      <div className={`${className} flex items-center justify-center theme-bg-2`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando organización...</p>
+          <p className="theme-text-secondary">Cargando organización...</p>
         </div>
       </div>
     );
@@ -198,11 +198,11 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
   // Show message if no organization
   if (!currentOrganization) {
     return (
-      <div className={`${className} flex items-center justify-center bg-gray-50`}>
+      <div className={`${className} flex items-center justify-center theme-bg-2`}>
         <div className="text-center">
-          <div className="w-16 h-16 text-gray-400 mx-auto mb-4">🏢</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay organización seleccionada</h3>
-          <p className="text-gray-600">Selecciona una organización para ver las posiciones de los conductores.</p>
+          <div className="w-16 h-16 theme-text-muted mx-auto mb-4">🏢</div>
+          <h3 className="text-lg font-semibold theme-text-primary mb-2">No hay organización seleccionada</h3>
+          <p className="theme-text-secondary">Selecciona una organización para ver las posiciones de los conductores.</p>
         </div>
       </div>
     );
@@ -231,10 +231,10 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
           )}
         </BaseMap>
       ) : (
-        <div className={`${className} flex items-center justify-center bg-gray-50`}>
+        <div className={`${className} flex items-center justify-center theme-bg-2`}>
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando posiciones de conductores...</p>
+            <p className="theme-text-secondary">Cargando posiciones de conductores...</p>
           </div>
         </div>
       )}
@@ -266,9 +266,9 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
       {/* Unified Controls Container - Route Selector and Driver Count */}
       {isMapReady && (
         <div className="absolute top-16 left-4 z-30 w-80">
-          <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg">
+          <div className="theme-bg-3/95 backdrop-blur-sm border theme-border rounded-lg shadow-lg">
             {/* Route Selector - Top */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b theme-border">
               <RouteSelector
                 routes={inProgressRoutes}
                 selectedRouteIds={selectedRouteIds}
@@ -289,17 +289,17 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                 </div>
                 <div className="flex items-center space-x-4">
                   <div>
-                    <div className="text-sm font-bold text-gray-900">
+                    <div className="text-sm font-bold theme-text-primary">
                       {driverPositions.length} conductor{driverPositions.length !== 1 ? 'es' : ''}
                     </div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs theme-text-secondary">
                       {driverPositions.filter(d => d.status === 'DRIVING').length} activos
                       {selectedRouteIds.length > 0 ? (
                         <span className="ml-2 text-blue-600 font-medium">
                           (Solo rutas seleccionadas)
                         </span>
                       ) : (
-                        <span className="ml-2 text-gray-500">
+                        <span className="ml-2 theme-text-muted">
                           (Todos los conductores)
                         </span>
                       )}
@@ -308,7 +308,7 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                       <span className={`font-medium ${
                         wsConnected ? 'text-green-600' : 
                         wsReady ? 'text-yellow-600' : 
-                        'text-gray-500'
+                        'theme-text-muted'
                       }`}>
                         {wsConnected ? '🟢 Tiempo real' : 
                          wsReady ? '🟡 Conectando...' : 
@@ -325,33 +325,33 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
       {/* Legend - more compact */}
       {isMapReady && driverPositions.length > 0 && (
-        <div className="absolute bottom-4 right-4 z-10 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">
-          <h4 className="text-xs font-semibold text-gray-900 mb-2">
+        <div className="absolute bottom-4 right-4 z-10 theme-bg-3/95 backdrop-blur-sm border theme-border rounded-lg p-3 shadow-lg">
+          <h4 className="text-xs font-semibold theme-text-primary mb-2">
             {selectedRouteIds.length > 0 ? 'Leyenda - Rutas Seleccionadas' : 'Leyenda - Todos los Conductores'}
           </h4>
           <div className="grid grid-cols-2 gap-1 text-xs">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-gray-600">Conduciendo</span>
+              <span className="theme-text-secondary">Conduciendo</span>
             </div>
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <span className="text-gray-600">Inactivo</span>
+              <span className="theme-text-secondary">Inactivo</span>
             </div>
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className="text-gray-600">Descanso</span>
+              <span className="theme-text-secondary">Descanso</span>
             </div>
             <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-              <span className="text-gray-600">Offline</span>
+              <div className="w-2 h-2 theme-bg-20 rounded-full"></div>
+              <span className="theme-text-secondary">Offline</span>
             </div>
           </div>
           {selectedRouteIds.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-gray-200">
+            <div className="mt-2 pt-2 border-t theme-border">
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-xs text-gray-600">Conductores de ruta específica</span>
+                <span className="text-xs theme-text-secondary">Conductores de ruta específica</span>
               </div>
             </div>
           )}

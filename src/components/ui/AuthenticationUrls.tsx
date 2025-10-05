@@ -32,7 +32,7 @@ export function AuthenticationUrls({
   if (compact) {
     return (
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-500">Login:</span>
+        <span className="text-xs theme-text-muted">Login:</span>
         <Button
           variant="ghost"
           size="sm"
@@ -50,14 +50,14 @@ export function AuthenticationUrls({
     <div className="space-y-3">
       {showLabels && (
         <div className="flex items-center">
-          <ExternalLink className="w-4 h-4 mr-2 text-gray-500" />
-          <span className="text-sm text-gray-600">URL de Autenticación:</span>
+          <ExternalLink className="w-4 h-4 mr-2 theme-text-muted" />
+          <span className="text-sm theme-text-secondary">URL de Autenticación:</span>
         </div>
       )}
       
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">Login:</span>
+          <span className="text-xs theme-text-muted">Login:</span>
           <Button
             variant="ghost"
             size="sm"
@@ -68,7 +68,7 @@ export function AuthenticationUrls({
             Copiar
           </Button>
         </div>
-        <div className="p-2 bg-gray-50 rounded text-xs text-gray-600 font-mono break-all">
+        <div className="p-2 theme-bg-2 rounded text-xs theme-text-secondary font-mono break-all">
           {loginUrl}
         </div>
       </div>

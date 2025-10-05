@@ -102,7 +102,7 @@ export function OrganizationActions({
           />
           
           {/* Menú de acciones */}
-          <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+          <div className="absolute right-0 top-full mt-1 w-48 theme-bg-3 border theme-border rounded-md shadow-lg z-20">
             <div className="py-1">
               {/* Ver organización */}
               {permissions.canView && (
@@ -111,7 +111,7 @@ export function OrganizationActions({
                     onView(organization);
                     setIsOpen(false);
                   }}
-                  className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="w-full flex items-center px-4 py-2 text-sm theme-text-primary hover:theme-bg-1"
                 >
                   <Eye className="w-4 h-4 mr-3" />
                   Ver detalles
@@ -125,7 +125,7 @@ export function OrganizationActions({
                     onEdit(organization);
                     setIsOpen(false);
                   }}
-                  className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="w-full flex items-center px-4 py-2 text-sm theme-text-primary hover:theme-bg-1"
                 >
                   <Edit className="w-4 h-4 mr-3" />
                   Editar
@@ -136,7 +136,7 @@ export function OrganizationActions({
               {permissions.canChangeStatus && (
                 <button
                   onClick={() => handleStatusChange(getNextStatus(organization.status))}
-                  className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="w-full flex items-center px-4 py-2 text-sm theme-text-primary hover:theme-bg-1"
                 >
                   {getStatusIcon(getNextStatus(organization.status))}
                   <span className="ml-3">
@@ -151,7 +151,7 @@ export function OrganizationActions({
                   // TODO: Implementar configuración
                   setIsOpen(false);
                 }}
-                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                className="w-full flex items-center px-4 py-2 text-sm theme-text-primary hover:theme-bg-1"
               >
                 <Settings className="w-4 h-4 mr-3" />
                 Configuración
@@ -159,7 +159,7 @@ export function OrganizationActions({
 
               {/* Separador */}
               {permissions.canDelete && (
-                <div className="border-t border-gray-200 my-1" />
+                <div className="border-t theme-border my-1" />
               )}
 
               {/* Eliminar organización */}

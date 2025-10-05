@@ -98,7 +98,7 @@ export function RouteSelector({
                   e.stopPropagation();
                   handleClearAll();
                 }}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                className="p-1 hover:theme-bg-1 rounded-full transition-colors cursor-pointer"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -157,7 +157,7 @@ export function RouteSelector({
           </div>
 
           {/* Actions */}
-          <div className="p-2 border-b border-gray-100">
+          <div className="p-2 border-b theme-divider">
             <div className="flex items-center justify-between">
               <button
                 onClick={handleSelectAll}
@@ -184,7 +184,7 @@ export function RouteSelector({
             {loading ? (
               <div className="p-3 text-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto mb-1"></div>
-                <p className="text-xs text-gray-600">Cargando...</p>
+                <p className="text-xs theme-text-secondary">Cargando...</p>
               </div>
             ) : error ? (
               <div className="p-3 text-center">
@@ -193,8 +193,8 @@ export function RouteSelector({
               </div>
             ) : filteredRoutes.length === 0 ? (
               <div className="p-3 text-center">
-                <div className="w-6 h-6 text-gray-400 mx-auto mb-1">🗺️</div>
-                <p className="text-xs text-gray-600">
+                <div className="w-6 h-6 theme-text-muted mx-auto mb-1">🗺️</div>
+                <p className="text-xs theme-text-secondary">
                   {searchTerm ? 'No encontradas' : 'Sin rutas'}
                 </p>
               </div>
@@ -208,7 +208,7 @@ export function RouteSelector({
                     key={route.uuid}
                     onClick={() => handleRouteToggle(route.uuid)}
                     className={`
-                      flex items-center space-x-2 p-2 hover:bg-gray-50 cursor-pointer transition-colors
+                      flex items-center space-x-2 p-2 hover:theme-bg-2 cursor-pointer transition-colors
                       ${isSelected ? 'bg-blue-50 border-l-2 border-blue-500' : ''}
                     `}
                   >
@@ -217,7 +217,7 @@ export function RouteSelector({
                         w-3 h-3 rounded border-2 flex items-center justify-center
                         ${isSelected 
                           ? 'bg-blue-600 border-blue-600' 
-                          : 'border-gray-300 hover:border-blue-400'
+                          : 'theme-border hover:border-blue-400'
                         }
                       `}>
                         {isSelected && <Check className="w-2 h-2 text-white" />}
@@ -225,16 +225,16 @@ export function RouteSelector({
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-medium text-gray-900 truncate">
+                      <h4 className="text-xs font-medium theme-text-primary truncate">
                         {route.route_name}
                       </h4>
                       
                       <div className="flex items-center space-x-2 mt-1">
-                        <div className="flex items-center space-x-1 text-xs text-gray-500">
+                        <div className="flex items-center space-x-1 text-xs theme-text-muted">
                           <Package className="w-2.5 h-2.5" />
                           <span>{orderCount} pedidos</span>
                         </div>
-                        <div className="flex items-center space-x-1 text-xs text-gray-500">
+                        <div className="flex items-center space-x-1 text-xs theme-text-muted">
                           <Clock className="w-2.5 h-2.5" />
                           <span>
                             {new Date(route.updated_at).toLocaleDateString('es-ES', {

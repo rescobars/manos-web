@@ -56,18 +56,18 @@ export function MobileMapControls({
       />
       
       {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 w-80 max-w-[90vw] sm:max-w-[85vw] bg-white dark:bg-gray-800 shadow-xl z-50 lg:hidden transform transition-transform duration-300 ease-in-out">
+      <div className="fixed inset-y-0 right-0 w-80 max-w-[90vw] sm:max-w-[85vw] theme-bg-3 dark:bg-gray-800 shadow-xl z-50 lg:hidden transform transition-transform duration-300 ease-in-out">
         {/* Header */}
-        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b theme-border dark:border-gray-700 theme-bg-2 dark:bg-gray-700">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
-            <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300 flex-shrink-0" />
-            <h2 className="text-sm sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">Controles del Mapa</h2>
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5 theme-text-secondary dark:text-gray-300 flex-shrink-0" />
+            <h2 className="text-sm sm:text-lg font-semibold theme-text-primary dark:text-gray-100 truncate">Controles del Mapa</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 sm:p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors flex-shrink-0"
+            className="p-1.5 sm:p-2 hover:theme-bg-2 dark:hover:bg-gray-600 rounded-lg transition-colors flex-shrink-0"
           >
-            <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5 theme-text-secondary dark:text-gray-300" />
           </button>
         </div>
         

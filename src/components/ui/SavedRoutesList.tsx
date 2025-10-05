@@ -63,7 +63,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       case 'CANCELLED':
         return <XCircle className="w-3 h-3 text-red-500" />;
       default:
-        return <AlertCircle className="w-3 h-3 text-gray-500" />;
+        return <AlertCircle className="w-3 h-3 theme-text-muted" />;
     }
   };
 
@@ -80,24 +80,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       case 'CANCELLED':
         return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getOrderStatusText = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return 'Pendiente';
-      case 'ASSIGNED':
-        return 'Asignado';
-      case 'IN_ROUTE':
-        return 'En Camino';
-      case 'COMPLETED':
-        return 'Entregado';
-      case 'CANCELLED':
-        return 'Cancelado';
-      default:
-        return 'Desconocido';
+        return 'theme-bg-1 theme-text-primary theme-border';
     }
   };
 
@@ -116,7 +99,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       case 'PAUSED':
         return <Pause className="w-3 h-3 text-orange-500" />;
       default:
-        return <AlertCircle className="w-3 h-3 text-gray-500" />;
+        return <AlertCircle className="w-3 h-3 theme-text-muted" />;
     }
   };
 
@@ -135,7 +118,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       case 'PAUSED':
         return 'bg-orange-100 text-orange-800 border-orange-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'theme-bg-1 theme-text-primary theme-border';
     }
   };
 
@@ -161,7 +144,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'LOW':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'theme-bg-1 theme-text-primary theme-border';
       case 'MEDIUM':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'HIGH':
@@ -169,7 +152,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       case 'URGENT':
         return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'theme-bg-1 theme-text-primary theme-border';
     }
   };
 
@@ -219,7 +202,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando rutas guardadas...</p>
+          <p className="theme-text-secondary">Cargando rutas guardadas...</p>
         </div>
       </div>
     );
@@ -237,10 +220,10 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
 
   if (savedRoutes.length === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-        <Route className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">No hay rutas guardadas</h3>
-        <p className="text-gray-600">
+      <div className="theme-bg-2 border theme-border rounded-lg p-8 text-center">
+        <Route className="w-16 h-16 theme-text-muted mx-auto mb-4" />
+        <h3 className="text-lg font-semibold theme-text-primary mb-2">No hay rutas guardadas</h3>
+        <p className="theme-text-secondary">
           Las rutas que guardes aparecerán aquí. Crea y optimiza una ruta para comenzar.
         </p>
       </div>
@@ -255,12 +238,12 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
           {savedRoutes.map((route) => (
           <div
             key={route.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+            className="theme-bg-3 border theme-border rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
           >
             {/* Header con título y estado */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-gray-900 truncate mb-1">{route.route_name}</h4>
+                <h4 className="text-sm font-semibold theme-text-primary truncate mb-1">{route.route_name}</h4>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getRouteStatusColor(route.status)}`}>
                     {getRouteStatusIcon(route.status)}
@@ -275,7 +258,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
               <div className="flex items-center gap-1 ml-2">
                 <button
                   onClick={() => handleViewRoute(route)}
-                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  className="p-1.5 theme-text-muted hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                   title="Ver detalles"
                 >
                   <Eye className="w-4 h-4" />
@@ -284,7 +267,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
                 {route.status === 'PLANNED' && onAssignRoute && (
                   <button
                     onClick={() => handleAssignRoute(route)}
-                    className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                    className="p-1.5 theme-text-muted hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
                     title="Asignar ruta"
                   >
                     <UserPlus className="w-4 h-4" />
@@ -295,12 +278,12 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
 
             {/* Información básica compacta */}
             <div className="space-y-2 mb-3">
-              <div className="flex items-center gap-2 text-xs text-gray-600">
+              <div className="flex items-center gap-2 text-xs theme-text-secondary">
                 <MapPin className="w-3 h-3 text-blue-500 flex-shrink-0" />
                 <span className="truncate">{route.origin_name}</span>
               </div>
               
-              <div className="flex items-center justify-between text-xs text-gray-600">
+              <div className="flex items-center justify-between text-xs theme-text-secondary">
                 <div className="flex items-center gap-2">
                   <Package className="w-3 h-3 text-green-500" />
                   <span>{route.orders.length} pedidos</span>
@@ -313,8 +296,8 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
             </div>
 
             {/* Acciones compactas */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-              <span className="text-xs text-gray-500">ID: {route.uuid.slice(0, 8)}</span>
+            <div className="flex items-center justify-between pt-2 border-t theme-divider">
+              <span className="text-xs theme-text-muted">ID: {route.uuid.slice(0, 8)}</span>
               
               <div className="flex items-center gap-1">
                 <button
@@ -340,41 +323,41 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="theme-bg-2">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                   Ruta
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                   Estado
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                   Prioridad
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                   Distancia
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                   Duración
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                   Pedidos
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium theme-text-muted uppercase tracking-wider">
                   Creada
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium theme-text-muted uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="theme-bg-3 divide-y divide-gray-200">
               {savedRoutes.map((route) => (
-                <tr key={route.id} className="hover:bg-gray-50">
+                <tr key={route.id} className="hover:theme-bg-2">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{route.route_name}</div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">{route.description}</div>
+                      <div className="text-sm font-medium theme-text-primary">{route.route_name}</div>
+                      <div className="text-sm theme-text-muted truncate max-w-xs">{route.description}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -388,23 +371,23 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
                       {getPriorityText(route.priority)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm theme-text-primary">
                     N/A km
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm theme-text-primary">
                     {Math.round(route.traffic_delay / 60)} min
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm theme-text-primary">
                     {route.orders?.length || 0}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm theme-text-muted">
                     {formatDate(route.created_at)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => setSelectedRouteForMap(route)}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 theme-text-muted hover:theme-text-secondary hover:theme-bg-1 rounded-lg transition-colors"
                         title="Ver en mapa"
                       >
                         <MapPin className="w-4 h-4" />
@@ -435,12 +418,12 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       {/* Modal del mapa */}
       {selectedRouteForMap && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Visualización de Ruta</h3>
+          <div className="theme-bg-3 rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b theme-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold theme-text-primary">Visualización de Ruta</h3>
               <button
                 onClick={handleCloseMap}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 theme-text-muted hover:theme-text-secondary hover:theme-bg-1 rounded-lg transition-colors"
               >
                 <XCircle className="w-5 h-5" />
               </button>

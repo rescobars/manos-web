@@ -41,7 +41,7 @@ export function OrganizationInfo({ organization, showDetails = false }: Organiza
           {/* Información principal */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-2">
-              <h3 className="text-lg font-semibold text-gray-900 truncate">
+              <h3 className="text-lg font-semibold theme-text-primary truncate">
                 {organization.name}
               </h3>
               {isPro && (
@@ -58,7 +58,7 @@ export function OrganizationInfo({ organization, showDetails = false }: Organiza
             </div>
 
             {organization.description && (
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+              <p className="text-sm theme-text-secondary mb-3 line-clamp-2">
                 {organization.description}
               </p>
             )}
@@ -73,7 +73,7 @@ export function OrganizationInfo({ organization, showDetails = false }: Organiza
             </div>
 
             {/* Estado de suscripción */}
-            <div className="flex items-center space-x-4 text-sm text-gray-500">
+            <div className="flex items-center space-x-4 text-sm theme-text-muted">
               <div className="flex items-center">
                 <Calendar className="w-4 h-4 mr-1" />
                 {isExpired ? (
@@ -95,30 +95,30 @@ export function OrganizationInfo({ organization, showDetails = false }: Organiza
 
             {/* Detalles adicionales */}
             {showDetails && (
-              <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+              <div className="mt-4 pt-4 border-t theme-border space-y-2">
                 {organization.contact_email && (
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm theme-text-secondary">
                     <Mail className="w-4 h-4 mr-2" />
                     <span>{organization.contact_email}</span>
                   </div>
                 )}
                 
                 {organization.contact_phone && (
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm theme-text-secondary">
                     <Phone className="w-4 h-4 mr-2" />
                     <span>{organization.contact_phone}</span>
                   </div>
                 )}
                 
                 {organization.address && (
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm theme-text-secondary">
                     <MapPin className="w-4 h-4 mr-2" />
                     <span className="truncate">{organization.address}</span>
                   </div>
                 )}
                 
                 {organization.website_url && (
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm theme-text-secondary">
                     <Globe className="w-4 h-4 mr-2" />
                     <a 
                       href={organization.website_url} 

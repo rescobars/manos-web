@@ -271,9 +271,9 @@ const FormField: React.FC<{
               onChange={handleChange}
               onBlur={() => onBlur?.(field.name)}
               disabled={field.disabled}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 theme-border rounded"
             />
-            <label htmlFor={field.name} className="ml-2 text-sm text-gray-700">
+            <label htmlFor={field.name} className="ml-2 text-sm theme-text-primary">
               {field.label}
             </label>
           </div>
@@ -292,9 +292,9 @@ const FormField: React.FC<{
                   onChange={handleChange}
                   onBlur={() => onBlur?.(field.name)}
                   disabled={field.disabled}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 theme-border"
                 />
-                <label className="ml-2 text-sm text-gray-700">
+                <label className="ml-2 text-sm theme-text-primary">
                   {option.label}
                 </label>
               </div>
@@ -332,7 +332,7 @@ const FormField: React.FC<{
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 theme-text-muted hover:theme-text-secondary"
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -360,7 +360,7 @@ const FormField: React.FC<{
       <div className="space-y-1">
         {renderInput()}
         {field.description && (
-          <p className="text-sm text-gray-500">{field.description}</p>
+          <p className="text-sm theme-text-muted">{field.description}</p>
         )}
         {error && (
           <div className="flex items-center gap-2 text-red-600 text-sm">
@@ -375,14 +375,14 @@ const FormField: React.FC<{
   return (
     <div className="space-y-2">
       {field.type !== 'radio' && (
-        <label htmlFor={field.name} className="block text-sm font-medium text-gray-700">
+        <label htmlFor={field.name} className="block text-sm font-medium theme-text-primary">
           {field.label}
           {field.validation?.required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
       {field.type === 'radio' && (
         <fieldset>
-          <legend className="block text-sm font-medium text-gray-700 mb-2">
+          <legend className="block text-sm font-medium theme-text-primary mb-2">
             {field.label}
             {field.validation?.required && <span className="text-red-500 ml-1">*</span>}
           </legend>
@@ -391,7 +391,7 @@ const FormField: React.FC<{
       )}
       {field.type !== 'radio' && renderInput()}
       {field.description && (
-        <p className="text-sm text-gray-500">{field.description}</p>
+        <p className="text-sm theme-text-muted">{field.description}</p>
       )}
       {error && (
         <div className="flex items-center gap-2 text-red-600 text-sm">
@@ -483,11 +483,11 @@ export const FormTemplate: React.FC<FormTemplateProps> = ({
   const hasErrors = Object.keys(errors).some(key => errors[key]);
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
+    <div className={`theme-bg-3 rounded-lg shadow-sm border theme-border ${className}`}>
       {(title || subtitle) && (
-        <div className="px-6 py-4 border-b border-gray-200">
-          {title && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
-          {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+        <div className="px-6 py-4 border-b theme-border">
+          {title && <h3 className="text-lg font-semibold theme-text-primary">{title}</h3>}
+          {subtitle && <p className="text-sm theme-text-secondary mt-1">{subtitle}</p>}
         </div>
       )}
 
@@ -505,13 +505,13 @@ export const FormTemplate: React.FC<FormTemplateProps> = ({
 
         {children}
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t theme-border">
           {onCancel && (
             <button
               type="button"
               onClick={onCancel}
               disabled={loading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+              className="px-4 py-2 theme-text-secondary hover:theme-text-primary hover:theme-bg-1 rounded-lg transition-colors disabled:opacity-50"
             >
               {cancelText}
             </button>
@@ -521,7 +521,7 @@ export const FormTemplate: React.FC<FormTemplateProps> = ({
             disabled={loading || disabled || hasErrors}
             className={`px-6 py-2 rounded-lg font-medium transition-colors ${
               loading || disabled || hasErrors
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'theme-bg-2 theme-text-muted cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
           >

@@ -27,7 +27,7 @@ export function ThemeToggle({ className = '', showLabel = true }: ThemeTogglePro
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
           ${useDefaultTheme 
             ? 'theme-button-primary-1' 
-            : 'bg-gray-200'
+            : 'theme-bg-2'
           }
         `}
         style={{
@@ -39,7 +39,7 @@ export function ThemeToggle({ className = '', showLabel = true }: ThemeTogglePro
       >
         <span
           className={`
-            inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+            inline-block h-4 w-4 transform rounded-full theme-bg-3 transition-transform
             ${useDefaultTheme ? 'translate-x-6' : 'translate-x-1'}
           `}
         />

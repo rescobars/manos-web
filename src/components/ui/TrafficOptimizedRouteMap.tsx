@@ -855,8 +855,8 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
 
   if (!trafficOptimizedRoute) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
-        <p className="text-gray-500">No hay datos de ruta para mostrar</p>
+      <div className="flex items-center justify-center h-64 theme-bg-1 rounded-lg">
+        <p className="theme-text-muted">No hay datos de ruta para mostrar</p>
       </div>
     );
   }
@@ -942,7 +942,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                       <div className="flex items-center justify-between mb-1">
                         <div 
                           className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm ${
-                            isSelected ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                            isSelected ? 'theme-bg-3 bg-opacity-20' : 'theme-bg-1'
                           }`}
                           style={{
                             backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : undefined,
@@ -1008,10 +1008,10 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
             }}
           />
           {!isMapReady && (
-            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+            <div className="absolute inset-0 theme-bg-1 flex items-center justify-center z-10">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                <p className="text-xs sm:text-sm text-gray-600">Cargando mapa...</p>
+                <p className="text-xs sm:text-sm theme-text-secondary">Cargando mapa...</p>
               </div>
             </div>
           )}
@@ -1061,7 +1061,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
               <div className="flex items-center justify-center space-x-4 mb-3">
                 <button
                   onClick={decreaseSpeed}
-                  className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-sm border border-gray-200 hover:border-gray-300"
+                  className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 theme-text-primary rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-sm border theme-border hover:theme-border"
                   title="Velocidad más lenta"
                 >
                   Más lento
@@ -1074,7 +1074,7 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
                 
                 <button
                   onClick={increaseSpeed}
-                  className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-sm border border-gray-200 hover:border-gray-300"
+                  className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 theme-text-primary rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-sm border theme-border hover:theme-border"
                   title="Velocidad más rápida"
                 >
                   Más rápido

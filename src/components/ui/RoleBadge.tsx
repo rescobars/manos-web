@@ -43,9 +43,9 @@ const roleConfig = {
     description: 'Solo puede ver información',
     icon: Eye,
     colors: {
-      bg: 'bg-gray-100',
-      text: 'text-gray-800',
-      border: 'border-gray-200'
+      bg: 'theme-bg-1',
+      text: 'theme-text-primary',
+      border: 'theme-border'
     }
   }
 };

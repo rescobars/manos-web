@@ -35,7 +35,7 @@ export function OrganizationLogo({
   
   return (
     <div 
-      className={`${sizeClasses[size]} ${className} bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-semibold`}
+      className={`${sizeClasses[size]} ${className} theme-bg-2 rounded-lg flex items-center justify-center theme-text-secondary font-semibold`}
       title={fallbackText}
     >
       {fallbackText.charAt(0).toUpperCase()}

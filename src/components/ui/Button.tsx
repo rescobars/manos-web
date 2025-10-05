@@ -24,7 +24,7 @@ export function Button({
     secondary: 'theme-btn-secondary theme-text-primary focus:ring-gray-500',
     outline: 'border theme-border theme-bg-3 theme-text-primary hover:theme-bg-2 focus:ring-blue-500',
     ghost: 'theme-text-primary hover:theme-bg-2 focus:ring-gray-500',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    danger: 'theme-error text-white hover:bg-red-700 focus:ring-red-500',
   };
   
   const sizes = {

@@ -92,7 +92,7 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
                 className="w-8 h-8 rounded-lg flex items-center justify-center mr-3"
                 style={{ backgroundColor: colors.buttonPrimary1 }}
               >
-                <span className="text-white font-bold text-lg">
+                <span className="theme-text-primary font-bold text-lg">
                   {currentOrganization?.name?.charAt(0) || 'O'}
                 </span>
               </div>

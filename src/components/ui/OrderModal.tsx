@@ -146,7 +146,7 @@ export function OrderModal({
     { value: 'CANCELLED', label: 'Cancelado' }
   ];
 
-  const modalIcon = <Package className="w-5 h-5 text-gray-600" />;
+  const modalIcon = <Package className="w-5 h-5 theme-text-secondary" />;
   const modalTitle = mode === 'create' ? 'Crear Pedido' : 'Editar Pedido';
 
   return (

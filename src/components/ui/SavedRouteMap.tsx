@@ -377,40 +377,40 @@ const SavedRouteMap: React.FC<SavedRouteMapProps> = ({
   return (
     <div className="space-y-4">
       {/* Header con información de la ruta */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="theme-bg-3 rounded-xl shadow-sm border theme-divider p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">{route.route_name}</h2>
-            <p className="text-gray-600">{route.description}</p>
+            <h2 className="text-xl font-bold theme-text-primary mb-1">{route.route_name}</h2>
+            <p className="theme-text-secondary">{route.description}</p>
           </div>
         </div>
 
         {/* Estadísticas de la ruta */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{totalOrders}</div>
-            <div className="text-sm text-gray-600">Total Pedidos</div>
+            <div className="text-2xl font-bold theme-text-primary">{totalOrders}</div>
+            <div className="text-sm theme-text-secondary">Total Pedidos</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">{completedOrders}</div>
-            <div className="text-sm text-gray-600">Entregados</div>
+            <div className="text-sm theme-text-secondary">Entregados</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">{inRouteOrders}</div>
-            <div className="text-sm text-gray-600">En Camino</div>
+            <div className="text-sm theme-text-secondary">En Camino</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">{assignedOrders}</div>
-            <div className="text-sm text-gray-600">Asignados</div>
+            <div className="text-sm theme-text-secondary">Asignados</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-amber-600">{pendingOrders}</div>
-            <div className="text-sm text-gray-600">Pendientes</div>
+            <div className="text-sm theme-text-secondary">Pendientes</div>
           </div>
         </div>
 
         {/* Información adicional */}
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-sm theme-text-secondary">
           <div className="flex items-center gap-4">
             <span>📍 {route.origin_name}</span>
             <span>⏱️ {Math.round(route.traffic_delay / 60)} min tráfico</span>
@@ -420,7 +420,7 @@ const SavedRouteMap: React.FC<SavedRouteMapProps> = ({
       </div>
 
       {/* Mapa */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="theme-bg-3 rounded-xl shadow-sm border theme-divider overflow-hidden">
         <div className="relative w-full h-96 md:h-[500px]">
           <div 
             ref={mapContainer} 
@@ -432,10 +432,10 @@ const SavedRouteMap: React.FC<SavedRouteMapProps> = ({
             }}
           />
           {!isMapReady && (
-            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+            <div className="absolute inset-0 theme-bg-1 flex items-center justify-center z-10">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                <p className="text-sm text-gray-600">Cargando mapa...</p>
+                <p className="text-sm theme-text-secondary">Cargando mapa...</p>
               </div>
             </div>
           )}
@@ -444,12 +444,12 @@ const SavedRouteMap: React.FC<SavedRouteMapProps> = ({
 
       {/* Lista de pedidos seleccionado */}
       {selectedOrder && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalles del Pedido Seleccionado</h3>
+        <div className="theme-bg-3 rounded-xl shadow-sm border theme-divider p-6">
+          <h3 className="text-lg font-semibold theme-text-primary mb-4">Detalles del Pedido Seleccionado</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">{selectedOrder.order_number}</h4>
-              <p className="text-gray-600 text-sm mb-2">{selectedOrder.delivery_address}</p>
+              <h4 className="font-medium theme-text-primary mb-2">{selectedOrder.order_number}</h4>
+              <p className="theme-text-secondary text-sm mb-2">{selectedOrder.delivery_address}</p>
               <div className="flex items-center gap-2 mb-2">
                 <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border`}
                       style={{ 
@@ -466,7 +466,7 @@ const SavedRouteMap: React.FC<SavedRouteMapProps> = ({
               <div className="text-2xl font-bold text-green-600 mb-1">
                 Q{parseFloat(selectedOrder.total_amount.toString()).toFixed(2)}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm theme-text-secondary">
                 Orden de entrega: #{selectedOrder.sequence_order}
               </div>
             </div>

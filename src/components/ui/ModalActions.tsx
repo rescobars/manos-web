@@ -35,13 +35,13 @@ export function ModalActions({
   };
 
   return (
-    <div className="flex justify-end gap-4 pt-6 border-t border-gray-100">
+    <div className="flex justify-end gap-4 pt-6 border-t theme-divider">
       <Button
         type="button"
         variant="outline"
         onClick={onCancel}
         disabled={loading || disabled}
-        className="px-6 py-3 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 hover:text-gray-800 rounded-xl transition-all duration-200"
+        className="px-6 py-3 border-2 theme-border hover:theme-border hover:theme-bg-2 theme-text-primary hover:theme-text-primary rounded-xl transition-all duration-200"
       >
         {cancelText}
       </Button>

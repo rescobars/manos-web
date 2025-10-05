@@ -61,7 +61,7 @@ export function FilterBar({
             placeholder={searchPlaceholder}
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 pr-4 py-3 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="pl-10 pr-4 py-3 theme-border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
         

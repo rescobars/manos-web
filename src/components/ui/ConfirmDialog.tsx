@@ -80,7 +80,7 @@ export function ConfirmDialog({
         </CardHeader>
 
         <CardContent>
-          <p className="text-gray-600 mb-6">{message}</p>
+          <p className="theme-text-secondary mb-6">{message}</p>
 
           <div className="flex justify-end space-x-3">
             <Button

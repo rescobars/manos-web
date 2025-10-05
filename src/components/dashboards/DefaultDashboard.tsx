@@ -65,10 +65,10 @@ export default function DefaultDashboard() {
             )}
             
             <div className="text-center sm:text-left">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+              <h1 className="text-xl sm:text-2xl font-bold theme-text-primary">
                 Dashboard - {currentOrganization.name}
               </h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">{currentOrganization.description}</p>
+              <p className="text-sm sm:text-base theme-text-secondary mt-1">{currentOrganization.description}</p>
               
               <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 mt-2">
                 {isPlatformAdmin && (
@@ -93,7 +93,7 @@ export default function DefaultDashboard() {
             </div>
           </div>
 
-          <div className="text-center lg:text-right text-sm text-gray-500 space-y-1">
+          <div className="text-center lg:text-right text-sm theme-text-muted space-y-1">
             <div className="flex items-center justify-center lg:justify-end">
               <Globe className="w-4 h-4 mr-1" />
               <span className="truncate">{currentOrganization.domain}</span>
@@ -161,7 +161,7 @@ export default function DefaultDashboard() {
                   <h4 className="font-medium text-sm capitalize mb-1">
                     {module.replace('_', ' ')}
                   </h4>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs theme-text-secondary">
                     {grantedPermissions}/{totalPermissions} permisos
                   </p>
                 </div>

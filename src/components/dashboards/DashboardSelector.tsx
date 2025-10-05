@@ -12,7 +12,7 @@ export default function DashboardSelector() {
   if (!currentOrganization) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">No se encontró la organización</p>
+        <p className="theme-text-secondary">No se encontró la organización</p>
       </div>
     );
   }

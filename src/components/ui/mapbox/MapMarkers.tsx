@@ -99,7 +99,7 @@ export function MapMarkers({
         .setHTML(`
           <div class="text-center">
             <div class="font-semibold text-blue-600">🏪 Sucursal</div>
-            <div class="text-sm text-gray-600">${pickupLocation.address}</div>
+            <div class="text-sm theme-text-secondary">${pickupLocation.address}</div>
           </div>
         `);
       pickupMarker.setPopup(popup);
@@ -248,8 +248,8 @@ export function MapMarkers({
           .setHTML(`
             <div class="text-center">
               <div class="font-semibold" style="color: ${color}">Pedido #${order.orderNumber}</div>
-              <div class="text-sm text-gray-600">${order.deliveryLocation.address}</div>
-              <div class="text-xs text-gray-500 mt-1">
+              <div class="text-sm theme-text-secondary">${order.deliveryLocation.address}</div>
+              <div class="text-xs theme-text-muted mt-1">
                 Distancia: ${(route.distance / 1000).toFixed(1)} km<br>
                 Tiempo: ${Math.floor(route.duration / 60)} min
               </div>
