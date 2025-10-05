@@ -78,6 +78,8 @@ interface UseMultiDeliveryOptimizationReturn {
       travel_mode?: string;
       route_type?: string;
       max_orders_per_trip?: number;
+      force_return_to_end?: boolean;
+      max_return_distance?: number;
     }
   ) => Promise<MultiDeliveryOptimizationData>;
   isLoading: boolean;
@@ -100,6 +102,8 @@ export function useMultiDeliveryOptimization(): UseMultiDeliveryOptimizationRetu
       travel_mode?: string;
       route_type?: string;
       max_orders_per_trip?: number;
+      force_return_to_end?: boolean;
+      max_return_distance?: number;
     } = {}
   ): Promise<MultiDeliveryOptimizationData> => {
     setIsLoading(true);
@@ -114,7 +118,9 @@ export function useMultiDeliveryOptimization(): UseMultiDeliveryOptimizationRetu
         departure_time: options.departure_time || 'now',
         travel_mode: options.travel_mode || 'car',
         route_type: options.route_type || 'fastest',
-        max_orders_per_trip: options.max_orders_per_trip || 10
+        max_orders_per_trip: options.max_orders_per_trip || 10,
+        force_return_to_end: options.force_return_to_end !== undefined ? options.force_return_to_end : false,
+        max_return_distance: options.max_return_distance !== undefined ? options.max_return_distance : 3.0
       };
 
       console.log('🚀 Sending request to API:', requestData);

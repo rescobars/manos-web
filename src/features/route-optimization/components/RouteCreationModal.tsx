@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Order } from '@/types';
-import { XCircle, Route, AlertCircle, MapPin, Package, Clock, ArrowLeft, ArrowRight, CheckCircle, Info, Truck } from 'lucide-react';
+import { XCircle, Route, AlertCircle, MapPin, Package, Clock, ArrowLeft, ArrowRight, CheckCircle, Info, Truck, Navigation } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useMultiDeliveryOptimization } from '@/hooks/useMultiDeliveryOptimization';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
@@ -59,6 +59,10 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const [startLocation, setStartLocation] = useState<PickupLocation | null>(null);
   const [endLocation, setEndLocation] = useState<PickupLocation | null>(null);
   const [useMultiDelivery, setUseMultiDelivery] = useState<boolean>(true);
+  
+  // Estados para parámetros de regreso
+  const [forceReturnToEnd, setForceReturnToEnd] = useState<boolean>(false);
+  const [maxReturnDistance, setMaxReturnDistance] = useState<number>(3.0);
 
   // Callbacks con logs para debug
   const handleStartLocationSelect = (location: PickupLocation) => {
@@ -299,7 +303,9 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         departure_time: 'now',
         travel_mode: 'car',
         route_type: 'fastest',
-        max_orders_per_trip: 10
+        max_orders_per_trip: 10,
+        force_return_to_end: forceReturnToEnd,
+        max_return_distance: maxReturnDistance
       }
     );
     
@@ -314,51 +320,93 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const handleSaveRoute = async () => {
     if (!currentOrganization || !multiDeliveryData?.optimized_route) return;
     
+    const optimizedRoute = multiDeliveryData.optimized_route;
+    
+    // Mapear stops a waypoints (puntos de parada)
+    const waypoints = optimizedRoute.stops
+      .filter(stop => stop.order) // Solo paradas con pedidos
+      .map(stop => ({
+        lat: stop.location.lat,
+        lon: stop.location.lng,
+        name: stop.location.address,
+        waypoint_type: stop.stop_type,
+        waypoint_index: stop.stop_number - 1 // Ajustar índice
+      }));
+
+    // Mapear route_points a points (puntos de navegación detallados)
+    const routePoints = optimizedRoute.route_points?.map((point, index) => {
+      // Mapear congestion_level a los valores esperados por FastAPI
+      let congestionLevel = 'free_flow';
+      if (point.traffic_delay > 60) {
+        congestionLevel = 'severe';
+      } else if (point.traffic_delay > 30) {
+        congestionLevel = 'heavy';
+      } else if (point.traffic_delay > 15) {
+        congestionLevel = 'moderate';
+      } else if (point.traffic_delay > 5) {
+        congestionLevel = 'light';
+      }
+
+      return {
+        lat: point.lat,
+        lon: point.lng,
+        name: point.instruction || `Punto ${index + 1}`,
+        traffic_delay: point.traffic_delay || 0,
+        speed: null,
+        congestion_level: congestionLevel,
+        waypoint_type: 'route' as const,
+        waypoint_index: undefined
+      };
+    }) || [];
+
+    // Mapear stops ordenados a visit_order
+    const visitOrder = optimizedRoute.stops
+      .filter(stop => stop.order)
+      .map((stop, index) => ({
+        name: stop.location.address,
+        waypoint_index: index,
+        order_id: stop.order?.id || `order-${index}` // Incluir order_id
+      }));
+
     // Convertir datos multi-delivery al formato esperado por createRoute
     const routeData = {
       route_info: {
-        total_distance: multiDeliveryData.optimized_route.total_distance,
-        total_time: multiDeliveryData.optimized_route.total_time,
-        orders_count: multiDeliveryData.optimized_route.orders_delivered,
         origin: startLocation ? {
           lat: startLocation.lat,
           lon: startLocation.lng,
           name: startLocation.address
-        } : null,
+        } : {
+          lat: 0,
+          lon: 0,
+          name: 'Origen no definido'
+        },
         destination: endLocation ? {
           lat: endLocation.lat,
           lon: endLocation.lng,
           name: endLocation.address
-        } : null,
-        waypoints: selectedOrders.map(id => {
-          const order = orders.find(o => o.uuid === id);
-          return order ? {
-            lat: parseFloat(String(order.delivery_lat || '0')),
-            lon: parseFloat(String(order.delivery_lng || '0')),
-            name: order.delivery_address
-          } : null;
-        }).filter(Boolean),
-        total_waypoints: selectedOrders.length,
-        optimization_mode: 'efficiency'
+        } : {
+          lat: 0,
+          lon: 0,
+          name: 'Destino no definido'
+        },
+        waypoints: waypoints,
+        total_waypoints: waypoints.length,
+        optimized_waypoints: waypoints,
+        visit_order: visitOrder
       },
       primary_route: {
-        points: multiDeliveryData.optimized_route.stops.map(stop => ({
-          lat: stop.location.lat,
-          lng: stop.location.lng,
-          name: stop.location.address
-        })),
-        total_distance: multiDeliveryData.optimized_route.total_distance,
-        total_duration: multiDeliveryData.optimized_route.total_time,
-        waypoints: multiDeliveryData.optimized_route.stops
-          .filter(stop => stop.order)
-          .map(stop => ({
-            lat: stop.location.lat,
-            lng: stop.location.lng,
-            name: stop.location.address
-          })),
-        visit_order: multiDeliveryData.optimized_route.stops
-          .filter(stop => stop.order)
-          .map((_, index) => index + 1)
+        summary: {
+          total_time: optimizedRoute.total_time,
+          total_distance: optimizedRoute.total_distance,
+          traffic_delay: optimizedRoute.total_traffic_delay,
+          base_time: optimizedRoute.total_time - optimizedRoute.total_traffic_delay,
+          traffic_time: optimizedRoute.total_traffic_delay,
+          fuel_consumption: null
+        },
+        points: routePoints, // route_points mapeados a points
+        route_id: `multi-delivery-${Date.now()}`,
+        visit_order: visitOrder, // stops ordenados mapeados a visit_order
+        optimized_waypoints: waypoints // stops mapeados a waypoints
       },
       alternative_routes: [],
       request_info: {
@@ -372,14 +420,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           lon: endLocation.lng,
           name: endLocation.address
         } : null,
-        waypoints: selectedOrders.map(id => {
-          const order = orders.find(o => o.uuid === id);
-          return order ? {
-            lat: parseFloat(String(order.delivery_lat || '0')),
-            lon: parseFloat(String(order.delivery_lng || '0')),
-            name: order.delivery_address
-          } : null;
-        }).filter(Boolean)
+        waypoints: waypoints
       },
       traffic_conditions: {
         overall_congestion: multiDeliveryData.traffic_conditions?.overall_congestion || 'low',
@@ -815,6 +856,83 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                     ) : (
                       <p className="text-sm theme-text-muted">No seleccionado</p>
                     )}
+                  </div>
+                </div>
+
+                {/* Parámetros de regreso */}
+                <div className="space-y-4">
+                  <h4 className="font-medium theme-text-primary flex items-center gap-2">
+                    <Navigation className="w-4 h-4" />
+                    Parámetros de Regreso
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Forzar regreso */}
+                    <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h5 className="font-medium theme-text-primary mb-1">Forzar Regreso</h5>
+                          <p className="text-xs theme-text-secondary">
+                            El conductor debe regresar siempre al punto final
+                          </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={forceReturnToEnd}
+                            onChange={(e) => setForceReturnToEnd(e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Distancia máxima de regreso */}
+                    <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
+                      <h5 className="font-medium theme-text-primary mb-2">Distancia Máxima de Regreso</h5>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0.5"
+                          max="20"
+                          step="0.5"
+                          value={maxReturnDistance}
+                          onChange={(e) => setMaxReturnDistance(parseFloat(e.target.value))}
+                          className="flex-1 px-3 py-2 border rounded-md text-sm"
+                          style={{ 
+                            borderColor: colors.border, 
+                            backgroundColor: colors.background1,
+                            color: colors.textPrimary
+                          }}
+                          disabled={forceReturnToEnd}
+                        />
+                        <span className="text-sm theme-text-secondary">km</span>
+                      </div>
+                      <p className="text-xs theme-text-muted mt-1">
+                        {forceReturnToEnd 
+                          ? 'Regreso forzado activado' 
+                          : `Regresará automáticamente si está a menos de ${maxReturnDistance}km del final`
+                        }
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Información de comportamiento */}
+                  <div className="p-3 rounded-lg" style={{ backgroundColor: colors.background2 }}>
+                    <div className="flex items-start gap-2">
+                      <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-blue-600 text-xs">💡</span>
+                      </div>
+                      <div className="text-sm">
+                        <p className="font-medium theme-text-primary mb-1">Comportamiento de Regreso:</p>
+                        <ul className="text-xs theme-text-secondary space-y-1">
+                          <li>• <strong>Conductores independientes:</strong> Regreso opcional basado en distancia</li>
+                          <li>• <strong>Empresas de delivery:</strong> Regreso forzado siempre</li>
+                          <li>• <strong>Flexible:</strong> Regreso automático si está cerca del final</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

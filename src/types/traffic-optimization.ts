@@ -11,6 +11,7 @@ export interface Point {
 export interface VisitOrderItem {
   name: string;
   waypoint_index: number;
+  order_id?: string;
 }
 
 export interface RouteSummary {
