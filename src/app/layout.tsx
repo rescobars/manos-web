@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ThemeProvider, UnifiedThemeProvider } from '@/components/ui/theme-provider'
 import { ThemeWrapper } from '@/components/ThemeWrapper'
+import { ThemeLoadingProvider } from '@/components/ThemeLoadingProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -28,9 +29,11 @@ export default function RootLayout({
         >
           <AuthProvider>
             <UnifiedThemeProvider>
-              <ThemeWrapper>
-                {children}
-              </ThemeWrapper>
+              <ThemeLoadingProvider>
+                <ThemeWrapper>
+                  {children}
+                </ThemeWrapper>
+              </ThemeLoadingProvider>
             </UnifiedThemeProvider>
           </AuthProvider>
         </ThemeProvider>

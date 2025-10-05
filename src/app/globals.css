@@ -93,6 +93,15 @@
 }
 
 @layer base {
+  /* Prevenir flash de contenido no estilizado */
+  html {
+    visibility: hidden;
+  }
+  
+  html.theme-loaded {
+    visibility: visible;
+  }
+  
   body {
     @apply theme-bg-1 theme-text-primary;
     font-family: var(--primary-font);

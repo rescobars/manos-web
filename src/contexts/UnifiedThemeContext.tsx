@@ -27,6 +27,7 @@ interface UnifiedThemeContextType {
   currentColors: DynamicThemeColors;
   isLoading: boolean;
   error: string | null;
+  themeReady: boolean;
   
   // Actions
   loadOrganizationTheme: (organizationUuid: string) => Promise<void>;
@@ -133,12 +134,13 @@ export function UnifiedThemeProvider({ children }: { children: React.ReactNode }
   const systemTheme = useSystemTheme();
   
   // State
-  const [mode, setMode] = useState<ThemeMode>('light'); // Cambiar default a 'light' para evitar problemas de hidratación
+  const [mode, setMode] = useState<ThemeMode>('light');
   const [organizationTheme, setOrganizationTheme] = useState<OrganizationThemeConfig | null>(null);
   const [branding, setBranding] = useState<OrganizationBranding | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Iniciar como loading
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [themeReady, setThemeReady] = useState(false); // Nuevo estado para controlar cuando el theme está listo
 
   // Manejar hidratación
   useEffect(() => {
@@ -240,8 +242,22 @@ export function UnifiedThemeProvider({ children }: { children: React.ReactNode }
   useLayoutEffect(() => {
     if (mounted) {
       applyThemeToDocument(currentColors);
+      setThemeReady(true); // Marcar como listo después de aplicar
+      
+      // Marcar HTML como cargado para mostrar contenido
+      if (typeof window !== 'undefined') {
+        document.documentElement.classList.add('theme-loaded');
+      }
     }
   }, [currentColors, applyThemeToDocument, mounted]);
+
+  // Aplicar tema inicial inmediatamente para evitar flash
+  useLayoutEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Aplicar tema por defecto inmediatamente
+      applyThemeToDocument(movigoTheme);
+    }
+  }, []);
 
   // Cargar tema de organización cuando cambia
   useEffect(() => {
@@ -257,6 +273,7 @@ export function UnifiedThemeProvider({ children }: { children: React.ReactNode }
   const loadOrganizationTheme = async (organizationUuid: string) => {
     setIsLoading(true);
     setError(null);
+    setThemeReady(false); // Marcar como no listo durante la carga
     
     try {
       const response = await fetch(`/api/organizations/public/${organizationUuid}`);
@@ -398,6 +415,7 @@ export function UnifiedThemeProvider({ children }: { children: React.ReactNode }
     currentColors,
     isLoading,
     error,
+    themeReady,
     loadOrganizationTheme,
     updateTheme,
     updateBranding,
