@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Body:', body);
+
     // Forward to backend API
     const response = await fetch(`${process.env.API_BASE_URL || 'http://localhost:3000/api'}/orders/public-create`, {
       method: 'POST',

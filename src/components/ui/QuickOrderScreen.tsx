@@ -144,11 +144,6 @@ export function QuickOrderScreen({
   };
 
   const handleSubmit = async () => {
-    if (!deliveryLocation) {
-      setError('Por favor selecciona un punto de entrega en el mapa');
-      return;
-    }
-
     if (!currentLocation) {
       setError('No se pudo obtener tu ubicación actual');
       return;
@@ -164,13 +159,12 @@ export function QuickOrderScreen({
         total_amount: parseFloat(totalAmount) || 0,
         customer_name: customerName,
         customer_phone: customerPhone,
-        pickup_address: currentLocation.address,
-        delivery_address: deliveryLocation.address,
-        pickup_lat: currentLocation.lat,
-        pickup_lng: currentLocation.lng,
-        delivery_lat: deliveryLocation.lat,
-        delivery_lng: deliveryLocation.lng,
+        delivery_address: currentLocation.address,
+        delivery_lat: currentLocation.lat,
+        delivery_lng: currentLocation.lng,
       };
+
+      console.log('Order data:', orderData);
 
       await onSubmit(orderData);
       onClose();
@@ -205,21 +199,21 @@ export function QuickOrderScreen({
         </Button>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row">
-        {/* Mapa */}
+      <div className="flex-1 flex flex-col">
+        {/* Mapa - 100% horizontal */}
         <div className="flex-1 p-4">
           <div className="bg-white rounded-lg border theme-border overflow-hidden h-full" style={{ borderColor: colors.border }}>
             <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
               <h3 className="font-semibold theme-text-primary flex items-center" style={{ color: colors.textPrimary }}>
                 <MapPin className="w-5 h-5 mr-2" />
-                Selecciona punto de entrega
+                Ubicación de entrega
               </h3>
               <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
-                Haz clic en el mapa para elegir dónde entregar el pedido
+                El pedido se entregará en tu ubicación actual
               </p>
             </div>
             
-            <div className="h-[calc(100vh-200px)] relative">
+            <div className="h-[calc(100vh-300px)] relative">
               {locationLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -239,108 +233,115 @@ export function QuickOrderScreen({
               )}
             </div>
           </div>
-
-          {/* Información del punto de entrega */}
-          <div className="mt-4">
-            <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
-              <div className="flex items-start">
-                <Package className="w-5 h-5 mr-3 mt-0.5" style={{ color: colors.success }} />
-                <div className="flex-1">
-                  <p className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>Punto de entrega</p>
-                  <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
-                    {deliveryLocation ? deliveryLocation.address : 'Haz clic en el mapa para seleccionar'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Formulario */}
-        <div className="w-full lg:w-96 p-4 border-l theme-border" style={{ borderColor: colors.border }}>
-          <div className="space-y-4">
-            <h3 className="font-semibold theme-text-primary" style={{ color: colors.textPrimary }}>
+        {/* Formulario - Abajo, optimizado */}
+        <div className="p-4 border-t theme-border bg-white" style={{ borderColor: colors.border, backgroundColor: colors.background1 }}>
+          <div className="max-w-4xl mx-auto">
+            <h3 className="font-semibold theme-text-primary mb-4" style={{ color: colors.textPrimary }}>
               Información del pedido
             </h3>
             
-            {/* Nombre del cliente */}
-            <div>
-              <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
-                Nombre del cliente
-              </label>
-              <Input
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Nombre completo"
-              />
+            {/* Información del punto de entrega */}
+            <div className="mb-4">
+              <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
+                <div className="flex items-start">
+                  <Package className="w-5 h-5 mr-3 mt-0.5" style={{ color: colors.success }} />
+                  <div className="flex-1">
+                    <p className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>Punto de entrega</p>
+                    <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
+                      {currentLocation ? currentLocation.address : 'Obteniendo tu ubicación...'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Teléfono del cliente */}
-            <div>
-              <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
-                Teléfono del cliente
-              </label>
-              <Input
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="Número de teléfono"
-                type="tel"
-              />
+            {/* Formulario en grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {/* Nombre del cliente */}
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                  Nombre del cliente
+                </label>
+                <Input
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Nombre completo"
+                />
+              </div>
+
+              {/* Teléfono del cliente */}
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                  Teléfono del cliente
+                </label>
+                <Input
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="Número de teléfono"
+                  type="tel"
+                />
+              </div>
+
+              {/* Monto total */}
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                  Monto total (Q)
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+
+              {/* Botón de envío */}
+              <div className="flex items-end">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading || !currentLocation}
+                  className="w-full theme-btn-primary"
+                  style={{ 
+                    backgroundColor: colors.buttonPrimary1, 
+                    color: colors.buttonText 
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creando...
+                    </>
+                  ) : (
+                    <>
+                      <Package className="w-4 h-4 mr-2" />
+                      Crear pedido
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
 
-            {/* Descripción */}
-            <TextAreaField
-              label="Descripción del pedido"
-              value={description}
-              onChange={setDescription}
-              placeholder="¿Qué contiene el pedido?"
-              rows={3}
-            />
-
-            {/* Monto total */}
+            {/* Descripción - Ancho completo */}
             <div>
-              <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
-                Monto total (Q)
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={totalAmount}
-                onChange={(e) => setTotalAmount(e.target.value)}
-                placeholder="0.00"
+              <TextAreaField
+                label="Descripción del pedido"
+                value={description}
+                onChange={setDescription}
+                placeholder="¿Qué contiene el pedido?"
+                rows={2}
               />
             </div>
 
             {/* Error message */}
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+              <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200">
                 <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
-
-            {/* Botón de envío */}
-            <Button
-              onClick={handleSubmit}
-              disabled={loading || !deliveryLocation || !currentLocation}
-              className="w-full theme-btn-primary"
-              style={{ 
-                backgroundColor: colors.buttonPrimary1, 
-                color: colors.buttonText 
-              }}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creando pedido...
-                </>
-              ) : (
-                <>
-                  <Package className="w-4 h-4 mr-2" />
-                  Crear pedido
-                </>
-              )}
-            </Button>
           </div>
         </div>
       </div>
