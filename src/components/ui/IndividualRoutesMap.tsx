@@ -6,7 +6,7 @@ import { Button } from './Button';
 import { Checkbox } from './Checkbox';
 import { isMapboxConfigured } from '@/lib/mapbox';
 import { Location, Order } from './mapbox/types';
-import { useDynamicTheme } from '@/contexts/DynamicThemeContext';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 

@@ -1,9 +1,9 @@
 'use client';
 
-import { useDynamicTheme } from '@/contexts/DynamicThemeContext';
+import { useBranding } from '@/hooks/useTheme';
 
 export function useOrganizationBranding() {
-  const { branding, updateBranding } = useDynamicTheme();
+  const { branding, updateBranding } = useBranding();
   
   return {
     branding,

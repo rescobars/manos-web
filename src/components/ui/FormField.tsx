@@ -57,15 +57,15 @@ export function InputField({
   
   return (
     <div className={className}>
-      <label htmlFor={inputId} className="block text-sm font-semibold text-gray-700 mb-3">
+      <label htmlFor={inputId} className="block text-sm font-semibold theme-text-primary mb-3">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="theme-error ml-1">*</span>}
       </label>
       
       <div className="relative">
         {Icon && (
           <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
-            error ? 'text-red-400' : 'text-gray-400'
+            error ? 'theme-error' : 'theme-text-muted'
           }`}>
             <Icon className="w-5 h-5" />
           </div>
@@ -80,16 +80,16 @@ export function InputField({
           step={step}
           min={min}
           disabled={disabled}
-          className={`w-full ${Icon ? 'pl-12' : 'pl-4'} pr-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+          className={`w-full ${Icon ? 'pl-12' : 'pl-4'} pr-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 theme-border theme-bg-3 theme-text-primary ${
             error 
-              ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
-              : 'border-gray-200'
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-200' 
+              : ''
           }`}
         />
       </div>
       
       {error && (
-        <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
+        <p className="mt-2 text-sm theme-error flex items-center gap-2">
           <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
           {error}
         </p>
@@ -113,9 +113,9 @@ export function TextAreaField({
   
   return (
     <div className={className}>
-      <label htmlFor={textareaId} className="block text-sm font-semibold text-gray-700 mb-3">
+      <label htmlFor={textareaId} className="block text-sm font-semibold theme-text-primary mb-3">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="theme-error ml-1">*</span>}
       </label>
       
       <TextArea
@@ -133,7 +133,7 @@ export function TextAreaField({
       />
       
       {error && (
-        <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
+        <p className="mt-2 text-sm theme-error flex items-center gap-2">
           <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
           {error}
         </p>
@@ -153,7 +153,6 @@ export function SelectField({
   className = '',
   disabled = false
 }: SelectFieldProps) {
-  const { colors } = useDynamicTheme();
   const selectId = `select-${label.toLowerCase().replace(/\s+/g, '-')}`;
   
   return (
@@ -161,10 +160,9 @@ export function SelectField({
       <label 
         htmlFor={selectId} 
         className="block text-sm font-semibold theme-text-primary mb-3"
-        style={{ color: colors.textPrimary }}
       >
         {label}
-        {required && <span className="theme-error ml-1" style={{ color: colors.error }}>*</span>}
+        {required && <span className="theme-error ml-1">*</span>}
       </label>
       
       <select
@@ -177,20 +175,11 @@ export function SelectField({
             ? 'focus:border-red-500 focus:ring-red-200' 
             : ''
         }`}
-        style={{
-          backgroundColor: colors.background3,
-          borderColor: error ? colors.error : colors.border,
-          color: colors.textPrimary,
-        }}
       >
         {placeholder && (
           <option 
             value="" 
             disabled
-            style={{
-              backgroundColor: colors.background3,
-              color: colors.textMuted
-            }}
           >
             {placeholder}
           </option>
@@ -199,10 +188,6 @@ export function SelectField({
           <option 
             key={option.value} 
             value={option.value}
-            style={{
-              backgroundColor: colors.background3,
-              color: colors.textPrimary
-            }}
           >
             {option.label}
           </option>
@@ -210,8 +195,8 @@ export function SelectField({
       </select>
       
       {error && (
-        <p className="mt-2 text-sm theme-error flex items-center gap-2" style={{ color: colors.error }}>
-          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors.error }}></span>
+        <p className="mt-2 text-sm theme-error flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full"></span>
           {error}
         </p>
       )}

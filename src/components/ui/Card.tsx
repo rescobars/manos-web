@@ -1,6 +1,5 @@
 import React from 'react';
 import { clsx } from 'clsx';
-import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 
 interface CardProps {
   children: React.ReactNode;
@@ -9,8 +8,6 @@ interface CardProps {
 }
 
 export function Card({ children, className, padding = 'md' }: CardProps) {
-  const { colors } = useDynamicTheme();
-  
   const paddingClasses = {
     sm: 'p-4',
     md: 'p-6',
@@ -25,10 +22,6 @@ export function Card({ children, className, padding = 'md' }: CardProps) {
         paddingClasses[padding],
         className
       )}
-      style={{
-        backgroundColor: colors.background3,
-        borderColor: colors.border,
-      }}
     >
       {children}
     </div>
@@ -41,12 +34,9 @@ interface CardHeaderProps {
 }
 
 export function CardHeader({ children, className }: CardHeaderProps) {
-  const { colors } = useDynamicTheme();
-  
   return (
     <div 
       className={clsx('border-b theme-divider pb-4 mb-4', className)}
-      style={{ borderColor: colors.divider }}
     >
       {children}
     </div>
@@ -85,12 +75,9 @@ interface CardFooterProps {
 }
 
 export function CardFooter({ children, className }: CardFooterProps) {
-  const { colors } = useDynamicTheme();
-  
   return (
     <div 
       className={clsx('border-t theme-divider pt-4 mt-4', className)}
-      style={{ borderColor: colors.divider }}
     >
       {children}
     </div>

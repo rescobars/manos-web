@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useDynamicTheme } from '@/contexts/DynamicThemeContext';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { Palette, Building2 } from 'lucide-react';
 
 interface ThemeToggleProps {

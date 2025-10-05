@@ -93,11 +93,9 @@
 }
 
 @layer base {
-  * {
-    @apply theme-border;
-  }
   body {
     @apply theme-bg-1 theme-text-primary;
+    font-family: var(--primary-font);
   }
 }
 
@@ -207,17 +205,14 @@
     background-color: var(--theme-menu-item-hover);
   }
   
-  /* Forzar aplicación de colores en elementos específicos */
-  .theme-bg-1 * {
+  /* Optimización: Aplicar colores de forma más selectiva */
+  .theme-bg-1, .theme-bg-2, .theme-bg-3 {
     color: var(--theme-text-primary);
   }
   
-  .theme-bg-2 * {
-    color: var(--theme-text-primary);
-  }
-  
-  .theme-bg-3 * {
-    color: var(--theme-text-primary);
+  /* Asegurar que los elementos interactivos mantengan sus colores */
+  .theme-bg-1 button, .theme-bg-2 button, .theme-bg-3 button {
+    color: inherit;
   }
 }
 

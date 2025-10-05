@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { useDynamicTheme } from '@/contexts/DynamicThemeContext';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { 
   Point, 
   RoutePoint,

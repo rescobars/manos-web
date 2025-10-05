@@ -2,8 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
-import { ThemeProvider } from '@/components/ui/theme-provider'
+import { ThemeProvider, UnifiedThemeProvider } from '@/components/ui/theme-provider'
 import { ThemeWrapper } from '@/components/ThemeWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -28,11 +27,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <DynamicThemeProvider>
+            <UnifiedThemeProvider>
               <ThemeWrapper>
                 {children}
               </ThemeWrapper>
-            </DynamicThemeProvider>
+            </UnifiedThemeProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

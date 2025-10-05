@@ -1,6 +1,6 @@
 'use client';
 
-import { useDynamicTheme as useDynamicThemeContext } from '@/contexts/DynamicThemeContext';
+import { useDynamicTheme as useDynamicThemeContext } from '@/contexts/UnifiedThemeContext';
 import { DynamicThemeColors } from '@/contexts/DynamicThemeContext';
 
 export function useDynamicTheme() {

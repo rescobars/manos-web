@@ -1,6 +1,6 @@
 'use client';
 
-import { useThemeClasses } from '@/hooks/useThemeClasses';
+import { useTheme } from '@/hooks/useTheme';
 import { useEffect } from 'react';
 
 interface ThemeWrapperProps {
@@ -8,13 +8,11 @@ interface ThemeWrapperProps {
 }
 
 export function ThemeWrapper({ children }: ThemeWrapperProps) {
-  const { theme, mounted } = useThemeClasses();
+  const { resolvedMode, currentColors, applyThemeToElement } = useTheme();
 
-  // Aplicar clases de tema a elementos específicos
+  // Aplicar tema a elementos específicos que no usan nuestro sistema de variables CSS
   useEffect(() => {
-    if (!mounted) return;
-
-    // Aplicar tema a elementos que no usan Tailwind dark: classes
+    // Aplicar tema a elementos de mapas que no usan Tailwind
     const elementsToUpdate = [
       '.leaflet-popup-content-wrapper',
       '.leaflet-popup-tip',
@@ -26,22 +24,18 @@ export function ThemeWrapper({ children }: ThemeWrapperProps) {
       const elements = document.querySelectorAll(selector);
       elements.forEach(element => {
         const htmlElement = element as HTMLElement;
-        if (theme === 'dark') {
-          htmlElement.style.backgroundColor = '#1f2937';
-          htmlElement.style.color = '#f9fafb';
-          htmlElement.style.borderColor = '#374151';
-        } else {
-          htmlElement.style.backgroundColor = '#ffffff';
-          htmlElement.style.color = '#111827';
-          htmlElement.style.borderColor = '#e5e7eb';
-        }
+        
+        // Usar los colores del tema actual
+        const styles = {
+          backgroundColor: currentColors.background3,
+          color: currentColors.textPrimary,
+          borderColor: currentColors.border,
+        };
+        
+        applyThemeToElement(htmlElement, styles);
       });
     });
-  }, [theme, mounted]);
-
-  if (!mounted) {
-    return <div className="min-h-screen theme-bg-1">{children}</div>;
-  }
+  }, [resolvedMode, currentColors, applyThemeToElement]);
 
   return <>{children}</>;
 }
