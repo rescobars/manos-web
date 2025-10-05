@@ -48,7 +48,7 @@ interface Location {
   address: string;
 }
 
-interface LeafletMapProps {
+interface OrdersMapProps {
   center: [number, number];
   zoom?: number;
   deliveryLocation?: Location | null;
@@ -56,13 +56,13 @@ interface LeafletMapProps {
   colors: any;
 }
 
-export function LeafletMap({ 
+export function OrdersMap({ 
   center, 
   zoom = 15, 
   deliveryLocation, 
   onMapClick, 
   colors 
-}: LeafletMapProps) {
+}: OrdersMapProps) {
   return (
     <div className="w-full h-full">
       <MapContainer

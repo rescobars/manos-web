@@ -5,7 +5,7 @@ import { X, MapPin, Package, Save, Navigation, Loader2 } from 'lucide-react';
 import { Button } from './Button';
 import { Input } from './Input';
 import { TextAreaField } from './FormField';
-import { LeafletMap } from './LeafletMap';
+import { OrdersMap } from './leaflet/orders';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -359,7 +359,7 @@ export function QuickOrderScreen({
                   </div>
                 </div>
               ) : (
-                <LeafletMap
+                <OrdersMap
                   key={mapKey}
                   center={mapCenter}
                   zoom={15}
