@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -6,14 +6,12 @@ import {
   Menu, 
   X,
   LogOut,
-  User,
-  Palette
+  User
 } from 'lucide-react';
 import { Button } from './Button';
 import NavigationSelector, { NavigationItem } from '@/components/navigation/NavigationSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
-import { organizationThemes } from '@/lib/themes/organizationThemes';
 import { OrganizationDarkThemeToggle } from './OrganizationDarkThemeToggle';
 
 interface SidebarProps {
@@ -28,30 +26,11 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: SidebarProps) {
   const pathname = usePathname();
-  const [selectedTheme, setSelectedTheme] = useState<string>('cruz-verde-guatemala');
-  const [isChangingTheme, setIsChangingTheme] = useState(false);
   
   const { currentOrganization } = useAuth();
   const { colors } = useDynamicTheme();
   const menuItems = NavigationSelector({ slug: currentSlug || '' });
 
-  const handleThemeChange = async (themeUuid: string) => {
-    if (themeUuid === selectedTheme) return;
-    
-    setIsChangingTheme(true);
-    setSelectedTheme(themeUuid);
-    
-    // Simular cambio de tema
-    const mockEvent = new CustomEvent('organizationChanged', { 
-      detail: { uuid: themeUuid } 
-    });
-    window.dispatchEvent(mockEvent);
-    
-    // Simular delay de cambio
-    setTimeout(() => {
-      setIsChangingTheme(false);
-    }, 1000);
-  };
   
   return (
     <>
@@ -177,37 +156,6 @@ export function Sidebar({ isOpen, onToggle, user, onLogout, currentSlug }: Sideb
           className="p-3 border-t theme-divider"
           style={{ borderColor: colors.divider }}
         >
-
-          {/* Theme Selector */}
-          <div className="mb-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Palette className="w-4 h-4 theme-sidebar-text" style={{ color: colors.sidebarText }} />
-              <span className="text-xs font-medium theme-sidebar-text" style={{ color: colors.sidebarText }}>Organización:</span>
-            </div>
-            <select
-              value={selectedTheme}
-              onChange={(e) => handleThemeChange(e.target.value)}
-              disabled={isChangingTheme}
-              className="w-full px-3 py-2 text-xs rounded border theme-sidebar-border theme-bg-3 theme-sidebar-text focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: colors.background3,
-                borderColor: colors.sidebarBorder,
-                color: colors.sidebarText
-              }}
-            >
-              {Object.entries(organizationThemes).map(([uuid, config]) => (
-                <option key={uuid} value={uuid}>
-                  {config.theme_name}
-                </option>
-              ))}
-            </select>
-            {isChangingTheme && (
-              <div className="flex items-center gap-1 mt-1 text-xs theme-sidebar-text" style={{ color: colors.sidebarText }}>
-                <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
-                <span>Cambiando...</span>
-              </div>
-            )}
-          </div>
 
           {/* Organization Dark Theme Toggle */}
           <div className="mb-3">
