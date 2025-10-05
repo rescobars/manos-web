@@ -59,7 +59,6 @@ export function useUnifiedDriverPositions() {
       const data: UnifiedDriverPositionsResponse = await response.json();
       
       if (data.success) {
-        console.log('✅ TODOS LOS CONDUCTORES CARGADOS:', data.data.length, 'conductores');
         setDriverPositions(data.data);
       } else {
         throw new Error('API returned unsuccessful response');

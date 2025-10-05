@@ -72,8 +72,8 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
     setSelectedDriver(null);
   }, []);
 
-  // Default center to Guatemala City
-  const defaultCenter: [number, number] = [-90.5069, 14.6349];
+  // Default center to Guatemala City (Leaflet format: [lat, lng])
+  const defaultCenter: [number, number] = [14.6349, -90.5069];
 
   // Filtrar drivers por estado Y rutas seleccionadas (filtrado unificado)
   const filteredDrivers = useMemo(() => {
@@ -109,30 +109,40 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
   // Handle map ready
   const handleMapReady = useCallback((map: L.Map) => {
-    console.log('🗺️ MAPA LEAFLET LISTO');
     setMapInstance(map);
     setMapCentered(true);
     setMapCenteringComplete(true);
     setWsReady(true);
   }, [setMapCentered, setMapCenteringComplete, setWsReady]);
 
-  // Centrar el mapa solo una vez cuando esté listo y haya datos de drivers
+  // Centrar el mapa cuando esté listo
   useEffect(() => {
-    if (mapInstance && driversBounds && !hasInitiallyCentered) {
-      console.log('🎯 CENTRANDO MAPA INICIAL - Una sola vez');
-      mapInstance.fitBounds(driversBounds, { 
-        padding: [20, 20],
-        maxZoom: 16
-      });
+    if (mapInstance && !hasInitiallyCentered) {
+      console.log('🎯 CENTRANDO MAPA INICIAL');
+      console.log('📍 driversBounds:', driversBounds);
+      console.log('📍 driverPositions.length:', driverPositions.length);
+      console.log('📍 defaultCenter:', defaultCenter);
+      
+      if (driversBounds && driverPositions.length > 0) {
+        // Si hay conductores, centrar en ellos
+        console.log('🚗 CENTRANDO EN CONDUCTORES');
+        mapInstance.fitBounds(driversBounds, { 
+          padding: [20, 20],
+          maxZoom: 16
+        });
+      } else {
+        // Si no hay conductores, centrar en Guatemala City
+        console.log('🏙️ CENTRANDO EN GUATEMALA CITY');
+        mapInstance.setView(defaultCenter, 12);
+      }
       setHasInitiallyCentered(true);
     }
-  }, [mapInstance, driversBounds, hasInitiallyCentered]);
+  }, [mapInstance, driversBounds, hasInitiallyCentered, defaultCenter, driverPositions.length]);
 
   // Función para centrar el mapa solo en marcadores visibles
   const centerMapToVisibleDrivers = useCallback(() => {
     if (mapInstance) {
       if (filteredDrivers.length > 0) {
-        console.log('🎯 CENTRANDO MAPA A CONDUCTORES VISIBLES -', filteredDrivers.length, 'conductores filtrados');
         const locations = filteredDrivers.map(driver => ({
           latitude: driver.location.latitude,
           longitude: driver.location.longitude
@@ -145,24 +155,11 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
           });
         }
       } else {
-        // Si no hay conductores visibles, centrar en todos los conductores
-        console.log('🎯 SIN CONDUCTORES VISIBLES - Centrando en todos los conductores');
-        if (driverPositions.length > 0) {
-          const allLocations = driverPositions.map(driver => ({
-            latitude: driver.location.latitude,
-            longitude: driver.location.longitude
-          }));
-          const allBounds = calculateBounds(allLocations);
-          if (allBounds) {
-            mapInstance.fitBounds(allBounds, { 
-              padding: [20, 20],
-              maxZoom: 16
-            });
-          }
-        }
+        // Si no hay conductores visibles, centrar en Guatemala City
+        mapInstance.setView(defaultCenter, 12);
       }
     }
-  }, [mapInstance, filteredDrivers, driverPositions]);
+  }, [mapInstance, filteredDrivers, defaultCenter]);
 
   // Detectar cambios en filtros de status y centrar el mapa
   useEffect(() => {
@@ -171,7 +168,6 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                                 !Array.from(previousStatusFilters).every(status => statusFilters.has(status));
     
     if (statusFiltersChanged && hasInitiallyCentered) {
-      console.log('🎯 FILTROS DE STATUS CAMBIARON - Centrando mapa a conductores visibles');
       centerMapToVisibleDrivers();
       setPreviousStatusFilters(new Set(statusFilters));
     }
@@ -185,7 +181,6 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
                           !previousSelectedRoutes.every(routeId => selectedRouteIds.includes(routeId));
     
     if (routesChanged && hasInitiallyCentered) {
-      console.log('🎯 RUTAS SELECCIONADAS CAMBIARON - Centrando mapa a conductores visibles');
       // Pequeño delay para asegurar que el estado se actualice
       setTimeout(() => {
         centerMapToVisibleDrivers();
@@ -193,6 +188,14 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
       setPreviousSelectedRoutes([...selectedRouteIds]);
     }
   }, [selectedRouteIds, previousSelectedRoutes, hasInitiallyCentered, centerMapToVisibleDrivers]);
+
+  // Efecto adicional para forzar centrado en Guatemala cuando no hay conductores
+  useEffect(() => {
+    if (mapInstance && !loading && driverPositions.length === 0 && hasInitiallyCentered) {
+      console.log('🏙️ FORZANDO CENTRADO EN GUATEMALA - Sin conductores');
+      mapInstance.setView(defaultCenter, 12);
+    }
+  }, [mapInstance, loading, driverPositions.length, hasInitiallyCentered, defaultCenter]);
 
   // Loading state
   if (authLoading) {
@@ -221,32 +224,37 @@ export function DriverMap({ className = 'w-full h-full', onDriverClick }: Driver
 
   return (
     <div className={`relative ${className}`}>
-      {/* Mapa principal */}
-      {driverPositions.length > 0 ? (
-        <BaseMap
-          center={defaultCenter}
-          zoom={15}
-          onMapReady={handleMapReady}
-          className={className}
-          tileType={tileType}
-        >
-          {/* Marcadores de conductores */}
+      {/* Mapa principal - siempre mostrar */}
+      <BaseMap
+        center={defaultCenter}
+        zoom={12}
+        onMapReady={handleMapReady}
+        className={className}
+        tileType={tileType}
+      >
+        {/* Marcadores de conductores - solo si hay conductores */}
+        {filteredDrivers.length > 0 && (
           <DriverMarkers
             drivers={filteredDrivers}
             selectedDriver={selectedDriver}
             selectedRouteIds={[]} // Pasamos array vacío para evitar doble filtrado
             onDriverClick={handleDriverClick}
           />
-        </BaseMap>
-      ) : (
-        <div className={`${className} flex items-center justify-center bg-gray-50`}>
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando posiciones de conductores...</p>
+        )}
+      </BaseMap>
+
+      {/* Overlay de información cuando no hay conductores */}
+      {!loading && driverPositions.length === 0 && (
+        <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-4 max-w-sm">
+          <div className="flex items-center space-x-3">
+            <div className="text-blue-600 text-2xl">📍</div>
+            <div>
+              <h3 className="font-semibold text-gray-800">Sin conductores activos</h3>
+              <p className="text-sm text-gray-600">No hay conductores registrados en esta organización.</p>
+            </div>
           </div>
         </div>
       )}
-
 
       {/* Modal de detalles del conductor */}
       <DriverDetailsModal 
