@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, AlertCircle } from 'lucide-react';
+import { MapPin, AlertCircle, Package, Truck, Navigation, Clock, DollarSign, Route } from 'lucide-react';
 import { Button } from '../Button';
 import { Checkbox } from '../Checkbox';
 import dynamic from 'next/dynamic';
@@ -17,6 +17,52 @@ const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ss
 const Polyline = dynamic(() => import('react-leaflet').then(mod => mod.Polyline), { ssr: false });
 // useMap no se puede importar dinámicamente, se usa directamente
 
+// Componente para manejar clics en el mapa para seleccionar ubicación inicial
+function MapClickHandler({ onStartLocationSelect }: { onStartLocationSelect: (location: Location) => void }) {
+  const map = useMap();
+  const [isMapReady, setIsMapReady] = useState(false);
+
+  useEffect(() => {
+    if (map) {
+      setIsMapReady(true);
+    }
+  }, [map]);
+
+  useEffect(() => {
+    if (!isMapReady || !map) return;
+
+    const handleMapClick = async (e: L.LeafletMouseEvent) => {
+      const { lat, lng } = e.latlng;
+      
+      try {
+        // Reverse geocoding para obtener la dirección
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+        );
+        const data = await response.json();
+        
+        const address = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        const location: Location = { lat, lng, address };
+        
+        onStartLocationSelect(location);
+      } catch (error) {
+        console.error('Error en reverse geocoding:', error);
+        const address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        const location: Location = { lat, lng, address };
+        onStartLocationSelect(location);
+      }
+    };
+
+    map.on('click', handleMapClick);
+
+    return () => {
+      map.off('click', handleMapClick);
+    };
+  }, [isMapReady, map, onStartLocationSelect]);
+
+  return null; // Este componente no renderiza nada, solo maneja la lógica
+}
+
 // Fix para iconos de Leaflet en Next.js
 if (typeof window !== 'undefined') {
   delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -26,6 +72,42 @@ if (typeof window !== 'undefined') {
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
   });
 }
+
+// Crear iconos personalizados
+const createCustomIcon = (color: string, icon: string) => {
+  return L.divIcon({
+    className: 'custom-div-icon',
+    html: `
+      <div style="
+        background-color: ${color};
+        width: 30px;
+        height: 30px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 3px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          transform: rotate(45deg);
+          color: white;
+          font-size: 14px;
+          font-weight: bold;
+        ">${icon}</div>
+      </div>
+    `,
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30]
+  });
+};
+
+// Iconos específicos
+const pickupIcon = createCustomIcon('#3B82F6', '🚛'); // Azul para pickup (camioncito)
+const deliveryIcon = createCustomIcon('#EF4444', '🏁'); // Rojo para delivery (banderita)
+const startLocationIcon = createCustomIcon('#10B981', '🚀'); // Verde para ubicación inicial
 
 interface Location {
   lat: number;
@@ -52,6 +134,18 @@ interface IndividualRoutesMapProps {
   onClearAll: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
+  startLocation?: Location | null;
+  onStartLocationSelect?: (location: Location) => void;
+  optimizationMode?: 'efficiency' | 'order';
+  onOptimizationModeChange?: (mode: 'efficiency' | 'order') => void;
+  colors?: {
+    buttonPrimary1: string;
+    buttonPrimary2: string;
+    background2: string;
+    background3: string;
+    border: string;
+    buttonText: string;
+  };
 }
 
 
@@ -63,7 +157,12 @@ export function IndividualRoutesMap({
   onSelectAll,
   onClearAll,
   searchTerm,
-  onSearchChange
+  onSearchChange,
+  startLocation,
+  onStartLocationSelect,
+  optimizationMode = 'efficiency',
+  onOptimizationModeChange,
+  colors,
 }: IndividualRoutesMapProps) {
 
   const formatCurrency = (amount: number) => {
@@ -146,24 +245,6 @@ export function IndividualRoutesMap({
               {selectedOrders.length} de {orders.filter(order => order.deliveryLocation && order.pickupLocation).length} pedidos seleccionados
             </p>
           </div>
-          <div className="flex space-x-2">
-            <Button
-              onClick={onSelectAll}
-              variant="outline"
-              size="sm"
-              className="text-blue-600 border-blue-200 hover:bg-blue-50"
-            >
-              Seleccionar Todos
-            </Button>
-            <Button
-              onClick={onClearAll}
-              variant="outline"
-              size="sm"
-              className="text-gray-600 border-gray-200 hover:bg-gray-50"
-            >
-              Limpiar
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -223,9 +304,10 @@ export function IndividualRoutesMap({
               <Marker
                 key={`delivery-${order.id}`}
                 position={[order.deliveryLocation.lat, order.deliveryLocation.lng]}
+                icon={deliveryIcon}
               >
                 <Popup>
-                  <div className="text-center min-w-[200px]">
+                  <div className="min-w-[200px] p-2">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-sm">Pedido #{order.orderNumber}</span>
                       <Checkbox
@@ -233,20 +315,11 @@ export function IndividualRoutesMap({
                         onChange={() => onOrderSelection(order.id)}
                       />
                     </div>
-                    {order.description && (
-                      <p className="text-xs text-gray-600 mb-2">{order.description}</p>
-                    )}
-                    <p className="text-sm font-medium text-green-600">
-                      {formatCurrency(order.totalAmount)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">Entrega: {order.deliveryLocation.address}</p>
-                    {order.pickupLocation && (
-                      <p className="text-xs text-gray-500 mt-1">Recogida: {order.pickupLocation.address}</p>
-                    )}
-                    <div 
-                      className="mt-2 w-full h-2 rounded"
-                      style={{ backgroundColor: orderColor }}
-                    ></div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Fin:</p>
+                      <p className="text-sm text-gray-700">{order.deliveryLocation.address}</p>
+                    </div>
                   </div>
                 </Popup>
               </Marker>
@@ -263,9 +336,10 @@ export function IndividualRoutesMap({
               <Marker
                 key={`pickup-${order.id}`}
                 position={[order.pickupLocation.lat, order.pickupLocation.lng]}
+                icon={pickupIcon}
               >
                 <Popup>
-                  <div className="text-center min-w-[200px]">
+                  <div className="min-w-[200px] p-2">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-sm">Pedido #{order.orderNumber}</span>
                       <Checkbox
@@ -273,27 +347,105 @@ export function IndividualRoutesMap({
                         onChange={() => onOrderSelection(order.id)}
                       />
                     </div>
-                    {order.description && (
-                      <p className="text-xs text-gray-600 mb-2">{order.description}</p>
-                    )}
-                    <p className="text-sm font-medium text-green-600">
-                      {formatCurrency(order.totalAmount)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">Recogida: {order.pickupLocation.address}</p>
-                    <p className="text-xs text-gray-500 mt-1">Entrega: {order.deliveryLocation.address}</p>
-                    <div 
-                      className="mt-2 w-full h-2 rounded"
-                      style={{ backgroundColor: orderColor }}
-                    ></div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Inicio:</p>
+                      <p className="text-sm text-gray-700">{order.pickupLocation.address}</p>
+                    </div>
                   </div>
                 </Popup>
               </Marker>
             );
           })}
 
+          {/* Marcador de ubicación inicial */}
+          {startLocation && (
+            <Marker 
+              position={[startLocation.lat, startLocation.lng]}
+              icon={startLocationIcon}
+            >
+              <Popup>
+                <div className="min-w-[200px] p-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Navigation className="w-4 h-4 text-green-500" />
+                    <span className="font-semibold text-sm text-gray-800">Ubicación Inicial</span>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Dirección:</p>
+                    <p className="text-sm text-gray-700">{startLocation.address}</p>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
+          {/* Lógica de selección de ubicación inicial */}
+          {onStartLocationSelect && <MapClickHandler onStartLocationSelect={onStartLocationSelect} />}
+
           </MapContainer>
         )}
       </div>
+
+      {/* Modo de optimización */}
+      {onOptimizationModeChange && colors && (
+        <div className="p-4 border-t bg-white">
+          <h4 className="text-sm font-semibold text-gray-900 text-center mb-3">Modo de optimización</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {/* Modo Eficiencia */}
+            <div 
+              className={`p-2 border-2 rounded-lg cursor-pointer transition-all duration-200`}
+              style={{
+                borderColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : colors.border,
+                backgroundColor: optimizationMode === 'efficiency' ? colors.background2 : colors.background3,
+                boxShadow: optimizationMode === 'efficiency' ? `0 0 0 2px ${colors.buttonPrimary2}33` : undefined
+              }}
+              onClick={() => onOptimizationModeChange('efficiency')}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Route className="w-4 h-4" style={{ color: colors.buttonPrimary1 }} />
+                  <span className="font-medium text-sm">Mejor Eficiencia</span>
+                </div>
+                <div className="w-4 h-4 rounded border-2 flex items-center justify-center" style={{ 
+                  borderColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : colors.border, 
+                  backgroundColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : 'transparent' 
+                }}>
+                  {optimizationMode === 'efficiency' && (
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.buttonText }}></div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modo Orden */}
+            <div 
+              className={`p-2 border-2 rounded-lg cursor-pointer transition-all duration-200`}
+              style={{
+                borderColor: optimizationMode === 'order' ? colors.buttonPrimary1 : colors.border,
+                backgroundColor: optimizationMode === 'order' ? colors.background2 : colors.background3,
+                boxShadow: optimizationMode === 'order' ? `0 0 0 2px ${colors.buttonPrimary2}33` : undefined
+              }}
+              onClick={() => onOptimizationModeChange('order')}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Navigation className="w-4 h-4" style={{ color: colors.buttonPrimary1 }} />
+                  <span className="font-medium text-sm">Orden de Llegada</span>
+                </div>
+                <div className="w-4 h-4 rounded border-2 flex items-center justify-center" style={{ 
+                  borderColor: optimizationMode === 'order' ? colors.buttonPrimary1 : colors.border, 
+                  backgroundColor: optimizationMode === 'order' ? colors.buttonPrimary1 : 'transparent' 
+                }}>
+                  {optimizationMode === 'order' && (
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.buttonText }}></div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lista de pedidos */}
       <div className="p-4 border-t bg-white">

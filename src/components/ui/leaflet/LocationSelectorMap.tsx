@@ -81,8 +81,13 @@ function MapContent({
         
         console.log('📍 Location created:', location);
 
+        // Si endLocation es null, solo manejar ubicación inicial
+        if (endLocation === null) {
+          console.log('🚀 Setting start location');
+          onStartLocationSelect(location);
+        }
         // Si no hay ubicación de inicio, seleccionar como inicio
-        if (!startLocation) {
+        else if (!startLocation) {
           console.log('🚀 Setting start location');
           onStartLocationSelect(location);
         }
@@ -165,15 +170,15 @@ export function LocationSelectorMap({
             <Popup>
               <div className="text-center">
                 <div className="w-4 h-4 mx-auto mb-1 rounded-full bg-green-500"></div>
-                <p className="font-semibold text-green-600">Punto de Inicio</p>
+                <p className="font-semibold text-green-600">Ubicación Inicial</p>
                 <p className="text-xs text-gray-600">{startLocation.address}</p>
               </div>
             </Popup>
           </Marker>
         )}
 
-        {/* Marcador de ubicación de fin */}
-        {endLocation && (
+        {/* Marcador de ubicación de fin - solo si endLocation no es null */}
+        {endLocation && endLocation !== null && (
           <Marker position={[endLocation.lat, endLocation.lng]}>
             <Popup>
               <div className="text-center">

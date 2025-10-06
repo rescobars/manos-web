@@ -20,7 +20,7 @@ interface PickupLocation {
   address: string;
 }
 
-type FlowStep = 'select' | 'locations' | 'review';
+type FlowStep = 'select' | 'review';
 
 interface RouteCreationModalProps {
   onClose: () => void;
@@ -50,9 +50,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const [endLocation, setEndLocation] = useState<PickupLocation | null>(null);
   const [useMultiDelivery, setUseMultiDelivery] = useState<boolean>(true);
   
-  // Estados para parámetros de regreso
-  const [forceReturnToEnd, setForceReturnToEnd] = useState<boolean>(false);
-  const [maxReturnDistance, setMaxReturnDistance] = useState<number>(3.0);
 
   // Callbacks con logs para debug
   const handleStartLocationSelect = (location: PickupLocation) => {
@@ -93,7 +90,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         const response = await ordersApiService.getPendingOrders(currentOrganization.uuid);
         if (response.success && response.data) {
           setOrders(response.data);
-          // Seleccionar todos los pedidos por defecto
           const allOrderIds = response.data.map(order => order.uuid);
           setSelectedOrders(allOrderIds);
         }
@@ -144,27 +140,19 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const steps = [
     {
       key: 'select',
-      title: 'Seleccionar Pedidos',
-      description: 'Elige los pedidos que quieres incluir en la ruta',
+      title: 'Seleccionar Pedidos y Ubicación',
+      description: 'Elige los pedidos y la ubicación inicial para los mandados',
       icon: Package,
-      canNext: selectedOrders.length > 0,
-      nextText: 'Continuar'
-    },
-    {
-      key: 'locations',
-      title: 'Seleccionar Ubicaciones',
-      description: 'Elige el punto de inicio y fin de la ruta',
-      icon: MapPin,
-      canNext: !!(startLocation && endLocation),
-      nextText: 'Optimizar Ruta'
+      canNext: selectedOrders.length > 0 && !!startLocation,
+      nextText: 'Optimizar Mandados'
     },
     {
       key: 'review',
-      title: 'Revisar Ruta',
-      description: 'Revisa la ruta optimizada antes de guardarla',
+      title: 'Revisar Mandados',
+      description: 'Revisa la ruta de mandados optimizada antes de guardarla',
       icon: Route,
       canNext: !!(multiDeliveryData && !routeSaved),
-      nextText: routeSaved ? 'Ruta Guardada' : 'Guardar Ruta'
+      nextText: routeSaved ? 'Mandados Guardados' : 'Guardar Mandados'
     },
   ];
 
@@ -185,19 +173,16 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     console.log('🎯 executeCurrentStepAction called, currentStep:', currentStep);
     switch (currentStep) {
       case 'select':
-        console.log('📝 Moving to locations step for multi-delivery');
-        setCurrentStep('locations');
-        break;
-        
-      case 'locations':
-        if (startLocation && endLocation) {
+        if (selectedOrders.length > 0 && startLocation) {
           console.log('📝 Moving to review step for multi-delivery');
           setCurrentStep('review');
           setTimeout(() => {
             handleOptimizeMultiDelivery();
           }, 100);
-        } else {
-          showError('Ubicaciones requeridas', 'Debes seleccionar tanto la ubicación de inicio como la de fin para continuar.', 3000);
+        } else if (selectedOrders.length === 0) {
+          showError('Pedidos requeridos', 'Debes seleccionar al menos un pedido para continuar.', 3000);
+        } else if (!startLocation) {
+          showError('Ubicación requerida', 'Debes seleccionar la ubicación inicial para continuar.', 3000);
         }
         break;
         
@@ -214,7 +199,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
 
 
   const handleOptimizeMultiDelivery = async () => {
-    if (selectedOrders.length < 1 || !startLocation || !endLocation) {
+    if (selectedOrders.length < 1 || !startLocation) {
       return;
     }
     
@@ -244,9 +229,17 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     }));
 
 
+    // Crear un punto de fin por defecto basado en el último punto de entrega
+    const lastDeliveryPoint = deliveryOrders[deliveryOrders.length - 1]?.destination;
+    const defaultEndLocation = lastDeliveryPoint || {
+      lat: startLocation.lat,
+      lng: startLocation.lng,
+      address: startLocation.address
+    };
+
     const result = await optimizeMultiDelivery(
       startLocation,
-      endLocation,
+      defaultEndLocation,
       deliveryOrders,
       {
         include_traffic: true,
@@ -254,8 +247,8 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         travel_mode: 'car',
         route_type: 'fastest',
         max_orders_per_trip: 10,
-        force_return_to_end: forceReturnToEnd,
-        max_return_distance: maxReturnDistance
+        force_return_to_end: false,
+        max_return_distance: 0
       }
     );
     
@@ -336,10 +329,10 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           lon: 0,
           name: 'Origen no definido'
         },
-        destination: endLocation ? {
-          lat: endLocation.lat,
-          lon: endLocation.lng,
-          name: endLocation.address
+        destination: waypoints.length > 0 ? {
+          lat: waypoints[waypoints.length - 1].lat,
+          lon: waypoints[waypoints.length - 1].lon,
+          name: waypoints[waypoints.length - 1].name
         } : {
           lat: 0,
           lon: 0,
@@ -371,10 +364,10 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           lon: startLocation.lng,
           name: startLocation.address
         } : null,
-        destination: endLocation ? {
-          lat: endLocation.lat,
-          lon: endLocation.lng,
-          name: endLocation.address
+        destination: waypoints.length > 0 ? {
+          lat: waypoints[waypoints.length - 1].lat,
+          lon: waypoints[waypoints.length - 1].lon,
+          name: waypoints[waypoints.length - 1].name
         } : null,
         waypoints: waypoints
       },
@@ -390,8 +383,8 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         routeData: routeData,
         selectedOrders: selectedOrders,
         organizationId: currentOrganization.uuid,
-        routeName: `Multi-Delivery ${currentOrganization.name} - ${new Date().toLocaleDateString()}`,
-        description: `Ruta optimizada multi-delivery con ${selectedOrders.length} pedidos`
+        routeName: `Mandados ${currentOrganization.name} - ${new Date().toLocaleDateString()}`,
+        description: `Ruta de mandados optimizada con ${selectedOrders.length} pedidos`
       });
       
       if (result.success) {
@@ -401,8 +394,8 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         }
         
         success(
-          '¡Ruta guardada exitosamente!',
-          `La ruta optimizada con ${selectedOrders.length} pedidos ha sido guardada.`,
+          '¡Mandados guardados exitosamente!',
+          `La ruta de mandados con ${selectedOrders.length} pedidos ha sido guardada.`,
           5000
         );
         setRouteSaved(true);
@@ -414,15 +407,15 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         }
       } else {
         showError(
-          'Error al guardar la ruta',
-          result.error || 'No se pudo guardar la ruta. Por favor, inténtalo de nuevo.',
+          'Error al guardar los mandados',
+          result.error || 'No se pudo guardar la ruta de mandados. Por favor, inténtalo de nuevo.',
           6000
         );
       }
     } catch (error) {
       showError(
         'Error inesperado',
-        'Ocurrió un error inesperado al guardar la ruta. Por favor, inténtalo de nuevo.',
+        'Ocurrió un error inesperado al guardar los mandados. Por favor, inténtalo de nuevo.',
         6000
       );
     }
@@ -528,8 +521,8 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         >
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
-              <h3 className={asPage ? "text-lg sm:text-xl lg:text-2xl font-semibold theme-text-primary" : "text-base sm:text-lg font-semibold theme-text-primary"}>Crear Nueva Ruta</h3>
-              <p className="text-xs sm:text-sm theme-text-secondary mt-1">Selecciona pedidos y crea una ruta optimizada</p>
+              <h3 className={asPage ? "text-lg sm:text-xl lg:text-2xl font-semibold theme-text-primary" : "text-base sm:text-lg font-semibold theme-text-primary"}>Crear Mandados</h3>
+              <p className="text-xs sm:text-sm theme-text-secondary mt-1">Selecciona pedidos y crea una ruta de mandados optimizada</p>
             </div>
             {asPage ? (
               <button
@@ -553,16 +546,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         
         <div className={asPage ? "" : "overflow-y-auto max-h-[calc(90vh-120px)]"}>
           {/* Información del paso actual */}
-          <div className={asPage ? "flex items-center justify-between h-12 sm:h-14 px-3 sm:px-4 lg:px-6 theme-bg-2 sticky top-0 z-20" : "flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6 theme-bg-2"} style={{ backgroundColor: colors.background2 }}>
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.buttonPrimary1 }}>
-                <stepInfo.icon className="w-3 h-3 sm:w-4 sm:h-4" style={{ color: colors.buttonText }} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h1 className={asPage ? "text-base sm:text-lg lg:text-xl font-semibold theme-text-primary truncate" : "text-lg sm:text-xl font-semibold theme-text-primary truncate"}>{stepInfo.title}</h1>
-                <p className="text-xs sm:text-sm theme-text-secondary truncate">{stepInfo.description}</p>
-              </div>
-            </div>
+          <div className={asPage ? "flex items-center justify-center h-12 sm:h-14 px-3 sm:px-4 lg:px-6 theme-bg-2 sticky top-0 z-20" : "flex items-center justify-center h-14 sm:h-16 px-4 sm:px-6 theme-bg-2"} style={{ backgroundColor: colors.background2 }}>
             
             {/* Progreso + Acciones (arriba) */}
             <div className="flex items-center gap-2 sm:gap-4">
@@ -581,280 +565,71 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                   })}
                 </div>
               </div>
-              {asPage && (
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <button
-                    onClick={goBack}
-                    disabled={!canGoBack}
-                    className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md font-medium text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                      canGoBack
-                        ? 'theme-text-secondary hover:theme-text-primary hover:theme-bg-2'
-                        : 'text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">Atrás</span>
-                  </button>
-              <button
-                onClick={executeCurrentStepAction}
-                disabled={!stepInfo.canNext}
-                className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md font-medium text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                  stepInfo.canNext
-                    ? 'shadow-sm hover:shadow-md theme-btn-primary'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-                style={stepInfo.canNext ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
-              >
-                <span className="truncate text-xs sm:text-sm">{stepInfo.nextText}</span>
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-              </button>
-                </div>
-              )}
             </div>
           </div>
 
           {/* Contenido del paso actual */}
-          <div className={asPage ? "p-3 sm:p-4 lg:p-6" : "p-4 sm:p-6 overflow-y-auto flex-1"}>
+          <div className={asPage ? "p-2 sm:p-3 lg:p-4" : "p-3 sm:p-4 overflow-y-auto flex-1"}>
             {currentStep === 'select' && (
-              <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                {/* Información del tipo de ruta */}
-                <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Truck className="w-5 h-5" style={{ color: colors.buttonPrimary1 }} />
-                    <h3 className="text-lg font-semibold theme-text-primary">Multi-Delivery</h3>
-                  </div>
-                  <p className="text-sm theme-text-secondary">
-                    Optimización punto a punto con ubicaciones de inicio y fin personalizadas
-                  </p>
-                </div>
+              <div className="space-y-1 sm:space-y-2">
 
-                {/* Selección del modo de optimización */}
-                <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-                  <h3 className="text-base sm:text-lg font-semibold theme-text-primary">Modo de optimización</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {/* Modo Eficiencia */}
-                    <div 
-                      className={`p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all duration-200`}
-                      style={{
-                        borderColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : colors.border,
-                        backgroundColor: optimizationMode === 'efficiency' ? colors.background2 : colors.background3,
-                        boxShadow: optimizationMode === 'efficiency' ? `0 0 0 2px ${colors.buttonPrimary2}33` : undefined
-                      }}
-                      onClick={() => setOptimizationMode('efficiency')}
+                {/* Mapa unificado de pedidos y selección de ubicación */}
+                <div className="space-y-1">
+
+                  <div className={asPage ? "h-[80vh] rounded-lg overflow-hidden shadow-sm" : "h-[40rem] rounded-lg overflow-hidden shadow-sm"}>
+                    <IndividualRoutesMap
+                      pickupLocation={pickupLocation}
+                      orders={ordersForMap}
+                      selectedOrders={selectedOrders}
+                      onOrderSelection={handleOrderSelection}
+                      onSelectAll={handleSelectAll}
+                      onClearAll={handleClearAll}
+                      searchTerm={searchTerm}
+                      onSearchChange={handleSearchChange}
+                      startLocation={startLocation}
+                      onStartLocationSelect={handleStartLocationSelect}
+                      optimizationMode={optimizationMode}
+                      onOptimizationModeChange={setOptimizationMode}
+                      colors={colors}
+                    />
+                  </div>
+
+
+                  {/* Nota sobre selección de ubicación inicial */}
+                  <div className="text-center">
+                    <p className="text-sm theme-text-secondary">
+                      💡 Haz clic en el mapa para seleccionar la posición inicial de la ruta
+                    </p>
+                  </div>
+
+                  {/* Botón para optimizar mandados */}
+                  <div className="flex justify-center pt-1">
+                    <button
+                      onClick={executeCurrentStepAction}
+                      disabled={!stepInfo.canNext}
+                      className={`px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
+                        stepInfo.canNext
+                          ? 'shadow-sm hover:shadow-md theme-btn-primary'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                      style={stepInfo.canNext ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                            <Route className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
-                            <h4 className="font-semibold theme-text-primary text-sm sm:text-base">Mejor Eficiencia</h4>
-                            <div className="relative group">
-                              <Info className="w-3 h-3 sm:w-4 sm:h-4 theme-text-muted cursor-help flex-shrink-0" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
-                                   style={{ backgroundColor: colors.background1, color: colors.textPrimary, border: `1px solid ${colors.border}` }}>
-                                Optimiza la ruta para minimizar tiempo y distancia total
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-xs sm:text-sm theme-text-secondary">
-                            El algoritmo reorganiza los pedidos para encontrar la ruta más corta y eficiente, reduciendo tiempo de entrega y combustible.
-                          </p>
-                        </div>
-                        <div className="w-5 h-5 rounded border-2 flex items-center justify-center" style={{ borderColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : colors.border, backgroundColor: optimizationMode === 'efficiency' ? colors.buttonPrimary1 : 'transparent' }}>
-                          {optimizationMode === 'efficiency' && (
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.buttonText }}></div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Modo Orden */}
-                    <div 
-                      className={`p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all duration-200`}
-                      style={{
-                        borderColor: optimizationMode === 'order' ? colors.buttonPrimary1 : colors.border,
-                        backgroundColor: optimizationMode === 'order' ? colors.background2 : colors.background3,
-                        boxShadow: optimizationMode === 'order' ? `0 0 0 2px ${colors.buttonPrimary2}33` : undefined
-                      }}
-                      onClick={() => setOptimizationMode('order')}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                            <Navigation className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
-                            <h4 className="font-semibold theme-text-primary text-sm sm:text-base">Orden de Llegada</h4>
-                            <div className="relative group">
-                              <Info className="w-3 h-3 sm:w-4 sm:h-4 theme-text-muted cursor-help flex-shrink-0" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
-                                   style={{ backgroundColor: colors.background1, color: colors.textPrimary, border: `1px solid ${colors.border}` }}>
-                                Mantiene el orden en que llegaron los pedidos
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-xs sm:text-sm theme-text-secondary">
-                            Respeta el orden cronológico de los pedidos, entregando primero los que llegaron antes.
-                          </p>
-                        </div>
-                        <div className="w-5 h-5 rounded border-2 flex items-center justify-center" style={{ borderColor: optimizationMode === 'order' ? colors.buttonPrimary1 : colors.border, backgroundColor: optimizationMode === 'order' ? colors.buttonPrimary1 : 'transparent' }}>
-                          {optimizationMode === 'order' && (
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.buttonText }}></div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                      <span>Optimizar Mandados</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
                   </div>
+
                 </div>
-
-                {/* Mapa básico de pedidos seleccionados */}
-                {selectedOrders.length > 0 && pickupLocation && (
-                  <div className="space-y-4">
-                    <div className={asPage ? "h-[60vh] rounded-lg overflow-hidden shadow-sm" : "h-[28rem] rounded-lg overflow-hidden shadow-sm"}>
-                      <IndividualRoutesMap
-                        pickupLocation={pickupLocation}
-                        orders={ordersForMap}
-                        selectedOrders={selectedOrders}
-                        onOrderSelection={handleOrderSelection}
-                        onSelectAll={handleSelectAll}
-                        onClearAll={handleClearAll}
-                        searchTerm={searchTerm}
-                        onSearchChange={handleSearchChange}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
-            {currentStep === 'locations' && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold theme-text-primary mb-2">Seleccionar Ubicaciones</h3>
-                  <p className="text-sm theme-text-secondary">
-                    Haz clic en el mapa para seleccionar el punto de inicio y fin de la ruta
-                  </p>
-                </div>
-
-                <div className="h-96 rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
-                  <LocationSelectorMap
-                    startLocation={startLocation}
-                    endLocation={endLocation}
-                    onStartLocationSelect={handleStartLocationSelect}
-                    onEndLocationSelect={handleEndLocationSelect}
-                    className="w-full h-full"
-                  />
-                </div>
-
-                {/* Información de ubicaciones seleccionadas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
-                    <h4 className="font-medium theme-text-primary mb-2 flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      Punto de Inicio
-                    </h4>
-                    {startLocation ? (
-                      <p className="text-sm theme-text-secondary">{startLocation.address}</p>
-                    ) : (
-                      <p className="text-sm theme-text-muted">No seleccionado</p>
-                    )}
-                  </div>
-
-                  <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
-                    <h4 className="font-medium theme-text-primary mb-2 flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      Punto de Fin
-                    </h4>
-                    {endLocation ? (
-                      <p className="text-sm theme-text-secondary">{endLocation.address}</p>
-                    ) : (
-                      <p className="text-sm theme-text-muted">No seleccionado</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Parámetros de regreso */}
-                <div className="space-y-4">
-                  <h4 className="font-medium theme-text-primary flex items-center gap-2">
-                    <Navigation className="w-4 h-4" />
-                    Parámetros de Regreso
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Forzar regreso */}
-                    <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h5 className="font-medium theme-text-primary mb-1">Forzar Regreso</h5>
-                          <p className="text-xs theme-text-secondary">
-                            El conductor debe regresar siempre al punto final
-                          </p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={forceReturnToEnd}
-                            onChange={(e) => setForceReturnToEnd(e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Distancia máxima de regreso */}
-                    <div className="p-4 rounded-lg border" style={{ borderColor: colors.border, backgroundColor: colors.background2 }}>
-                      <h5 className="font-medium theme-text-primary mb-2">Distancia Máxima de Regreso</h5>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min="0.5"
-                          max="20"
-                          step="0.5"
-                          value={maxReturnDistance}
-                          onChange={(e) => setMaxReturnDistance(parseFloat(e.target.value))}
-                          className="flex-1 px-3 py-2 border rounded-md text-sm"
-                          style={{ 
-                            borderColor: colors.border, 
-                            backgroundColor: colors.background1,
-                            color: colors.textPrimary
-                          }}
-                          disabled={forceReturnToEnd}
-                        />
-                        <span className="text-sm theme-text-secondary">km</span>
-                      </div>
-                      <p className="text-xs theme-text-muted mt-1">
-                        {forceReturnToEnd 
-                          ? 'Regreso forzado activado' 
-                          : `Regresará automáticamente si está a menos de ${maxReturnDistance}km del final`
-                        }
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Información de comportamiento */}
-                  <div className="p-3 rounded-lg" style={{ backgroundColor: colors.background2 }}>
-                    <div className="flex items-start gap-2">
-                      <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-blue-600 text-xs">💡</span>
-                      </div>
-                      <div className="text-sm">
-                        <p className="font-medium theme-text-primary mb-1">Comportamiento de Regreso:</p>
-                        <ul className="text-xs theme-text-secondary space-y-1">
-                          <li>• <strong>Conductores independientes:</strong> Regreso opcional basado en distancia</li>
-                          <li>• <strong>Empresas de delivery:</strong> Regreso forzado siempre</li>
-                          <li>• <strong>Flexible:</strong> Regreso automático si está cerca del final</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {currentStep === 'review' && (
               <div className="space-y-6">
                 {multiDeliveryLoading ? (
                   <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
-                    <p className="theme-text-secondary">Optimizando ruta multi-delivery...</p>
+                    <p className="theme-text-secondary">Optimizando ruta de mandados...</p>
                   </div>
                 ) : multiDeliveryData?.optimized_route ? (
                   <div className="w-full rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
@@ -868,7 +643,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                   <div className="text-center py-12">
                     <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
                     <h3 className="text-lg font-semibold theme-text-primary mb-2">Error en la optimización</h3>
-                    <p className="theme-text-secondary">No se pudo optimizar la ruta multi-delivery. Inténtalo de nuevo.</p>
+                    <p className="theme-text-secondary">No se pudo optimizar la ruta de mandados. Inténtalo de nuevo.</p>
                   </div>
                 )}
               </div>
@@ -877,45 +652,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           </div>
         </div>
 
-        {/* Botones de navegación inferiores: solo en modal */}
-        {!asPage && (
-          <div 
-            className="p-4 sm:p-6 border-t theme-divider"
-            style={{ 
-              borderColor: colors.divider,
-              backgroundColor: colors.background2 
-            }}
-          >
-            <div className="flex items-center justify-between gap-2 sm:gap-4">
-              <button
-                onClick={goBack}
-                disabled={!canGoBack}
-                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                  canGoBack
-                    ? 'theme-text-secondary hover:theme-text-primary hover:theme-bg-2'
-                    : 'text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Atrás</span>
-              </button>
-              
-              <button
-                onClick={executeCurrentStepAction}
-                disabled={!stepInfo.canNext}
-                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                  stepInfo.canNext
-                    ? 'shadow-lg hover:shadow-xl theme-btn-primary'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-                style={stepInfo.canNext ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
-              >
-                <span className="truncate">{stepInfo.nextText}</span>
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
       {/* Toasts locales */}
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
