@@ -105,7 +105,9 @@ function MapContent({ route }: { route: any }) {
       // Fallback: conectar waypoints si no hay route_points
       const coordinates = [
         [route.origin_lat, route.origin_lon],
-        ...route.waypoints.map((wp: any) => [wp.lat, wp.lon] as [number, number]),
+        ...route.waypoints
+          .filter((wp: any) => wp.location && wp.location.lat && wp.location.lng)
+          .map((wp: any) => [wp.location.lat, wp.location.lng] as [number, number]),
         [route.destination_lat, route.destination_lon]
       ];
       
@@ -166,27 +168,29 @@ function MapContent({ route }: { route: any }) {
 
     // Marcadores de waypoints
     route.waypoints.forEach((waypoint: any, index: number) => {
-      const waypointMarker = require('leaflet').marker([waypoint.lat, waypoint.lon], {
-        icon: require('leaflet').divIcon({
-          className: 'custom-marker',
-          html: `
-            <div class="bg-white border-2 rounded-full w-10 h-10 flex items-center justify-center text-sm font-bold shadow-lg" style="border-color: ${getStopColor('waypoint')};">
-              <span class="text-lg">${index + 1}</span>
-            </div>
-          `,
-          iconSize: [40, 40],
-          iconAnchor: [20, 20]
-        })
-      }).addTo(map);
+      if (waypoint.location && waypoint.location.lat && waypoint.location.lng) {
+        const waypointMarker = require('leaflet').marker([waypoint.location.lat, waypoint.location.lng], {
+          icon: require('leaflet').divIcon({
+            className: 'custom-marker',
+            html: `
+              <div class="bg-white border-2 rounded-full w-10 h-10 flex items-center justify-center text-sm font-bold shadow-lg" style="border-color: ${getStopColor('waypoint')};">
+                <span class="text-lg">${index + 1}</span>
+              </div>
+            `,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+          })
+        }).addTo(map);
 
-      waypointMarker.bindPopup(`
-        <div class="text-center min-w-[200px]">
-          <div class="font-semibold text-sm mb-2">Waypoint ${index + 1}</div>
-          <div class="text-xs text-gray-600 mb-2">${waypoint.name}</div>
-          <div class="text-xs text-gray-500">${Number(waypoint.lat || 0).toFixed(6)}, ${Number(waypoint.lon || 0).toFixed(6)}</div>
-        </div>
-      `);
-      newLayers.push(waypointMarker);
+        waypointMarker.bindPopup(`
+          <div class="text-center min-w-[200px]">
+            <div class="font-semibold text-sm mb-2">Waypoint ${index + 1}</div>
+            <div class="text-xs text-gray-600 mb-2">${waypoint.location.address || 'Sin dirección'}</div>
+            <div class="text-xs text-gray-500">${Number(waypoint.location.lat || 0).toFixed(6)}, ${Number(waypoint.location.lng || 0).toFixed(6)}</div>
+          </div>
+        `);
+        newLayers.push(waypointMarker);
+      }
     });
 
     setAddedLayers(newLayers);

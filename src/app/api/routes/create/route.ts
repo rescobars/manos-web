@@ -109,11 +109,7 @@ export async function POST(request: NextRequest) {
         lon: Number(payload.destination?.lon) || 0,
         name: String(payload.destination?.name || 'Destino')
       },
-      waypoints: (payload.waypoints || []).map((wp: any, i: number) => ({
-        lat: Number(wp?.lat) || 0,
-        lon: Number(wp?.lon) || 0,
-        name: String(wp?.name || `Punto ${i + 1}`)
-      })),
+      waypoints: payload.waypoints || [], // Enviar toda la estructura completa del FastAPI
       route: (payload.route || []).map((point: any, i: number) => ({
         lat: Number(point?.lat) || 0,
         lon: Number(point?.lon) || 0,
@@ -133,8 +129,6 @@ export async function POST(request: NextRequest) {
       status: String(payload.status || 'PLANNED'),
       priority: String(payload.priority || 'MEDIUM')
     };
-
-    console.log('🧹 Payload limpiado:', JSON.stringify(cleanedPayload, null, 2));
 
     // Llamada real al backend de Next.js API
     const backendUrl = process.env.API_BASE_URL || 'http://localhost:3000/api';

@@ -267,16 +267,23 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     setSaving(true);
     const optimizedRoute = multiDeliveryData.optimized_route;
     
-    // Mapear stops a waypoints (TODAS las paradas en orden)
-    const waypoints = optimizedRoute.stops
-      .map(stop => ({
-        lat: stop.location.lat,
-        lon: stop.location.lng,
-        name: stop.location.address,
-        waypoint_type: stop.stop_type,
-        waypoint_index: stop.stop_number - 1, // Ajustar índice
-        order_id: stop.order?.id || null // Incluir order_id si existe
-      }));
+    // Los waypoints son directamente los stops del FastAPI
+    const waypoints = optimizedRoute.stops;
+    
+    // Console log para debug - mostrar la salida del FastAPI (excepto route_points)
+    console.log('🚀 FastAPI Response (sin route_points):', {
+      success: multiDeliveryData.success,
+      optimized_route: {
+        total_distance: optimizedRoute.total_distance,
+        total_time: optimizedRoute.total_time,
+        total_traffic_delay: optimizedRoute.total_traffic_delay,
+        stops: optimizedRoute.stops,
+        orders_delivered: optimizedRoute.orders_delivered,
+        route_efficiency: optimizedRoute.route_efficiency
+      },
+      processing_time: multiDeliveryData.processing_time,
+      traffic_conditions: multiDeliveryData.traffic_conditions
+    });
 
     // Mapear route_points a points (TODOS los puntos de navegación detallados)
     const routePoints = optimizedRoute.route_points?.map((point, index) => {
@@ -313,13 +320,9 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         waypoint_type: stop.stop_type // Incluir tipo de parada
       }));
 
-    // ordered_waypoints = waypoints (TODAS las paradas en orden)
-    const orderedWaypoints = waypoints.map((waypoint, index) => ({
-      order_id: waypoint.order_id || null,
-      order: index + 1,
-      waypoint_type: waypoint.waypoint_type
-    }));
 
+
+      console.log("waypoints", waypoints);
     // Convertir datos multi-delivery al formato esperado por createRoute
     const routeData = {
       route_info: {
@@ -333,9 +336,9 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           name: 'Origen no definido'
         },
         destination: waypoints.length > 0 ? {
-          lat: waypoints[waypoints.length - 1].lat,
-          lon: waypoints[waypoints.length - 1].lon,
-          name: waypoints[waypoints.length - 1].name
+          lat: waypoints[waypoints.length - 1].location.lat,
+          lon: waypoints[waypoints.length - 1].location.lng,
+          name: waypoints[waypoints.length - 1].location.address
         } : {
           lat: 0,
           lon: 0,
@@ -368,9 +371,9 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           name: startLocation.address
         } : null,
         destination: waypoints.length > 0 ? {
-          lat: waypoints[waypoints.length - 1].lat,
-          lon: waypoints[waypoints.length - 1].lon,
-          name: waypoints[waypoints.length - 1].name
+          lat: waypoints[waypoints.length - 1].location.lat,
+          lon: waypoints[waypoints.length - 1].location.lng,
+          name: waypoints[waypoints.length - 1].location.address
         } : null,
         waypoints: waypoints
       },
