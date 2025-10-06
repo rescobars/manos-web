@@ -7,7 +7,7 @@ import { DataTable } from '@/components/ui/DataTable';
 import { Button } from '@/components/ui/Button';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { SavedRoute } from '@/types';
-import { Plus, Route, Clock, Users, CheckCircle, AlertCircle, XCircle, MapPin, Package, Truck, Eye } from 'lucide-react';
+import { Plus, Route, Clock, Users, CheckCircle, AlertCircle, XCircle, MapPin, Package, Truck, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
@@ -169,8 +169,8 @@ export default function RoutesPage() {
     setShowCreateRouteModal(false);
   };
 
-  const handleViewRoute = (route: SavedRoute) => {
-    router.push(`./routes/${route.uuid}`);
+  const handleAssignRoute = (route: SavedRoute) => {
+    router.push(`./routes/${route.uuid}/assign`);
   };
 
 
@@ -307,12 +307,12 @@ export default function RoutesPage() {
       render: (value: any, route: SavedRoute) => (
         <div className="flex items-center gap-1 sm:gap-2">
           <button
-            onClick={() => handleViewRoute(route)}
-            className="px-1.5 sm:px-2 lg:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-            title="Ver detalles"
+            onClick={() => handleAssignRoute(route)}
+            className="px-1.5 sm:px-2 lg:px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+            title="Asignar conductor"
           >
-            <Eye className="w-3 h-3" />
-            <span className="hidden sm:inline">Ver</span>
+            <UserPlus className="w-3 h-3" />
+            <span className="hidden sm:inline">Asignar</span>
           </button>
         </div>
       )
@@ -371,12 +371,12 @@ export default function RoutesPage() {
         
         <div className="flex items-center gap-1">
           <button
-            onClick={() => handleViewRoute(route)}
-            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-            title="Ver detalles"
+            onClick={() => handleAssignRoute(route)}
+            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+            title="Asignar conductor"
           >
-            <Eye className="w-3 h-3" />
-            <span className="hidden sm:inline">Ver</span>
+            <UserPlus className="w-3 h-3" />
+            <span className="hidden sm:inline">Asignar</span>
           </button>
         </div>
       </div>
