@@ -5,9 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Clock, Package, Route, Navigation, CheckCircle, AlertCircle, User, Truck } from 'lucide-react';
 import { useRoute, RouteData } from '@/hooks/useRoute';
 import { useDriverPositions } from '@/hooks/useDriverPositions';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useRouteAssignment } from '@/hooks/useRouteAssignment';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/useToast';
 import { Page } from '@/components/ui/Page';
 import { Button } from '@/components/ui/Button';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 import dynamic from 'next/dynamic';
 
 // Importar Leaflet dinámicamente
@@ -29,10 +34,11 @@ if (typeof window !== 'undefined') {
 }
 
 // Componente para manejar la lógica del mapa
-function MapContent({ route, selectedDriver, onDriverSelect }: { 
+function MapContent({ route, selectedDriver, onDriverSelect, drivers }: { 
   route: RouteData; 
   selectedDriver: string | null;
   onDriverSelect: (driverId: string) => void;
+  drivers: any[];
 }) {
   const map = require('react-leaflet').useMap();
   const [isMapReady, setIsMapReady] = useState(false);
@@ -199,11 +205,13 @@ function MapContent({ route, selectedDriver, onDriverSelect }: {
       }
     });
 
-    // Marcadores de drivers
-    driverPositions.forEach((driver) => {
-      if (driver.location.latitude && driver.location.longitude) {
-        const isSelected = selectedDriver === driver.driverId;
-        const driverMarker = require('leaflet').marker([driver.location.latitude, driver.location.longitude], {
+    // Marcadores de drivers - combinar drivers con sus posiciones
+    drivers.forEach((driver) => {
+      const driverPosition = driverPositions.find(dp => dp.driverId === driver.user_uuid);
+      
+      if (driverPosition && driverPosition.location.latitude && driverPosition.location.longitude) {
+        const isSelected = selectedDriver === driver.user_uuid;
+        const driverMarker = require('leaflet').marker([driverPosition.location.latitude, driverPosition.location.longitude], {
           icon: require('leaflet').divIcon({
             className: 'driver-marker',
             html: `
@@ -218,18 +226,19 @@ function MapContent({ route, selectedDriver, onDriverSelect }: {
 
         // Hacer clic para seleccionar driver
         driverMarker.on('click', () => {
-          onDriverSelect(driver.driverId);
+          onDriverSelect(driver.user_uuid);
         });
 
         // Crear popup con información del driver
         const popupContent = `
           <div class="text-center min-w-[200px]">
             <div class="font-semibold text-sm mb-2">Conductor</div>
-            <div class="text-xs text-gray-600 mb-2">${driver.driverName || 'Sin nombre'}</div>
-            <div class="text-xs text-gray-500 mb-1">ID: ${driver.driverId}</div>
+            <div class="text-xs text-gray-600 mb-2">${driver.name || 'Sin nombre'}</div>
+            <div class="text-xs text-gray-500 mb-1">Email: ${driver.email}</div>
             <div class="text-xs text-gray-500 mb-1">Estado: ${driver.status}</div>
-            <div class="text-xs text-gray-500 mb-1">Última actualización: ${new Date(driver.timestamp).toLocaleTimeString()}</div>
-            <div class="text-xs text-gray-500">${driver.location.latitude.toFixed(6)}, ${driver.location.longitude.toFixed(6)}</div>
+            <div class="text-xs text-gray-500 mb-1">Estado GPS: ${driverPosition.status}</div>
+            <div class="text-xs text-gray-500 mb-1">Última actualización: ${new Date(driverPosition.timestamp).toLocaleTimeString()}</div>
+            <div class="text-xs text-gray-500">${driverPosition.location.latitude.toFixed(6)}, ${driverPosition.location.longitude.toFixed(6)}</div>
             <div class="text-xs text-blue-600 mt-2 font-medium">Haz clic para seleccionar</div>
           </div>
         `;
@@ -247,7 +256,7 @@ function MapContent({ route, selectedDriver, onDriverSelect }: {
       const bounds = group.getBounds();
       map.fitBounds(bounds.pad(0.1));
     }
-  }, [isMapReady, route, map, driverPositions, selectedDriver, onDriverSelect]);
+  }, [isMapReady, route, map, driverPositions, drivers, selectedDriver, onDriverSelect]);
 
   return null; // Este componente no renderiza nada, solo maneja la lógica
 }
@@ -258,6 +267,10 @@ export default function RouteAssignmentPage() {
   const router = useRouter();
   const { route, getRoute, isLoading, error } = useRoute();
   const { driverPositions } = useDriverPositions();
+  const { drivers, fetchDrivers, isLoading: driversLoading } = useDrivers();
+  const { assignDriverToRoute, isLoading: assignmentLoading, error: assignmentError } = useRouteAssignment();
+  const { currentOrganization } = useAuth();
+  const { success: showSuccess, error: showError, warning: showWarning, toasts, removeToast } = useToast();
 
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [driverNotes, setDriverNotes] = useState('');
@@ -268,39 +281,81 @@ export default function RouteAssignmentPage() {
     }
   }, [params.uuid, getRoute]);
 
+  // Fetch drivers when organization is available
+  useEffect(() => {
+    if (currentOrganization?.uuid) {
+      fetchDrivers(currentOrganization.uuid);
+    }
+  }, [currentOrganization?.uuid, fetchDrivers]);
+
   const handleDriverSelect = (driverId: string) => {
     setSelectedDriver(driverId);
   };
 
   const handleAssign = async () => {
     if (!selectedDriver) {
-      alert('Por favor selecciona un conductor');
+      showWarning('Selección requerida', 'Por favor selecciona un conductor');
       return;
     }
 
     if (!params.uuid || typeof params.uuid !== 'string') {
-      alert('Error: UUID de ruta no válido');
+      showError('Error de validación', 'UUID de ruta no válido');
       return;
     }
 
-    const request = {
-      driver_notes: driverNotes || undefined,
-    };
+    if (!currentOrganization?.uuid) {
+      showError('Error de organización', 'No se encontró la organización actual');
+      return;
+    }
 
+    // Find the selected driver's membership UUID
+    const selectedDriverData = drivers.find(d => d.user_uuid === selectedDriver);
+    if (!selectedDriverData) {
+      showError('Error de datos', 'No se encontró la información del conductor seleccionado');
+      return;
+    }
+
+    try {
+      const request = {
+        driver_notes: driverNotes || undefined,
+      };
+
+      const result = await assignDriverToRoute(
+        params.uuid,
+        selectedDriverData.organization_membership_uuid,
+        request,
+        currentOrganization?.uuid || ''
+      );
+
+      if (result.success) {
+        showSuccess('¡Ruta asignada!', 'La ruta ha sido asignada exitosamente al conductor');
+        // Optionally redirect after successful assignment
+        setTimeout(() => {
+          router.back();
+        }, 2000);
+      } else {
+        showError('Error al asignar', result.error || 'Error desconocido al asignar la ruta');
+      }
+    } catch (error) {
+      console.error('Error assigning route:', error);
+      showError('Error al asignar', error instanceof Error ? error.message : 'Error desconocido al asignar la ruta');
+    }
   };
 
 
 
-  if (isLoading) {
+  if (isLoading || driversLoading) {
     return (
       <Page
-        title="Cargando ruta..."
-        subtitle="Obteniendo información de la ruta"
+        title="Cargando..."
+        subtitle={isLoading ? "Obteniendo información de la ruta" : "Cargando conductores disponibles"}
       >
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
-            <p className="theme-text-secondary">Cargando ruta...</p>
+            <p className="theme-text-secondary">
+              {isLoading ? "Cargando ruta..." : "Cargando conductores..."}
+            </p>
           </div>
         </div>
       </Page>
@@ -355,7 +410,8 @@ export default function RouteAssignmentPage() {
     );
   }
 
-  const selectedDriverData = driverPositions.find(d => d.driverId === selectedDriver);
+  const selectedDriverData = drivers.find(d => d.user_uuid === selectedDriver);
+  const selectedDriverPosition = driverPositions.find(d => d.driverId === selectedDriver);
 
   return (
     <Page
@@ -392,6 +448,7 @@ export default function RouteAssignmentPage() {
                 route={route} 
                 selectedDriver={selectedDriver}
                 onDriverSelect={handleDriverSelect}
+                drivers={drivers}
               />
             </MapContainer>
           </div>
@@ -412,18 +469,24 @@ export default function RouteAssignmentPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4" style={{ color: colors.info }} />
-                  <span className="font-medium theme-text-primary">{selectedDriverData.driverName}</span>
+                  <span className="font-medium theme-text-primary">{selectedDriverData.name}</span>
                 </div>
                 <div className="text-sm theme-text-secondary">
-                  <div>ID: {selectedDriverData.driverId}</div>
+                  <div>Email: {selectedDriverData.email}</div>
                   <div>Estado: {selectedDriverData.status}</div>
-                  <div>Última actualización: {new Date(selectedDriverData.timestamp).toLocaleTimeString()}</div>
+                  {selectedDriverPosition && (
+                    <>
+                      <div>Estado GPS: {selectedDriverPosition.status}</div>
+                      <div>Última actualización: {new Date(selectedDriverPosition.timestamp).toLocaleTimeString()}</div>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
               <p className="text-sm theme-text-muted">Selecciona un conductor en el mapa</p>
             )}
           </div>
+
 
           {/* Formulario de asignación */}
           <div className="space-y-4">
@@ -446,15 +509,23 @@ export default function RouteAssignmentPage() {
           <div className="flex gap-3 mt-6">
             <Button
               onClick={handleAssign}
-              disabled={!selectedDriver}
+              disabled={!selectedDriver || assignmentLoading}
               className="flex-1"
             >
-              Asignar Ruta
+              {assignmentLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Asignando...
+                </div>
+              ) : (
+                'Asignar Ruta'
+              )}
             </Button>
             <Button
               onClick={() => router.back()}
               variant="outline"
               className="flex-1"
+              disabled={assignmentLoading}
             >
               Cancelar
             </Button>
@@ -462,6 +533,9 @@ export default function RouteAssignmentPage() {
 
         </div>
       </div>
+
+      {/* Toast Container para notificaciones */}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </Page>
   );
 }
