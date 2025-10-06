@@ -173,22 +173,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<MultiDeli
       }
     }
 
-    // Preparar datos para FastAPI
-    console.log('🔍 startValidation:', startValidation);
-    console.log('🔍 endValidation:', endValidation);
-    console.log('🔍 body.driver_start_location:', body.driver_start_location);
-    console.log('🔍 body.driver_end_location:', body.driver_end_location);
-
     const fastApiData = {
       driver_start_location: {
         lat: startValidation.cleanedCoordinate?.lat || 0,
         lng: startValidation.cleanedCoordinate?.lng || 0,
         address: body.driver_start_location.address
-      },
-      driver_end_location: {
-        lat: endValidation.cleanedCoordinate?.lat || 0,
-        lng: endValidation.cleanedCoordinate?.lng || 0,
-        address: body.driver_end_location.address
       },
       delivery_orders: body.delivery_orders.map(order => ({
         id: order.id,
@@ -218,11 +207,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<MultiDeli
       max_return_distance: 0.0
     };
 
-    console.log('🚀 Enviando solicitud de optimización multi-delivery a FastAPI');
-    console.log('📍 Ubicación de inicio:', fastApiData.driver_start_location);
-    console.log('📍 Ubicación de fin:', fastApiData.driver_end_location);
-    console.log(`📦 ${fastApiData.delivery_orders.length} pedidos de entrega`);
-
+   console.log('🚀 Enviando solicitud de optimización multi-delivery a FastAPI');
+   console.log('📍 Ubicación de inicio:', fastApiData);
     // Llamar a FastAPI
     const response = await fetch(`${FASTAPI_BASE_URL}/api/v1/routes/optimize-multi-delivery`, {
       method: 'POST',
