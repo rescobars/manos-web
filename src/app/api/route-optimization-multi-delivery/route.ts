@@ -214,8 +214,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<MultiDeli
       travel_mode: body.travel_mode || 'car',
       route_type: body.route_type || 'fastest',
       max_orders_per_trip: body.max_orders_per_trip || 10,
-      force_return_to_end: body.force_return_to_end !== undefined ? body.force_return_to_end : false,
-      max_return_distance: body.max_return_distance !== undefined ? body.max_return_distance : 3.0
+      force_return_to_end: false,
+      max_return_distance: 0.0
     };
 
     console.log('🚀 Enviando solicitud de optimización multi-delivery a FastAPI');

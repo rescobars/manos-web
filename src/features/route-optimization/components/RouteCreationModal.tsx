@@ -44,6 +44,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const [routeSaved, setRouteSaved] = useState<boolean>(false);
   const [createdRouteUuid, setCreatedRouteUuid] = useState<string>('');
   const [optimizationMode, setOptimizationMode] = useState<'efficiency' | 'order'>('efficiency');
+  const [saving, setSaving] = useState<boolean>(false);
   
   // Estados para multi-delivery
   const [startLocation, setStartLocation] = useState<PickupLocation | null>(null);
@@ -263,6 +264,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const handleSaveRoute = async () => {
     if (!currentOrganization || !multiDeliveryData?.optimized_route) return;
     
+    setSaving(true);
     const optimizedRoute = multiDeliveryData.optimized_route;
     
     // Mapear stops a waypoints (puntos de parada con pedidos)
@@ -418,6 +420,8 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         'Ocurrió un error inesperado al guardar los mandados. Por favor, inténtalo de nuevo.',
         6000
       );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -625,25 +629,107 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
 
 
             {currentStep === 'review' && (
-              <div className="space-y-6">
+              <div className="space-y-4">
+                {/* Header de la ruta optimizada */}
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold theme-text-primary mb-2">Ruta Optimizada Multi-Delivery</h3>
+                  <p className="text-sm theme-text-secondary">
+                    {multiDeliveryData?.optimized_route ? 
+                      `${multiDeliveryData.optimized_route.orders_delivered || 0} mandados optimizados` : 
+                      'Preparando optimización...'
+                    }
+                  </p>
+                </div>
+
                 {multiDeliveryLoading ? (
                   <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
                     <p className="theme-text-secondary">Optimizando ruta de mandados...</p>
                   </div>
                 ) : multiDeliveryData?.optimized_route ? (
-                  <div className="w-full rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
-                    <MultiDeliveryRouteMap
-                      optimizedRoute={multiDeliveryData.optimized_route}
-                      className="w-full"
-                      style={{ height: asPage ? '60vh' : '28rem' }}
-                    />
+                  <div className="space-y-4">
+                    {/* Mapa de la ruta optimizada */}
+                    <div className="w-full rounded-lg overflow-hidden border shadow-sm" style={{ borderColor: colors.border }}>
+                      <MultiDeliveryRouteMap
+                        optimizedRoute={multiDeliveryData.optimized_route}
+                        className="w-full"
+                        style={{ height: asPage ? '60vh' : '32rem' }}
+                      />
+                    </div>
+
+                    {/* Información de la ruta */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-lg" style={{ backgroundColor: colors.background2 }}>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold theme-text-primary">
+                          {multiDeliveryData.optimized_route.total_distance?.toFixed(1) || '0'} km
+                        </div>
+                        <div className="text-xs theme-text-secondary">Distancia Total</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold theme-text-primary">
+                          {Math.round(multiDeliveryData.optimized_route.total_time || 0)} min
+                        </div>
+                        <div className="text-xs theme-text-secondary">Tiempo Estimado</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold theme-text-primary">
+                          {multiDeliveryData.optimized_route.orders_delivered || 0}
+                        </div>
+                        <div className="text-xs theme-text-secondary">Mandados</div>
+                      </div>
+                    </div>
+
+                    {/* Botones de acción */}
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <button
+                        onClick={() => setCurrentStep('select')}
+                        className="px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 border-2 hover:shadow-md"
+                        style={{ 
+                          borderColor: colors.border, 
+                          color: colors.textPrimary,
+                          backgroundColor: colors.background3
+                        }}
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Volver a Editar</span>
+                      </button>
+                      <button
+                        onClick={handleSaveRoute}
+                        disabled={saving}
+                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
+                          saving
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'shadow-sm hover:shadow-md'
+                        }`}
+                        style={!saving ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
+                      >
+                        {saving ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Guardando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Guardar Ruta</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-12">
                     <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
                     <h3 className="text-lg font-semibold theme-text-primary mb-2">Error en la optimización</h3>
-                    <p className="theme-text-secondary">No se pudo optimizar la ruta de mandados. Inténtalo de nuevo.</p>
+                    <p className="theme-text-secondary mb-4">No se pudo optimizar la ruta de mandados. Inténtalo de nuevo.</p>
+                    <button
+                      onClick={() => setCurrentStep('select')}
+                      className="px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 mx-auto"
+                      style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Volver a Editar</span>
+                    </button>
                   </div>
                 )}
               </div>
