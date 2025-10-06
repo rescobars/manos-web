@@ -150,7 +150,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     {
       key: 'review',
       title: 'Revisar Mandados',
-      description: 'Revisa la ruta de mandados optimizada antes de guardarla',
+      description: routeSaved ? 'Ruta de mandados guardada exitosamente' : 'Revisa la ruta de mandados optimizada antes de guardarla',
       icon: Route,
       canNext: !!(multiDeliveryData && !routeSaved),
       nextText: routeSaved ? 'Mandados Guardados' : 'Guardar Mandados'
@@ -684,30 +684,40 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                       <button
                         onClick={() => setCurrentStep('select')}
-                        className="px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 border-2 hover:shadow-md"
-                        style={{ 
+                        disabled={routeSaved}
+                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 border-2 ${
+                          routeSaved 
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300' 
+                            : 'hover:shadow-md'
+                        }`}
+                        style={!routeSaved ? { 
                           borderColor: colors.border, 
                           color: colors.textPrimary,
                           backgroundColor: colors.background3
-                        }}
+                        } : undefined}
                       >
                         <ArrowLeft className="w-4 h-4" />
-                        <span>Volver a Editar</span>
+                        <span>{routeSaved ? 'Ruta Guardada' : 'Volver a Editar'}</span>
                       </button>
                       <button
                         onClick={handleSaveRoute}
-                        disabled={saving}
+                        disabled={saving || routeSaved}
                         className={`px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
-                          saving
+                          saving || routeSaved
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'shadow-sm hover:shadow-md'
                         }`}
-                        style={!saving ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
+                        style={!saving && !routeSaved ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
                       >
                         {saving ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                             <span>Guardando...</span>
+                          </>
+                        ) : routeSaved ? (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Ruta Guardada</span>
                           </>
                         ) : (
                           <>
