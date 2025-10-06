@@ -8,7 +8,6 @@ import {
   Route, 
   Calendar, 
   Users, 
-  Eye, 
   Play,
   MoreVertical,
   CheckCircle,
@@ -17,7 +16,6 @@ import {
   Package,
   Truck,
   DollarSign,
-  UserPlus,
   Pause,
   PlayCircle
 } from 'lucide-react';
@@ -27,9 +25,7 @@ interface SavedRoutesListProps {
   savedRoutes: SavedRoute[];
   isLoading: boolean;
   error: string | null;
-  onViewRoute: (route: SavedRoute) => void;
   onStartRoute: (route: SavedRoute) => void;
-  onAssignRoute?: (route: SavedRoute) => void;
   viewMode?: 'grid' | 'table';
 }
 
@@ -37,9 +33,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
   savedRoutes,
   isLoading,
   error,
-  onViewRoute,
   onStartRoute,
-  onAssignRoute,
   viewMode
 }) => {
   const [selectedRouteForMap, setSelectedRouteForMap] = useState<SavedRoute | null>(null);
@@ -86,7 +80,7 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
       case 'PLANNED':
         return <Clock className="w-3 h-3 text-blue-500" />;
       case 'ASSIGNED':
-        return <UserPlus className="w-3 h-3 text-purple-500" />;
+        return <Package className="w-3 h-3 text-purple-500" />;
       case 'IN_PROGRESS':
         return <PlayCircle className="w-3 h-3 text-green-500" />;
       case 'COMPLETED':
@@ -179,19 +173,8 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
     });
   };
 
-  const handleViewRoute = (route: SavedRoute) => {
-    setSelectedRouteForMap(route);
-    onViewRoute(route);
-  };
-
   const handleCloseMap = () => {
     setSelectedRouteForMap(null);
-  };
-
-  const handleAssignRoute = (route: SavedRoute) => {
-    if (onAssignRoute) {
-      onAssignRoute(route);
-    }
   };
 
   if (isLoading) {
@@ -252,25 +235,6 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
                 </div>
               </div>
               
-              <div className="flex items-center gap-1 ml-2">
-                <button
-                  onClick={() => handleViewRoute(route)}
-                  className="p-1.5 theme-text-muted hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                  title="Ver detalles"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-                
-                {route.status === 'PLANNED' && onAssignRoute && (
-                  <button
-                    onClick={() => handleAssignRoute(route)}
-                    className="p-1.5 theme-text-muted hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                    title="Asignar ruta"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
             </div>
 
             {/* Información básica compacta */}
@@ -296,23 +260,6 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
             <div className="flex items-center justify-between pt-2 border-t theme-divider">
               <span className="text-xs theme-text-muted">ID: {route.uuid.slice(0, 8)}</span>
               
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handleViewRoute(route)}
-                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
-                >
-                  Ver
-                </button>
-                
-                {route.status === 'PLANNED' && onAssignRoute && (
-                  <button
-                    onClick={() => handleAssignRoute(route)}
-                    className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
-                  >
-                    Asignar
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         ))}
@@ -389,20 +336,6 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
                       >
                         <MapPin className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleViewRoute(route)}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
-                      >
-                        Ver
-                      </button>
-                      {route.status === 'PLANNED' && onAssignRoute && (
-                        <button
-                          onClick={() => handleAssignRoute(route)}
-                          className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-lg transition-colors"
-                        >
-                          Asignar
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
