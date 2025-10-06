@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useMap } from 'react-leaflet';
+import { useDriverPositions } from '@/hooks/useDriverPositions';
 
 // Importar Leaflet dinámicamente
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
@@ -16,6 +17,78 @@ const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { 
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
 const Polyline = dynamic(() => import('react-leaflet').then(mod => mod.Polyline), { ssr: false });
 // useMap no se puede importar dinámicamente, se usa directamente
+
+// Componente para manejar los marcadores de drivers
+function DriverMarkers() {
+  const map = useMap();
+  const [isMapReady, setIsMapReady] = useState(false);
+  const [addedLayers, setAddedLayers] = useState<L.Layer[]>([]);
+  const { driverPositions, loading } = useDriverPositions();
+
+  // Marcar mapa como listo
+  useEffect(() => {
+    if (map) {
+      setIsMapReady(true);
+    }
+  }, [map]);
+
+  // Limpiar capas existentes
+  const clearMap = () => {
+    addedLayers.forEach(layer => {
+      if (map && map.hasLayer(layer)) {
+        map.removeLayer(layer);
+      }
+    });
+    setAddedLayers([]);
+  };
+
+  // Mostrar drivers en el mapa
+  useEffect(() => {
+    if (!isMapReady || !map || loading) {
+      return;
+    }
+
+    clearMap();
+
+    const newLayers: L.Layer[] = [];
+
+    driverPositions.forEach((driver) => {
+      if (driver.location.latitude && driver.location.longitude) {
+        const driverMarker = L.marker([driver.location.latitude, driver.location.longitude], {
+          icon: L.divIcon({
+            className: 'driver-marker',
+            html: `
+              <div class="bg-blue-500 border-2 border-white rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold shadow-lg">
+                🚗
+              </div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          })
+        }).addTo(map);
+
+        // Crear popup con información del driver
+        const popupContent = `
+          <div class="text-center min-w-[200px]">
+            <div class="font-semibold text-sm mb-2">Conductor</div>
+            <div class="text-xs text-gray-600 mb-2">${driver.driverName || 'Sin nombre'}</div>
+            <div class="text-xs text-gray-500 mb-1">ID: ${driver.driverId}</div>
+            <div class="text-xs text-gray-500 mb-1">Estado: ${driver.status}</div>
+            <div class="text-xs text-gray-500 mb-1">Última actualización: ${new Date(driver.timestamp).toLocaleTimeString()}</div>
+            <div class="text-xs text-gray-500">${driver.location.latitude.toFixed(6)}, ${driver.location.longitude.toFixed(6)}</div>
+          </div>
+        `;
+
+        driverMarker.bindPopup(popupContent);
+        newLayers.push(driverMarker);
+      }
+    });
+
+    setAddedLayers(newLayers);
+  }, [isMapReady, map, driverPositions, loading]);
+
+  return null; // Este componente no renderiza nada, solo maneja la lógica
+}
 
 // Componente para manejar clics en el mapa para seleccionar ubicación inicial
 function MapClickHandler({ onStartLocationSelect }: { onStartLocationSelect: (location: Location) => void }) {
@@ -164,6 +237,7 @@ export function IndividualRoutesMap({
   onOptimizationModeChange,
   colors,
 }: IndividualRoutesMapProps) {
+  const { driverPositions, loading: driversLoading } = useDriverPositions();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -244,6 +318,14 @@ export function IndividualRoutesMap({
             <p className="text-sm theme-text-secondary mt-1" style={{ color: 'var(--theme-text-secondary)' }}>
               {selectedOrders.length} de {orders.filter(order => order.deliveryLocation && order.pickupLocation).length} pedidos seleccionados
             </p>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-xs theme-text-secondary" style={{ color: 'var(--theme-text-secondary)' }}>
+                  {driversLoading ? 'Cargando...' : `${driverPositions.length} conductores activos`}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -271,6 +353,9 @@ export function IndividualRoutesMap({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
+          
+          {/* Marcadores de drivers */}
+          <DriverMarkers />
           
           {/* Marcador de pickup */}
 
