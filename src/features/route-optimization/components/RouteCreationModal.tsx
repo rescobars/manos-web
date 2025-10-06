@@ -322,7 +322,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     
     const optimizedRoute = multiDeliveryData.optimized_route;
     
-    // Mapear stops a waypoints (puntos de parada)
+    // Mapear stops a waypoints (puntos de parada con pedidos)
     const waypoints = optimizedRoute.stops
       .filter(stop => stop.order) // Solo paradas con pedidos
       .map(stop => ({
@@ -333,7 +333,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         waypoint_index: stop.stop_number - 1 // Ajustar índice
       }));
 
-    // Mapear route_points a points (puntos de navegación detallados)
+    // Mapear route_points a points (TODOS los puntos de navegación detallados)
     const routePoints = optimizedRoute.route_points?.map((point, index) => {
       // Mapear congestion_level a los valores esperados por FastAPI
       let congestionLevel = 'free_flow';
@@ -352,14 +352,14 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         lon: point.lng,
         name: point.instruction || `Punto ${index + 1}`,
         traffic_delay: point.traffic_delay || 0,
-        speed: null,
+        speed: 35, // Velocidad por defecto
         congestion_level: congestionLevel,
         waypoint_type: 'route' as const,
-        waypoint_index: undefined
+        waypoint_index: null
       };
     }) || [];
 
-    // Mapear stops ordenados a visit_order
+    // Mapear stops ordenados a visit_order (igual que waypoints pero con orden)
     const visitOrder = optimizedRoute.stops
       .filter(stop => stop.order)
       .map((stop, index) => ({
@@ -367,6 +367,12 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         waypoint_index: index,
         order_id: stop.order?.id || `order-${index}` // Incluir order_id
       }));
+
+    // ordered_waypoints = waypoints (puntos de parada con pedidos)
+    const orderedWaypoints = waypoints.map((waypoint, index) => ({
+      order_id: visitOrder[index]?.order_id || `order-${index}`,
+      order: index + 1
+    }));
 
     // Convertir datos multi-delivery al formato esperado por createRoute
     const routeData = {

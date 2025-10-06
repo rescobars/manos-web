@@ -51,12 +51,17 @@ export async function POST(request: NextRequest) {
       route: selectedRoute.points,
       
       // 8. ordered_waypoints - pedidos con UUID y orden de entrega del backend
-      ordered_waypoints: selectedRoute.visit_order.map((visitItem: any, index: number) => {
-        // Buscar el pedido correspondiente en selectedOrders basado en el índice
-        const orderId = selectedOrders[index];
+      ordered_waypoints: (selectedRoute.visit_order || []).map((visitItem: any, index: number) => {
+        // Preferir el order_id si viene desde visit_order
+        const orderIdFromVisit = (visitItem && (visitItem.order_id || visitItem.orderId)) as string | undefined;
+        // Fallback al arreglo de selectedOrders usando waypoint_index si existe, sino el índice
+        const byWaypointIndex = typeof visitItem?.waypoint_index === 'number' ? selectedOrders[visitItem.waypoint_index] : undefined;
+        const byIndex = selectedOrders[index];
+        const resolvedOrderId = orderIdFromVisit || byWaypointIndex || byIndex || '';
+
         return {
-          order_id: orderId,
-          order: visitItem.waypoint_index + 1 // Usar el orden del backend
+          order_id: resolvedOrderId,
+          order: (typeof visitItem?.waypoint_index === 'number' ? visitItem.waypoint_index : index) + 1 // Usar el orden del backend
         };
       }),
       
@@ -64,8 +69,12 @@ export async function POST(request: NextRequest) {
       traffic_condition: routeData.traffic_conditions,
       
       // 10. traffic_delay
-      traffic_delay: selectedRoute.summary.traffic_delay
-    };
+      traffic_delay: selectedRoute.summary.traffic_delay,
+
+      // 11. opcionales sugeridos
+      status: 'PLANNED',
+      priority: 'MEDIUM'
+    } as any;
 
     // Console.log para ver qué se enviará al backend
     console.log('🚀 Enviando ruta al backend:');
@@ -95,25 +104,61 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    // Limpiar y validar los datos antes de enviar
+    // De-duplicar ordered_waypoints por order_id manteniendo el primer occurrence
+    const seenIds = new Set<string>();
+    const dedupedOrdered = (payload.ordered_waypoints as any[]).filter((ow: any) => {
+      if (!ow?.order_id || typeof ow.order_id !== 'string') return false;
+      if (seenIds.has(ow.order_id)) return false;
+      seenIds.add(ow.order_id);
+      return true;
+    });
+
+    // Normalizar traffic_condition a claves requeridas y strings
+    const normalizedTrafficCondition = {
+      current_time: payload.traffic_condition?.current_time || new Date().toISOString(),
+      weather: payload.traffic_condition?.weather || 'clear',
+      road_conditions: payload.traffic_condition?.road_conditions || 'Seco',
+      general_congestion: payload.traffic_condition?.general_congestion || 'Moderado'
+    };
+
+    // Limpiar y validar los datos antes de enviar con el formato EXACTO requerido
     const cleanedPayload = {
-      ...payload,
-      route: payload.route.map((point: any) => ({
-        lat: point.lat || 0,
-        lon: point.lon || 0,
-        name: point.name || `Punto ${point.waypoint_index || 'N/A'}`,
-        traffic_delay: point.traffic_delay || 0,
-        speed: point.speed || 0,
-        congestion_level: point.congestion_level || 'unknown',
-        waypoint_type: point.waypoint_type || 'route',
-        waypoint_index: point.waypoint_index || 0
+      organization_id: payload.organization_id,
+      route_name: payload.route_name,
+      description: payload.description,
+      origin: {
+        lat: Number(payload.origin?.lat) || 0,
+        lon: Number(payload.origin?.lon) || 0,
+        name: String(payload.origin?.name || 'Origen')
+      },
+      destination: {
+        lat: Number(payload.destination?.lat) || 0,
+        lon: Number(payload.destination?.lon) || 0,
+        name: String(payload.destination?.name || 'Destino')
+      },
+      waypoints: (payload.waypoints || []).map((wp: any, i: number) => ({
+        lat: Number(wp?.lat) || 0,
+        lon: Number(wp?.lon) || 0,
+        name: String(wp?.name || `Punto ${i + 1}`)
       })),
-      traffic_condition: {
-        current_time: payload.traffic_condition?.current_time || new Date().toISOString(),
-        weather: payload.traffic_condition?.weather || 'clear',
-        road_conditions: payload.traffic_condition?.road_conditions || 'good',
-        general_congestion: payload.traffic_condition?.general_congestion || 'low'
-      }
+      route: (payload.route || []).map((point: any, i: number) => ({
+        lat: Number(point?.lat) || 0,
+        lon: Number(point?.lon) || 0,
+        name: String(point?.name || `Segmento ${i + 1}`),
+        traffic_delay: Number(point?.traffic_delay) || 0,
+        speed: point?.speed == null ? 35 : Number(point.speed),
+        congestion_level: String(point?.congestion_level || 'light'),
+        waypoint_type: String(point?.waypoint_type || 'route'),
+        waypoint_index: null
+      })),
+      ordered_waypoints: dedupedOrdered.map((ow: any, idx: number) => ({
+        order_id: String(ow.order_id),
+        order: Number(ow.order) || idx + 1
+      })),
+      traffic_condition: normalizedTrafficCondition,
+      traffic_delay: Number(payload.traffic_delay) || 0,
+      status: String(payload.status || 'PLANNED'),
+      priority: String(payload.priority || 'MEDIUM')
     };
 
     console.log('🧹 Payload limpiado:', JSON.stringify(cleanedPayload, null, 2));
