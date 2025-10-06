@@ -80,8 +80,8 @@ const createCustomIcon = (color: string, icon: string) => {
     html: `
       <div style="
         background-color: ${color};
-        width: 30px;
-        height: 30px;
+        width: 40px;
+        height: 40px;
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
         border: 3px solid white;
@@ -93,19 +93,19 @@ const createCustomIcon = (color: string, icon: string) => {
         <div style="
           transform: rotate(45deg);
           color: white;
-          font-size: 14px;
+          font-size: 18px;
           font-weight: bold;
         ">${icon}</div>
       </div>
     `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 30],
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
     popupAnchor: [0, -30]
   });
 };
 
 // Iconos específicos
-const pickupIcon = createCustomIcon('#3B82F6', '🚛'); // Azul para pickup (camioncito)
+const pickupIcon = createCustomIcon('#3B82F6', '🛒'); // Azul para pickup (carrito)
 const deliveryIcon = createCustomIcon('#EF4444', '🏁'); // Rojo para delivery (banderita)
 const startLocationIcon = createCustomIcon('#10B981', '🚀'); // Verde para ubicación inicial
 

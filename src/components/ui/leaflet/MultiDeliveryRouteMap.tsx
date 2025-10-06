@@ -126,9 +126,9 @@ function MapContent({
       case 'start':
         return '🚀';
       case 'pickup':
-        return '📦';
+        return '🛒';
       case 'delivery':
-        return '🏠';
+        return '🏁';
       case 'end':
         return '🏁';
       default:
@@ -186,12 +186,12 @@ function MapContent({
         icon: L.divIcon({
           className: 'custom-marker',
           html: `
-            <div class="bg-white border-2 rounded-full w-10 h-10 flex items-center justify-center text-sm font-bold shadow-lg" style="border-color: ${color};">
-              <span class="text-lg">${icon}</span>
+            <div class="bg-white border-2 rounded-full w-14 h-14 flex items-center justify-center text-lg font-bold shadow-lg" style="border-color: ${color};">
+              <span class="text-2xl">${icon}</span>
             </div>
           `,
-          iconSize: [40, 40],
-          iconAnchor: [20, 20]
+          iconSize: [56, 56],
+          iconAnchor: [28, 28]
         })
       }).addTo(map);
 
