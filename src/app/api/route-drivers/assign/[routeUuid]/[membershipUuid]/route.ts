@@ -15,33 +15,53 @@ export async function POST(
       );
     }
 
-    const backendBase = process.env.API_BASE_URL || 'http://localhost:3000/api';
-    const url = `${backendBase}/route-drivers/assign/${routeUuid}/${membershipUuid}`;
+    // Obtener el token de autorización del header de la request
+    const authHeader = request.headers.get('authorization');
+    const orgIdHeader = request.headers.get('organization-id');
 
-    // Forward Authorization header and organization-id
-    const authHeader = request.headers.get('authorization') || undefined;
-    const orgIdHeader = request.headers.get('organization-id') || undefined;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, error: 'Authorization header required' },
+        { status: 401 }
+      );
+    }
 
-    const response = await fetch(url, {
+    if (!orgIdHeader) {
+      return NextResponse.json(
+        { success: false, error: 'organization-id header is required' },
+        { status: 400 }
+      );
+    }
+
+    // URL del backend real - usar la misma URL que otros endpoints
+    const backendUrl = process.env.API_BASE_URL;
+    const apiUrl = `${backendUrl}/route-drivers/assign/${routeUuid}/${membershipUuid}`;
+
+    // Hacer la llamada al backend externo
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(authHeader ? { Authorization: authHeader } : {}),
-        ...(orgIdHeader ? { 'organization-id': orgIdHeader } : {}),
+        'Authorization': authHeader,
+        'organization-id': orgIdHeader,
       },
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      return NextResponse.json(
-        { success: false, error: data.error || data.message || 'Failed to assign route to driver' },
-        { status: response.status }
-      );
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Error del backend:', response.status, errorData);
+      
+      return NextResponse.json({
+        success: false,
+        error: `Error del backend: ${response.status}`,
+        details: errorData
+      }, { status: response.status });
     }
 
-    return NextResponse.json(data);
+    const backendResponse = await response.json();
+    
+    return NextResponse.json(backendResponse);
   } catch (error) {
     console.error('Route assignment proxy error:', error);
     return NextResponse.json(

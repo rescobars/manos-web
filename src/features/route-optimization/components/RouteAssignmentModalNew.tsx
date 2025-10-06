@@ -36,12 +36,14 @@ export function RouteAssignmentModalNew({ route, onClose, onRouteAssigned }: Rou
       validation: { 
         required: true 
       },
-      options: drivers.map(driver => ({
-        value: driver.user_uuid,
-        label: `${driver.name} - ${driver.status === 'ACTIVE' ? 'Disponible' : 'Inactivo'}`
-      })),
+      options: drivers
+        .filter(driver => driver.status === 'ACTIVE')
+        .map(driver => ({
+          value: driver.user_uuid,
+          label: `${driver.name} - Disponible`
+        })),
       disabled: driversLoading || drivers.length === 0,
-      description: driversError ? `Error: ${driversError}` : driversLoading ? 'Cargando conductores...' : `${drivers.length} conductores disponibles`
+      description: driversError ? `Error: ${driversError}` : driversLoading ? 'Cargando conductores...' : `${drivers.filter(d => d.status === 'ACTIVE').length} conductores disponibles`
     },
     {
       name: 'startTime',

@@ -224,9 +224,11 @@ export function RouteAssignmentModal({ route, onClose, onRouteAssigned, onSucces
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 >
                   <option value="">Selecciona un piloto...</option>
-                  {drivers.map((driver) => (
+                  {drivers
+                    .filter(driver => driver.status === 'ACTIVE')
+                    .map((driver) => (
                     <option key={driver.user_uuid} value={driver.user_uuid}>
-                      {driver.name} - {driver.status === 'ACTIVE' ? 'Disponible' : 'Inactivo'}
+                      {driver.name} - Disponible
                     </option>
                   ))}
                 </select>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Order } from '@/types';
-import { XCircle, Route, AlertCircle, MapPin, Package, Clock, ArrowLeft, ArrowRight, CheckCircle, Info, Truck, Navigation } from 'lucide-react';
+import { XCircle, Route, AlertCircle, MapPin, Package, ArrowLeft, ArrowRight, CheckCircle, Info, Truck, Navigation } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useMultiDeliveryOptimization } from '@/hooks/useMultiDeliveryOptimization';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
@@ -12,8 +12,6 @@ import { ordersApiService } from '@/lib/api/orders';
 import { BRANCH_LOCATION } from '@/lib/constants';
 import { LocationSelectorMap, MultiDeliveryRouteMap } from '@/components/ui/leaflet';
 import { IndividualRoutesMap } from '@/components/ui/leaflet/IndividualRoutesMap';
-import { useDrivers } from '@/hooks/useDrivers';
-import { organizationMembersApiService } from '@/lib/api/organization-members';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 
 interface PickupLocation {
@@ -22,7 +20,7 @@ interface PickupLocation {
   address: string;
 }
 
-type FlowStep = 'select' | 'locations' | 'review' | 'assign';
+type FlowStep = 'select' | 'locations' | 'review';
 
 interface RouteCreationModalProps {
   onClose: () => void;
@@ -43,17 +41,9 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
   const [queueMode, setQueueMode] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<FlowStep>('select');
-  const [selectedPilot, setSelectedPilot] = useState<string>('');
-  const [pilotNotes, setPilotNotes] = useState<string>('');
   const [routeSaved, setRouteSaved] = useState<boolean>(false);
   const [createdRouteUuid, setCreatedRouteUuid] = useState<string>('');
-  const [startTime, setStartTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('');
-  const [selectedDriver, setSelectedDriver] = useState<string>('');
-  const [driverNotes, setDriverNotes] = useState<string>('');
   const [optimizationMode, setOptimizationMode] = useState<'efficiency' | 'order'>('efficiency');
-  const [assigning, setAssigning] = useState<boolean>(false);
-  const [assignmentSuccess, setAssignmentSuccess] = useState<boolean>(false);
   
   // Estados para multi-delivery
   const [startLocation, setStartLocation] = useState<PickupLocation | null>(null);
@@ -117,15 +107,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     fetchOrders();
   }, [currentOrganization]);
 
-  // Drivers hook
-  const { drivers, isLoading: driversLoading, error: driversError, fetchDrivers } = useDrivers();
-
-  // Cargar conductores reales de la organización
-  useEffect(() => {
-    if (currentOrganization?.uuid) {
-      fetchDrivers(currentOrganization.uuid);
-    }
-  }, [currentOrganization, fetchDrivers]);
 
   // Función para obtener pedidos formateados para el mapa
   const getOrdersForMap = useCallback(() => {
@@ -185,14 +166,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
       canNext: !!(multiDeliveryData && !routeSaved),
       nextText: routeSaved ? 'Ruta Guardada' : 'Guardar Ruta'
     },
-    {
-      key: 'assign',
-      title: 'Asignar Conductor',
-      description: 'Asigna la ruta a un conductor disponible',
-      icon: Clock,
-      canNext: selectedDriver.length > 0,
-      nextText: 'Asignar y Completar'
-    }
   ];
 
   const currentStepIndex = steps.findIndex(step => step.key === currentStep);
@@ -236,10 +209,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         }
         break;
         
-      case 'assign':
-        // Asignar ruta
-        await handleAssignRoute();
-        break;
     }
   };
 
@@ -433,11 +402,16 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         
         success(
           '¡Ruta guardada exitosamente!',
-          `La ruta optimizada con ${selectedOrders.length} pedidos ha sido guardada. Ahora puedes asignar un conductor.`,
+          `La ruta optimizada con ${selectedOrders.length} pedidos ha sido guardada.`,
           5000
         );
         setRouteSaved(true);
-        setCurrentStep('assign');
+        
+        // Cerrar el modal automáticamente después de crear la ruta
+        if (!asPage) {
+          onRouteCreated();
+          onClose();
+        }
       } else {
         showError(
           'Error al guardar la ruta',
@@ -454,56 +428,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     }
   };
 
-  const handleAssignRoute = async () => {
-    if (!selectedDriver || !createdRouteUuid) return;
-    
-    try {
-      setAssigning(true);
-      setAssignmentSuccess(false);
-
-      const assignmentData = {
-        start_time: startTime || new Date().toISOString(),
-        end_time: endTime || '',
-        driver_notes: driverNotes || undefined,
-        driver_instructions: undefined as Record<string, any> | undefined,
-      };
-
-      const response = await organizationMembersApiService.assignRouteToDriver(
-        createdRouteUuid,
-        selectedDriver,
-        assignmentData,
-        currentOrganization?.uuid
-      );
-
-      if (response.success) {
-        setAssignmentSuccess(true);
-        success(
-          '¡Ruta asignada!',
-          `Asignada a ${drivers.find(d => d.organization_membership_uuid === selectedDriver)?.name}`,
-          4000
-        );
-        if (!asPage) {
-          onRouteCreated();
-          onClose();
-        }
-      } else {
-        showError(
-          'No se pudo asignar',
-          response.error || 'Intenta de nuevo más tarde',
-          6000
-        );
-      }
-      
-    } catch (error) {
-      showError(
-        'Error al asignar la ruta',
-        'No se pudo asignar la ruta al conductor. Por favor, inténtalo de nuevo.',
-        6000
-      );
-    } finally {
-      setAssigning(false);
-    }
-  };
 
   // Funciones de selección de pedidos
   const handleOrderSelection = useCallback((orderId: string) => {
@@ -582,7 +506,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           </div>
         </div>
       ) : (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           <div className="rounded-xl shadow-2xl max-w-md w-full p-6 text-center theme-bg-3" style={{ backgroundColor: colors.background3 }}>
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
             <p className="theme-text-secondary">Cargando pedidos...</p>
@@ -593,7 +517,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   }
 
   return (
-    <div className={asPage ? "p-4 sm:p-6 md:p-8" : "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"}>
+    <div className={asPage ? "p-4 sm:p-6 md:p-8" : "fixed inset-0 flex items-center justify-center z-50 p-4"}>
       <div 
         className={asPage ? "rounded-xl shadow theme-bg-3 w-full max-w-[1400px] mx-auto flex flex-col" : "rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] flex flex-col theme-bg-3"}
         style={{ backgroundColor: colors.background3 }}
@@ -673,15 +597,15 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                   </button>
               <button
                 onClick={executeCurrentStepAction}
-                disabled={!stepInfo.canNext || (currentStep === 'assign' && assigning)}
+                disabled={!stepInfo.canNext}
                 className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md font-medium text-xs sm:text-sm transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                  stepInfo.canNext && !(currentStep === 'assign' && assigning)
+                  stepInfo.canNext
                     ? 'shadow-sm hover:shadow-md theme-btn-primary'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
-                style={stepInfo.canNext && !(currentStep === 'assign' && assigning) ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
+                style={stepInfo.canNext ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
               >
-                <span className="truncate text-xs sm:text-sm">{currentStep === 'assign' && assigning ? 'Asignando...' : stepInfo.nextText}</span>
+                <span className="truncate text-xs sm:text-sm">{stepInfo.nextText}</span>
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
               </button>
                 </div>
@@ -756,7 +680,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                            <Clock className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
+                            <Navigation className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
                             <h4 className="font-semibold theme-text-primary text-sm sm:text-base">Orden de Llegada</h4>
                             <div className="relative group">
                               <Info className="w-3 h-3 sm:w-4 sm:h-4 theme-text-muted cursor-help flex-shrink-0" />
@@ -933,10 +857,11 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                     <p className="theme-text-secondary">Optimizando ruta multi-delivery...</p>
                   </div>
                 ) : multiDeliveryData?.optimized_route ? (
-                  <div className={asPage ? "h-[60vh]" : "h-96"}>
+                  <div className="w-full rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
                     <MultiDeliveryRouteMap
                       optimizedRoute={multiDeliveryData.optimized_route}
-                      className="w-full h-full"
+                      className="w-full"
+                      style={{ height: asPage ? '60vh' : '28rem' }}
                     />
                   </div>
                 ) : (
@@ -949,102 +874,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
               </div>
             )}
 
-            {currentStep === 'assign' && (
-              <div className="space-y-6">
-                <div className="rounded-lg p-4" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.success}33` }}>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5" style={{ color: colors.success }} />
-                    <span className="font-medium" style={{ color: colors.textPrimary }}>Ruta creada exitosamente</span>
-                  </div>
-                  <p className="text-sm text-green-700 mt-1">
-                    La ruta con {selectedOrders.length} pedidos ha sido guardada. Ahora asigna un conductor.
-                  </p>
-                </div>
-
-                {/* Selección de conductor */}
-                <div className="space-y-3 sm:space-y-4">
-                  <h3 className="text-base sm:text-lg font-semibold theme-text-primary">Seleccionar Conductor</h3>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {drivers.map((driver) => (
-                      <div
-                        key={driver.organization_membership_uuid}
-                        onClick={() => setSelectedDriver(driver.organization_membership_uuid)}
-                        className={`p-3 sm:p-4 border rounded-lg cursor-pointer transition-all duration-200`}
-                        style={{
-                          borderColor: selectedDriver === driver.organization_membership_uuid ? colors.buttonPrimary1 : colors.border,
-                          backgroundColor: selectedDriver === driver.organization_membership_uuid ? colors.background2 : (driver.status === 'ACTIVE' ? colors.background3 : colors.background2),
-                          opacity: driver.status === 'ACTIVE' ? 1 : 0.6,
-                          boxShadow: selectedDriver === driver.organization_membership_uuid ? `0 0 0 2px ${colors.buttonPrimary2}33` : undefined,
-                          cursor: driver.status === 'ACTIVE' ? 'pointer' as const : 'not-allowed'
-                        }}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium theme-text-primary text-sm sm:text-base truncate">{driver.name}</h4>
-                            <p className="text-xs sm:text-sm theme-text-secondary mt-1 truncate">{driver.email}</p>
-                            <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
-                              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0" style={{ backgroundColor: driver.status === 'ACTIVE' ? colors.success : colors.error }}></div>
-                              <span className="text-xs theme-text-secondary">
-                                {driver.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="w-5 h-5 rounded border-2 flex items-center justify-center" style={{ borderColor: selectedDriver === driver.organization_membership_uuid ? colors.buttonPrimary1 : colors.border, backgroundColor: selectedDriver === driver.organization_membership_uuid ? colors.buttonPrimary1 : 'transparent' }}>
-                            {selectedDriver === driver.organization_membership_uuid && (
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.buttonText }}></div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Notas adicionales */}
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-xs sm:text-sm font-medium theme-text-primary">
-                    Notas adicionales (opcional)
-                  </label>
-                  <textarea
-                    value={driverNotes}
-                    onChange={(e) => setDriverNotes(e.target.value)}
-                    placeholder="Instrucciones especiales para el conductor..."
-                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg focus:ring-2 focus:border-transparent resize-none theme-text-primary text-xs sm:text-sm"
-                    style={{ 
-                      borderColor: colors.border, 
-                      backgroundColor: colors.background3,
-                      color: colors.textPrimary,
-                      boxShadow: `0 0 0 2px transparent` 
-                    }}
-                    rows={2}
-                  />
-                </div>
-
-                {/* Resumen de la asignación */}
-                {selectedDriver && (
-                  <div className="rounded-lg p-3 sm:p-4" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.info}33` }}>
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: colors.info }} />
-                      <span className="font-medium text-sm sm:text-base" style={{ color: colors.textPrimary }}>Resumen de asignación</span>
-                    </div>
-                    <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm theme-text-secondary space-y-1">
-                      <p className="truncate">Conductor: <strong>{drivers.find(d => d.organization_membership_uuid === selectedDriver)?.name}</strong></p>
-                      <p>Pedidos: <strong>{selectedOrders.length}</strong></p>
-                      <p className="truncate">Ruta: <strong>{createdRouteUuid}</strong></p>
-                    </div>
-                    {assignmentSuccess && (
-                      <div className="mt-3 rounded-md p-3" style={{ backgroundColor: colors.background1, border: `1px solid ${colors.success}66` }}>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4" style={{ color: colors.success }} />
-                          <span className="text-sm" style={{ color: colors.textPrimary }}>Ruta asignada correctamente</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
