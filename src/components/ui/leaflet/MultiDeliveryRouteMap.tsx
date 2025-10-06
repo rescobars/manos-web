@@ -175,61 +175,7 @@ function MapContent({
       console.log('✅ Stops polyline added');
     }
 
-    // Crear un solo marcador en el centro de la ruta para mostrar detalles
-    if (optimizedRoute.route_points && optimizedRoute.route_points.length > 0) {
-      // Calcular el punto medio de la ruta
-      const midIndex = Math.floor(optimizedRoute.route_points.length / 2);
-      const midPoint = optimizedRoute.route_points[midIndex];
-      
-      if (midPoint && midPoint.lat && midPoint.lng) {
-        const marker = L.marker([midPoint.lat, midPoint.lng], {
-          icon: L.divIcon({
-            className: 'route-point-marker',
-            html: `
-              <div class="bg-blue-500 border-2 border-white rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold shadow-lg">
-                🛣️
-              </div>
-            `,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-          })
-        }).addTo(map);
-
-        // Crear popup con información de la ruta
-        const totalPoints = optimizedRoute.route_points.length;
-        const totalDistance = optimizedRoute.total_distance;
-        const totalTime = optimizedRoute.total_time;
-        
-        let popupContent = `
-          <div class="text-center min-w-[250px]">
-            <div class="font-semibold text-sm mb-2">📋 Detalles de la Ruta</div>
-            <div class="text-xs text-gray-600 mb-2">Punto ${midPoint.sequence + 1} de ${totalPoints}</div>
-            <div class="text-xs text-blue-600 font-medium mb-2">${midPoint.instruction || 'Punto de navegación'}</div>
-            <div class="text-xs text-gray-500 mb-1">Calle: ${midPoint.street_name || 'N/A'}</div>
-        `;
-
-        if (midPoint.distance_from_previous) {
-          popupContent += `
-            <div class="border-t pt-2 mt-2 text-xs text-gray-500">
-              <div>Distancia desde anterior: ${midPoint.distance_from_previous.toFixed(0)}m</div>
-              <div>Retraso tráfico: ${midPoint.traffic_delay || 0}s</div>
-            </div>
-          `;
-        }
-
-        popupContent += `
-            <div class="border-t pt-2 mt-2 text-xs text-gray-500">
-              <div>📏 Distancia total: ${totalDistance.toFixed(1)}km</div>
-              <div>⏱️ Tiempo total: ${Math.round(totalTime)}min</div>
-              <div>🚦 Retraso total: ${Math.round(optimizedRoute.total_traffic_delay / 60)}min</div>
-            </div>
-          </div>
-        `;
-
-        marker.bindPopup(popupContent);
-        newLayers.push(marker);
-      }
-    }
+    // Marcador de ruta removido - solo se muestran las paradas reales
 
     // Crear marcadores para cada parada
     optimizedRoute.stops.forEach((stop, index) => {

@@ -267,15 +267,15 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     setSaving(true);
     const optimizedRoute = multiDeliveryData.optimized_route;
     
-    // Mapear stops a waypoints (puntos de parada con pedidos)
+    // Mapear stops a waypoints (TODAS las paradas en orden)
     const waypoints = optimizedRoute.stops
-      .filter(stop => stop.order) // Solo paradas con pedidos
       .map(stop => ({
         lat: stop.location.lat,
         lon: stop.location.lng,
         name: stop.location.address,
         waypoint_type: stop.stop_type,
-        waypoint_index: stop.stop_number - 1 // Ajustar índice
+        waypoint_index: stop.stop_number - 1, // Ajustar índice
+        order_id: stop.order?.id || null // Incluir order_id si existe
       }));
 
     // Mapear route_points a points (TODOS los puntos de navegación detallados)
@@ -304,19 +304,20 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
       };
     }) || [];
 
-    // Mapear stops ordenados a visit_order (igual que waypoints pero con orden)
+    // Mapear stops ordenados a visit_order (TODAS las paradas en orden)
     const visitOrder = optimizedRoute.stops
-      .filter(stop => stop.order)
       .map((stop, index) => ({
         name: stop.location.address,
         waypoint_index: index,
-        order_id: stop.order?.id || `order-${index}` // Incluir order_id
+        order_id: stop.order?.id || null, // Incluir order_id si existe
+        waypoint_type: stop.stop_type // Incluir tipo de parada
       }));
 
-    // ordered_waypoints = waypoints (puntos de parada con pedidos)
+    // ordered_waypoints = waypoints (TODAS las paradas en orden)
     const orderedWaypoints = waypoints.map((waypoint, index) => ({
-      order_id: visitOrder[index]?.order_id || `order-${index}`,
-      order: index + 1
+      order_id: waypoint.order_id || null,
+      order: index + 1,
+      waypoint_type: waypoint.waypoint_type
     }));
 
     // Convertir datos multi-delivery al formato esperado por createRoute
