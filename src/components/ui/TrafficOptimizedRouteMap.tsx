@@ -114,12 +114,6 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
     if (routeIndex < 0 || routeIndex >= routes.length) return;
     
     const newRoute = routes[routeIndex];
-    console.log('🔄 Cambiando a ruta:', { 
-      routeIndex, 
-      routeId: newRoute.route_id,
-      visitOrderLength: newRoute.visit_order?.length,
-      visitOrder: newRoute.visit_order
-    });
     
     // Detener simulación si está activa
     stopSimulation();
@@ -569,23 +563,16 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
   };
 
   const displayRoute = (route: RouteType, routeIndex: number) => {
-    console.log('🚀 displayRoute llamado:', { route, routeIndex, isMapReady, mapExists: !!map.current });
-    
     if (!map.current || !isMapReady) {
-      console.log('❌ displayRoute: Mapa no está listo');
       return;
     }
 
     const routeId = `route-${routeIndex}`;
     const isPrimary = routeIndex === 0;
     const color = getRouteColorByIndex(routeIndex);
-    
-    console.log('🎨 Color de ruta:', { routeId, isPrimary, color });
-    console.log('📍 Puntos de ruta:', route.points.length, route.points.slice(0, 3));
 
     // Agregar fuente para los puntos de la ruta
     const coordinates = route.points.map(point => [point.lon, point.lat]);
-    console.log('🗺️ Coordenadas de la ruta:', coordinates.slice(0, 5));
     
     try {
       map.current.addSource(routeId, {
@@ -599,10 +586,8 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
           },
         },
       });
-      console.log('✅ Fuente agregada:', routeId);
       setAddedSources(prev => [...prev, routeId]);
     } catch (error) {
-      console.error('❌ Error al agregar fuente:', error);
       return;
     }
 
@@ -622,10 +607,8 @@ const TrafficOptimizedRouteMap: React.FC<TrafficOptimizedRouteMapProps> = ({
           'line-opacity': isPrimary ? 0.9 : 0.35,
         },
       });
-      console.log('✅ Capa agregada:', `${routeId}-line`);
       setAddedLayers(prev => [...prev, `${routeId}-line`]);
     } catch (error) {
-      console.error('❌ Error al agregar capa:', error);
       return;
     }
 

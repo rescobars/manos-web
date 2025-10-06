@@ -66,20 +66,10 @@ export function useRouteOptimization() {
       // Construir coordenadas reales de los pedidos
       // Formato requerido por Mapbox: lng,lat;lng,lat;lng,lat (longitud primero, luego latitud)
       const allLocations = [pickupLocation, ...deliveryLocations];
-      console.log('🔍 All locations before mapping:', allLocations);
       
       const coordinates = allLocations
-        .map(loc => {
-          const coordString = `${loc.lng},${loc.lat}`;
-          console.log(`🔍 Location ${loc.address}: lat=${loc.lat}, lng=${loc.lng} -> "${coordString}"`);
-          return coordString;
-        })
+        .map(loc => `${loc.lng},${loc.lat}`)
         .join(';');
-      
-      // Debug: Ver qué coordenadas se envían
-      console.log('🔍 Coordenadas reales de los pedidos:', coordinates);
-      console.log('🔍 Pickup Location:', pickupLocation);
-      console.log('🔍 Delivery Locations:', deliveryLocations);
 
       // Parámetros de la API - Replicando la petición exitosa de curl
       const params = new URLSearchParams({
@@ -101,11 +91,6 @@ export function useRouteOptimization() {
       }
 
       const data = await response.json();
-      
-      // Debug: Ver qué recibimos de Mapbox
-      console.log('🔍 Respuesta de Mapbox:', data);
-      console.log('🔍 data.routes:', data.routes);
-      console.log('🔍 data.routes?.length:', data.routes?.length);
 
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];

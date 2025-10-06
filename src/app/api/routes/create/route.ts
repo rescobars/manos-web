@@ -76,33 +76,6 @@ export async function POST(request: NextRequest) {
       priority: 'MEDIUM'
     } as any;
 
-    // Console.log para ver qué se enviará al backend
-    console.log('🚀 Enviando ruta al backend:');
-    console.log('📋 Payload completo:', JSON.stringify(payload, null, 2));
-    console.log('🏢 Organización:', payload.organization_id);
-    console.log('📝 Nombre ruta:', payload.route_name);
-    console.log('📍 Origen:', payload.origin);
-    console.log('🎯 Destino:', payload.destination);
-    console.log('🛣️  Waypoints:', payload.waypoints.length);
-    console.log('🗺️  Coordenadas ruta:', payload.route.length);
-    console.log('📦 Pedidos ordenados:', payload.ordered_waypoints);
-    console.log('🚦 Condiciones tráfico:', payload.traffic_condition);
-    console.log('⏱️  Retraso tráfico:', payload.traffic_delay);
-
-    // Log detallado de la estructura de route para debug
-    console.log('🔍 Estructura de route:');
-    payload.route.forEach((point: any, index: number) => {
-      console.log(`  Punto ${index}:`, {
-        lat: point.lat,
-        lon: point.lon,
-        name: point.name,
-        speed: point.speed,
-        traffic_delay: point.traffic_delay,
-        congestion_level: point.congestion_level,
-        waypoint_type: point.waypoint_type,
-        waypoint_index: point.waypoint_index
-      });
-    });
 
     // De-duplicar ordered_waypoints por order_id manteniendo el primer occurrence
     const seenIds = new Set<string>();
@@ -191,11 +164,9 @@ export async function POST(request: NextRequest) {
       }
 
       const backendResponse = await response.json();
-      console.log('✅ Respuesta del backend:', backendResponse);
 
       // Extraer el route_id de la respuesta del backend
       const routeId = backendResponse?.data?.uuid || backendResponse?.data?.id || backendResponse?.route_id || backendResponse?.id || backendResponse?.uuid;
-      console.log('🔑 Route ID extraído:', routeId);
 
       return NextResponse.json({
         success: true,

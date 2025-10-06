@@ -47,9 +47,6 @@ const SavedRoutesList: React.FC<SavedRoutesListProps> = ({
   // Usar el viewMode que viene del padre, con table por defecto
   const actualViewMode = viewMode || 'table';
   
-  // Debug: verificar el viewMode recibido
-  console.log('SavedRoutesList viewMode recibido:', viewMode);
-  console.log('SavedRoutesList actualViewMode:', actualViewMode);
   const getOrderStatusIcon = (status: string) => {
     switch (status) {
       case 'PENDING':

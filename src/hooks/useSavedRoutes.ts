@@ -66,9 +66,6 @@ export function useSavedRoutes(): UseSavedRoutesReturn {
       let apiUrl = '/api/routes';
       const queryParams = new URLSearchParams();
       
-      console.log('=== useSavedRoutes fetchSavedRoutes ===');
-      console.log('filters received:', filters);
-      
       if (filters?.status) queryParams.append('status', filters.status);
       if (filters?.priority) queryParams.append('priority', filters.priority);
       if (filters?.search) queryParams.append('search', filters.search);

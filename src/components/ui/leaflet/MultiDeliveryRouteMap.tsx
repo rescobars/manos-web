@@ -139,11 +139,8 @@ function MapContent({
   // Mostrar ruta optimizada
   useEffect(() => {
     if (!isMapReady || !optimizedRoute || !map) {
-      console.log('🔍 Map not ready:', { isMapReady, optimizedRoute: !!optimizedRoute, map: !!map });
       return;
     }
-
-    console.log('🎯 Rendering route on map:', optimizedRoute);
 
     clearMap();
 
@@ -151,7 +148,6 @@ function MapContent({
 
     // Crear polylines para la ruta completa usando route_points
     if (optimizedRoute.route_points && optimizedRoute.route_points.length > 0) {
-      console.log('📍 Using route_points:', optimizedRoute.route_points.length);
       const routeCoordinates = optimizedRoute.route_points.map(point => 
         [point.lat, point.lng] as [number, number]
       );
@@ -163,9 +159,7 @@ function MapContent({
       }).addTo(map);
 
       newLayers.push(routePolyline);
-      console.log('✅ Route polyline added');
     } else if (optimizedRoute.stops.length > 1) {
-      console.log('📍 Using stops fallback:', optimizedRoute.stops.length);
       // Fallback: conectar solo las paradas si no hay route_points
       const coordinates = optimizedRoute.stops.map(stop => 
         [stop.location.lat, stop.location.lng] as [number, number]
@@ -234,17 +228,13 @@ function MapContent({
 
         marker.bindPopup(popupContent);
         newLayers.push(marker);
-        console.log('✅ Route details marker added');
       }
     }
 
     // Crear marcadores para cada parada
-    console.log('📍 Creating stop markers:', optimizedRoute.stops.length);
     optimizedRoute.stops.forEach((stop, index) => {
       const color = getStopColor(stop.stop_type);
       const icon = getStopIcon(stop.stop_type);
-      
-      console.log(`📍 Creating marker ${index + 1}:`, stop.location, stop.stop_type);
       
       const marker = L.marker([stop.location.lat, stop.location.lng], {
         icon: L.divIcon({
@@ -294,15 +284,10 @@ function MapContent({
 
     // Ajustar vista para mostrar toda la ruta
     if (optimizedRoute.stops.length > 0) {
-      console.log('🎯 Adjusting map view to show all stops');
       const group = L.featureGroup(newLayers);
       const bounds = group.getBounds();
-      console.log('📍 Map bounds:', bounds);
       map.fitBounds(bounds.pad(0.1));
-      console.log('✅ Map view adjusted');
     }
-
-    console.log('🎯 Route rendering completed. Total layers:', newLayers.length);
   }, [isMapReady, optimizedRoute, map]);
 
   return null; // Este componente no renderiza nada, solo maneja la lógica

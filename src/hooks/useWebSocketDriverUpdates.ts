@@ -19,7 +19,6 @@ export function useWebSocketDriverUpdates({
   selectedRouteIds,
   isInitialLoadComplete
 }: UseWebSocketDriverUpdatesProps) {
-  console.log('🎯 HOOK - useWebSocketDriverUpdates ejecutándose');
   const { user: currentUser, currentOrganization } = useAuth();
   const isAuthenticated = useRef(false);
 
@@ -50,19 +49,15 @@ export function useWebSocketDriverUpdates({
 
   // Manejar actualizaciones de drivers de organización
   const handleOrganizationDriverUpdate = useCallback((data: any) => {
-    console.log('🔄 PROCESANDO - Actualización de driver de organización:', data);
     // La estructura real es data.data.data según el mensaje recibido
     const updateData = data.data?.data || data.data;
-    console.log('🔍 EXTRACCIÓN - DriverId de organización extraído:', updateData?.driverId);
     
     if (!updateData || !updateData.driverId || !updateData.location) {
-      console.log('⚠️ DATOS INVÁLIDOS - Actualización de organización sin datos válidos');
       return;
     }
     
     // Solo procesar drivers de organización si no hay rutas seleccionadas
     if (selectedRouteIds.length > 0) {
-      console.log('⏭️ OMITIENDO - Driver de organización porque hay rutas seleccionadas:', updateData.driverId);
       return;
     }
     
@@ -102,33 +97,26 @@ export function useWebSocketDriverUpdates({
       };
 
       if (existingIndex >= 0) {
-        console.log('✏️ ACTUALIZANDO - Driver de organización existente:', updateData.driverId);
         updatedPositions[existingIndex] = updatedDriver;
       } else {
-        console.log('➕ AGREGANDO - Nuevo driver de organización:', updateData.driverId);
         updatedPositions.push(updatedDriver);
       }
 
-      console.log('📊 ESTADO ACTUALIZADO - Total drivers:', updatedPositions.length);
       return updatedPositions;
     });
   }, [setDriverPositions, selectedRouteIds]);
 
   // Manejar actualizaciones de drivers de ruta
   const handleRouteDriverUpdate = useCallback((data: any) => {
-    console.log('🔄 PROCESANDO - Actualización de driver de ruta:', data);
     // La estructura real es data.data.data según el mensaje recibido
     const updateData = data.data?.data || data.data;
-    console.log('🔍 EXTRACCIÓN - DriverId de ruta extraído:', updateData?.driverId);
     
     if (!updateData || !updateData.driverId || !updateData.location) {
-      console.log('⚠️ DATOS INVÁLIDOS - Actualización de ruta sin datos válidos');
       return;
     }
     
     // Solo procesar si la ruta está seleccionada
     if (!selectedRouteIds.includes(updateData.routeId)) {
-      console.log('⏭️ OMITIENDO - Ruta no seleccionada:', updateData.routeId);
       return;
     }
 
@@ -158,29 +146,21 @@ export function useWebSocketDriverUpdates({
       };
 
       if (existingIndex >= 0) {
-        console.log('✏️ ACTUALIZANDO - Driver de ruta existente:', updateData.driverId, 'en ruta:', updateData.routeId);
         updatedPositions[existingIndex] = updatedDriver;
       } else {
-        console.log('➕ AGREGANDO - Nuevo driver de ruta:', updateData.driverId, 'en ruta:', updateData.routeId);
         updatedPositions.push(updatedDriver);
       }
 
-      console.log('📊 ESTADO ACTUALIZADO - Total drivers:', updatedPositions.length);
       return updatedPositions;
     });
   }, [setDriverPositions, selectedRouteIds]);
 
   // Manejar transmisiones de drivers
   const handleDriverTransmission = useCallback((data: any) => {
-    console.log('🔄 PROCESANDO - Transmisión de driver:', data);
     // El driverId está en data.data.data.driverId según el mensaje recibido
     const transmissionData = data.data?.data || data.data;
-    console.log('🔍 EXTRACCIÓN - DriverId extraído:', transmissionData?.driverId);
-    console.log('🔍 EXTRACCIÓN - Ubicación extraída:', transmissionData?.location);
-    console.log('🔍 EXTRACCIÓN - Estado extraído:', transmissionData?.status);
     
     if (!transmissionData || !transmissionData.driverId || !transmissionData.location) {
-      console.log('⚠️ DATOS INVÁLIDOS - Transmisión sin datos válidos');
       return;
     }
     
@@ -191,7 +171,6 @@ export function useWebSocketDriverUpdates({
       );
 
       if (existingIndex >= 0) {
-        console.log('✏️ ACTUALIZANDO - Transmisión de driver existente:', transmissionData.driverId);
         // Actualizar driver existente
         const existingDriver = updatedPositions[existingIndex];
         updatedPositions[existingIndex] = {
@@ -214,11 +193,8 @@ export function useWebSocketDriverUpdates({
             networkType: transmissionData.metadata.networkType
           }
         };
-      } else {
-        console.log('⚠️ OMITIENDO - Driver no encontrado para transmisión:', transmissionData.driverId);
       }
 
-      console.log('📊 ESTADO ACTUALIZADO - Total drivers:', updatedPositions.length);
       return updatedPositions;
     });
   }, [setDriverPositions]);
@@ -226,17 +202,13 @@ export function useWebSocketDriverUpdates({
   // Suscribirse a eventos de WebSocket solo después de la carga inicial
   useEffect(() => {
     if (!isInitialLoadComplete) {
-      console.log('⏳ ESPERANDO - Carga inicial no completada, no suscribiéndose a WebSocket');
       return;
     }
-
-    console.log('🔌 SUSCRIBIÉNDOSE - A eventos de WebSocket (carga inicial completada)');
     wsService.on('organization_driver_update', handleOrganizationDriverUpdate);
     wsService.on('route_driver_update', handleRouteDriverUpdate);
     wsService.on('driver_transmission', handleDriverTransmission);
 
     return () => {
-      console.log('🔌 DESUSCRIBIÉNDOSE - De eventos de WebSocket');
       wsService.off('organization_driver_update', handleOrganizationDriverUpdate);
       wsService.off('route_driver_update', handleRouteDriverUpdate);
       wsService.off('driver_transmission', handleDriverTransmission);
@@ -246,18 +218,13 @@ export function useWebSocketDriverUpdates({
   // Unirse/salir de rutas cuando cambian las rutas seleccionadas (solo después de carga inicial)
   useEffect(() => {
     if (!isInitialLoadComplete) {
-      console.log('⏳ ESPERANDO - Carga inicial no completada, no uniéndose a rutas');
       return;
     }
 
     if (selectedRouteIds.length > 0) {
-      console.log('🛣️ UNIÉNDOSE - A rutas seleccionadas:', selectedRouteIds);
       selectedRouteIds.forEach(routeId => {
-        console.log('🛣️ UNIÉNDOSE - A ruta:', routeId);
         wsService.joinRoute(routeId);
       });
-    } else {
-      console.log('🛣️ SIN RUTAS - No hay rutas seleccionadas');
     }
 
     return () => {

@@ -100,7 +100,6 @@ export function useUnifiedDriverPositions() {
       const data: RouteDriverPositionsResponse = await response.json();
       
       if (data.success) {
-        console.log('✅ CONDUCTORES DE RUTAS CARGADOS:', data.data.length, 'conductores para rutas:', routeIds);
         setDriverPositions(data.data);
       } else {
         throw new Error('API returned unsuccessful response');
@@ -116,20 +115,15 @@ export function useUnifiedDriverPositions() {
 
   // Update selected routes - solo actualizar el estado, el filtrado se hace en el frontend
   const updateSelectedRoutes = useCallback((routeIds: string[]) => {
-    console.log('🔄 ACTUALIZANDO RUTAS SELECCIONADAS:', routeIds);
     setSelectedRouteIds(routeIds);
     
     // Solo cargar conductores si no tenemos datos
     if (driverPositions.length === 0) {
       if (routeIds.length > 0) {
-        console.log('📍 CARGANDO CONDUCTORES DE RUTAS:', routeIds);
         fetchRouteDrivers(routeIds);
       } else {
-        console.log('🌐 CARGANDO TODOS LOS CONDUCTORES');
         fetchAllDrivers();
       }
-    } else {
-      console.log('✅ USANDO CONDUCTORES EXISTENTES - Filtrado en frontend');
     }
   }, [fetchRouteDrivers, fetchAllDrivers, driverPositions.length]);
 

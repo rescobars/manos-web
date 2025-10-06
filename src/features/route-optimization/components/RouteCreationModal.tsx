@@ -198,14 +198,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const currentStepIndex = steps.findIndex(step => step.key === currentStep);
   const stepInfo = steps[currentStepIndex] || steps[0];
   
-  // Debug logs
-  console.log('🔍 RouteCreationModal Debug:', {
-    currentStep,
-    selectedOrders: selectedOrders.length,
-    orders: orders.length,
-    canNext: stepInfo.canNext,
-    stepInfo
-  });
 
   // Funciones de navegación
   const canGoBack = currentStepIndex > 0 && !routeSaved;
@@ -253,15 +245,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
 
 
   const handleOptimizeMultiDelivery = async () => {
-    console.log('🚀 handleOptimizeMultiDelivery called');
-    console.log('🔍 selectedOrders:', selectedOrders);
-    console.log('🔍 startLocation:', startLocation);
-    console.log('🔍 endLocation:', endLocation);
-    console.log('🔍 startLocation lat/lng:', startLocation?.lat, startLocation?.lng);
-    console.log('🔍 endLocation lat/lng:', endLocation?.lat, endLocation?.lng);
-    
     if (selectedOrders.length < 1 || !startLocation || !endLocation) {
-      console.log('❌ Early return: missing required data');
       return;
     }
     
@@ -290,9 +274,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
       estimated_delivery_time: 3
     }));
 
-    console.log('🔍 Delivery orders:', deliveryOrders);
-    console.log('🔍 Sending to API - startLocation:', startLocation);
-    console.log('🔍 Sending to API - endLocation:', endLocation);
 
     const result = await optimizeMultiDelivery(
       startLocation,

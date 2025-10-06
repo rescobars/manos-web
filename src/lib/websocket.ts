@@ -168,12 +168,10 @@ class WebSocketService {
     });
 
     this.socket.on('joined_route', (data) => {
-      console.log('🚗️ Unido a la ruta:', data);
       this.emit('joined_route', data);
     });
 
     this.socket.on('left_route', (data) => {
-      console.log('🚪 Salido de la ruta:', data);
       this.emit('left_route', data);
     });
 
@@ -184,7 +182,6 @@ class WebSocketService {
     });
 
     this.socket.on('route_driver_update', (data) => {
-      console.log('🛣️ MENSAJE RECIBIDO - Driver actualizado en ruta:', JSON.stringify(data, null, 2));
       this.emit('route_driver_update', data);
     });
 

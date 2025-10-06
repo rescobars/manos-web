@@ -341,7 +341,6 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       const cssVarName = cssVarMap[key as keyof DynamicThemeColors];
       if (cssVarName) {
         root.style.setProperty(cssVarName, value);
-        console.log(`🎨 Applied CSS variable: ${cssVarName} = ${value}`); // Debug log
       } else {
         console.warn(`⚠️ No CSS variable mapping found for: ${key}`);
       }
