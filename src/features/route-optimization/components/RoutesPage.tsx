@@ -7,7 +7,8 @@ import { DataTable } from '@/components/ui/DataTable';
 import { Button } from '@/components/ui/Button';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { SavedRoute } from '@/types';
-import { Plus, Route, Clock, Users, CheckCircle, AlertCircle, XCircle, MapPin, Package, Truck } from 'lucide-react';
+import { Plus, Route, Clock, Users, CheckCircle, AlertCircle, XCircle, MapPin, Package, Truck, Eye } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { StatCard } from '@/components/ui/StatCard';
@@ -17,6 +18,7 @@ export default function RoutesPage() {
   const { colors } = useDynamicTheme();
   const { currentOrganization } = useAuth();
   const { success, error: showError, toasts, removeToast } = useToast();
+  const router = useRouter();
   
   // Estados para rutas
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
@@ -167,6 +169,10 @@ export default function RoutesPage() {
     setShowCreateRouteModal(false);
   };
 
+  const handleViewRoute = (route: SavedRoute) => {
+    router.push(`./routes/${route.uuid}`);
+  };
+
 
   // Función para refrescar rutas después de crear una nueva
   const handleRouteCreated = () => {
@@ -293,6 +299,24 @@ export default function RoutesPage() {
         </div>
       )
     },
+    {
+      key: 'actions' as keyof SavedRoute,
+      label: 'Acciones',
+      sortable: false,
+      className: 'w-16 sm:w-20 lg:w-32',
+      render: (value: any, route: SavedRoute) => (
+        <div className="flex items-center gap-1 sm:gap-2">
+          <button
+            onClick={() => handleViewRoute(route)}
+            className="px-1.5 sm:px-2 lg:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+            title="Ver detalles"
+          >
+            <Eye className="w-3 h-3" />
+            <span className="hidden sm:inline">Ver</span>
+          </button>
+        </div>
+      )
+    }
   ];
 
   // Función para renderizar items en grid
@@ -345,6 +369,16 @@ export default function RoutesPage() {
       <div className="flex items-center justify-between pt-2 border-t theme-divider">
         <span className="text-xs theme-text-muted truncate">ID: {route.uuid.slice(0, 8)}</span>
         
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => handleViewRoute(route)}
+            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+            title="Ver detalles"
+          >
+            <Eye className="w-3 h-3" />
+            <span className="hidden sm:inline">Ver</span>
+          </button>
+        </div>
       </div>
     </div>
   );
