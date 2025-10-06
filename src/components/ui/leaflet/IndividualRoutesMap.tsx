@@ -105,7 +105,7 @@ const createCustomIcon = (color: string, icon: string) => {
 };
 
 // Iconos específicos
-const pickupIcon = createCustomIcon('#3B82F6', '🛒'); // Azul para pickup (carrito)
+const pickupIcon = createCustomIcon('#3B82F6', '🚛'); // Azul para pickup (camioncito)
 const deliveryIcon = createCustomIcon('#EF4444', '🏁'); // Rojo para delivery (banderita)
 const startLocationIcon = createCustomIcon('#10B981', '🚀'); // Verde para ubicación inicial
 
@@ -237,11 +237,11 @@ export function IndividualRoutesMap({
   return (
     <div className="h-full flex flex-col">
       {/* Header mejorado */}
-      <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div className="p-4 border-b theme-bg-2 theme-border" style={{ backgroundColor: 'var(--theme-bg-2)', borderColor: 'var(--theme-border)' }}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Rutas de Pedidos</h3>
-            <p className="text-sm text-gray-600 mt-1">
+            <h3 className="text-lg font-semibold theme-text-primary" style={{ color: 'var(--theme-text-primary)' }}>Rutas de Pedidos</h3>
+            <p className="text-sm theme-text-secondary mt-1" style={{ color: 'var(--theme-text-secondary)' }}>
               {selectedOrders.length} de {orders.filter(order => order.deliveryLocation && order.pickupLocation).length} pedidos seleccionados
             </p>
           </div>
@@ -249,15 +249,15 @@ export function IndividualRoutesMap({
       </div>
 
       {/* Mapa */}
-      <div className="flex-1 relative bg-gray-100">
+      <div className="flex-1 relative theme-bg-2" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
         {filteredOrders.length === 0 ? (
-          <div className="flex items-center justify-center h-full bg-gray-50">
+          <div className="flex items-center justify-center h-full theme-bg-3" style={{ backgroundColor: 'var(--theme-bg-3)' }}>
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-200 flex items-center justify-center">
-                <MapPin className="w-8 h-8 text-gray-400" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full theme-bg-2 flex items-center justify-center" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
+                <MapPin className="w-8 h-8 theme-text-muted" style={{ color: 'var(--theme-text-muted)' }} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay pedidos seleccionados</h3>
-              <p className="text-sm text-gray-600">Selecciona pedidos de la lista para ver sus rutas en el mapa</p>
+              <h3 className="text-lg font-medium theme-text-primary mb-2" style={{ color: 'var(--theme-text-primary)' }}>No hay pedidos seleccionados</h3>
+              <p className="text-sm theme-text-secondary" style={{ color: 'var(--theme-text-secondary)' }}>Selecciona pedidos de la lista para ver sus rutas en el mapa</p>
             </div>
           </div>
         ) : (
@@ -317,8 +317,8 @@ export function IndividualRoutesMap({
                     </div>
                     
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Fin:</p>
-                      <p className="text-sm text-gray-700">{order.deliveryLocation.address}</p>
+                      <p className="text-xs theme-text-muted mb-1" style={{ color: 'var(--theme-text-muted)' }}>Fin:</p>
+                      <p className="text-sm theme-text-primary" style={{ color: 'var(--theme-text-primary)' }}>{order.deliveryLocation.address}</p>
                     </div>
                   </div>
                 </Popup>
@@ -349,8 +349,8 @@ export function IndividualRoutesMap({
                     </div>
                     
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Inicio:</p>
-                      <p className="text-sm text-gray-700">{order.pickupLocation.address}</p>
+                      <p className="text-xs theme-text-muted mb-1" style={{ color: 'var(--theme-text-muted)' }}>Inicio:</p>
+                      <p className="text-sm theme-text-primary" style={{ color: 'var(--theme-text-primary)' }}>{order.pickupLocation.address}</p>
                     </div>
                   </div>
                 </Popup>
@@ -368,12 +368,12 @@ export function IndividualRoutesMap({
                 <div className="min-w-[200px] p-2">
                   <div className="flex items-center gap-2 mb-2">
                     <Navigation className="w-4 h-4 text-green-500" />
-                    <span className="font-semibold text-sm text-gray-800">Ubicación Inicial</span>
+                    <span className="font-semibold text-sm theme-text-primary" style={{ color: 'var(--theme-text-primary)' }}>Ubicación Inicial</span>
                   </div>
                   
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Dirección:</p>
-                    <p className="text-sm text-gray-700">{startLocation.address}</p>
+                    <p className="text-xs theme-text-muted mb-1" style={{ color: 'var(--theme-text-muted)' }}>Dirección:</p>
+                    <p className="text-sm theme-text-primary" style={{ color: 'var(--theme-text-primary)' }}>{startLocation.address}</p>
                   </div>
                 </div>
               </Popup>
@@ -389,8 +389,8 @@ export function IndividualRoutesMap({
 
       {/* Modo de optimización */}
       {onOptimizationModeChange && colors && (
-        <div className="p-4 border-t bg-white">
-          <h4 className="text-sm font-semibold text-gray-900 text-center mb-3">Modo de optimización</h4>
+        <div className="p-4 border-t theme-bg-3 theme-border" style={{ backgroundColor: 'var(--theme-bg-3)', borderColor: 'var(--theme-border)' }}>
+          <h4 className="text-sm font-semibold theme-text-primary text-center mb-3" style={{ color: 'var(--theme-text-primary)' }}>Modo de optimización</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* Modo Eficiencia */}
             <div 
@@ -448,7 +448,7 @@ export function IndividualRoutesMap({
       )}
 
       {/* Lista de pedidos */}
-      <div className="p-4 border-t bg-white">
+      <div className="p-4 border-t theme-bg-3 theme-border" style={{ backgroundColor: 'var(--theme-bg-3)', borderColor: 'var(--theme-border)' }}>
         <h4 className="font-medium mb-3">
           Últimos Pedidos ({Math.min(orders.filter(order => order.deliveryLocation && order.pickupLocation).length, 20)} de {orders.filter(order => order.deliveryLocation && order.pickupLocation).length})
         </h4>
@@ -465,8 +465,8 @@ export function IndividualRoutesMap({
                   key={order.id}
                   className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
                     isSelected 
-                      ? 'bg-blue-50 border-blue-300 shadow-sm' 
-                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                      ? 'theme-bg-2 theme-border shadow-sm' 
+                      : 'theme-bg-3 theme-border hover:theme-bg-2 hover:theme-border'
                   }`}
                   onClick={() => onOrderSelection(order.id)}
                 >
@@ -482,24 +482,24 @@ export function IndividualRoutesMap({
                         style={{ backgroundColor: orderColor }}
                       ></div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm text-gray-900">#{order.orderNumber}</p>
-                        <p className="text-xs text-gray-600 truncate">{order.deliveryLocation.address}</p>
+                        <p className="font-medium text-sm theme-text-primary" style={{ color: 'var(--theme-text-primary)' }}>#{order.orderNumber}</p>
+                        <p className="text-xs theme-text-secondary truncate" style={{ color: 'var(--theme-text-secondary)' }}>{order.deliveryLocation.address}</p>
                         {order.pickupLocation && (
-                          <p className="text-xs text-gray-500 truncate">
+                          <p className="text-xs theme-text-muted truncate" style={{ color: 'var(--theme-text-muted)' }}>
                             Recogida: {order.pickupLocation.address}
                           </p>
                         )}
                         {order.description && (
-                          <p className="text-xs text-gray-500 truncate mt-1">{order.description}</p>
+                          <p className="text-xs theme-text-muted truncate mt-1" style={{ color: 'var(--theme-text-muted)' }}>{order.description}</p>
                         )}
                       </div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="font-semibold text-sm text-green-600">
+                    <p className="font-semibold text-sm theme-success" style={{ color: 'var(--theme-success)' }}>
                       {formatCurrency(order.totalAmount)}
                     </p>
-                    <p className="text-xs text-gray-500 capitalize">{order.status}</p>
+                    <p className="text-xs theme-text-muted capitalize" style={{ color: 'var(--theme-text-muted)' }}>{order.status}</p>
                   </div>
                 </div>
               );

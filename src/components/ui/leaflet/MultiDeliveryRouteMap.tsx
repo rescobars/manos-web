@@ -126,7 +126,7 @@ function MapContent({
       case 'start':
         return '🚀';
       case 'pickup':
-        return '🛒';
+        return '🚛';
       case 'delivery':
         return '🏁';
       case 'end':
@@ -197,23 +197,23 @@ function MapContent({
 
       // Crear popup con información de la parada
       let popupContent = `
-        <div class="text-center min-w-[250px]">
-          <div class="font-semibold text-sm mb-2">Parada #${stop.stop_number}</div>
-          <div class="text-xs text-gray-600 mb-2">${stop.location.address || 'Dirección no disponible'}</div>
+        <div class="text-center min-w-[250px] theme-bg-3" style="background-color: var(--theme-bg-3);">
+          <div class="font-semibold text-sm mb-2 theme-text-primary" style="color: var(--theme-text-primary);">Parada #${stop.stop_number}</div>
+          <div class="text-xs theme-text-secondary mb-2" style="color: var(--theme-text-secondary);">${stop.location.address || 'Dirección no disponible'}</div>
       `;
 
       if (stop.order) {
         popupContent += `
-          <div class="border-t pt-2 mt-2">
-            <div class="font-medium text-xs">Pedido: ${stop.order.order_number || 'N/A'}</div>
-            <div class="text-xs text-gray-600">${stop.order.description || 'Sin descripción'}</div>
-            <div class="text-xs text-green-600 font-medium">$${stop.order.total_amount || 0}</div>
+          <div class="border-t pt-2 mt-2 theme-divider" style="border-color: var(--theme-divider);">
+            <div class="font-medium text-xs theme-text-primary" style="color: var(--theme-text-primary);">Pedido: ${stop.order.order_number || 'N/A'}</div>
+            <div class="text-xs theme-text-secondary" style="color: var(--theme-text-secondary);">${stop.order.description || 'Sin descripción'}</div>
+            <div class="text-xs theme-success font-medium" style="color: var(--theme-success);">$${stop.order.total_amount || 0}</div>
           </div>
         `;
       }
 
       popupContent += `
-          <div class="border-t pt-2 mt-2 text-xs text-gray-500">
+          <div class="border-t pt-2 mt-2 text-xs theme-text-muted theme-divider" style="border-color: var(--theme-divider); color: var(--theme-text-muted);">
             <div>Distancia: ${(stop.distance_from_previous || 0).toFixed(1)} km</div>
             <div>Tiempo: ${(stop.estimated_time || 0).toFixed(1)} min</div>
             <div>Total: ${(stop.cumulative_time || 0).toFixed(1)} min</div>
@@ -265,8 +265,8 @@ export function MultiDeliveryRouteMap({
     return (
       <div className={`${className} flex items-center justify-center bg-gray-50`} style={style}>
         <div className="text-center">
-          <Route className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No hay ruta optimizada disponible</p>
+          <Route className="w-12 h-12 theme-text-muted mx-auto mb-4" style={{ color: 'var(--theme-text-muted)' }} />
+          <p className="theme-text-secondary" style={{ color: 'var(--theme-text-secondary)' }}>No hay ruta optimizada disponible</p>
         </div>
       </div>
     );
@@ -287,10 +287,10 @@ export function MultiDeliveryRouteMap({
   return (
     <div className={className} style={style}>
       {/* Información de la ruta */}
-      <div className="bg-white p-4 border-b">
+      <div className="theme-bg-3 p-4 border-b theme-border" style={{ backgroundColor: 'var(--theme-bg-3)', borderColor: 'var(--theme-border)' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Ruta Optimizada Multi-Delivery</h3>
-          <div className="flex items-center space-x-4 text-sm text-gray-600">
+          <div className="flex items-center space-x-4 text-sm theme-text-secondary" style={{ color: 'var(--theme-text-secondary)' }}>
             <div className="flex items-center">
               <Clock className="w-4 h-4 mr-1" />
               <span>{formatDuration(optimizedRoute.total_time)}</span>
@@ -349,7 +349,7 @@ export function MultiDeliveryRouteMap({
       </div>
 
       {/* Lista de paradas */}
-      <div className="bg-white p-4 border-t overflow-y-auto">
+      <div className="theme-bg-3 p-4 border-t theme-border overflow-y-auto" style={{ backgroundColor: 'var(--theme-bg-3)', borderColor: 'var(--theme-border)' }}>
         <h4 className="font-medium mb-3">Paradas de la Ruta ({optimizedRoute.stops.length})</h4>
         <div className="space-y-2">
           {optimizedRoute.stops.map((stop) => (
@@ -376,13 +376,13 @@ export function MultiDeliveryRouteMap({
                     {stop.stop_type === 'end' && 'Fin'}
                     {stop.order && ` - ${stop.order.order_number}`}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs theme-text-muted" style={{ color: 'var(--theme-text-muted)' }}>
                     {formatDuration(stop.cumulative_time)}
                   </span>
                 </div>
-                <p className="text-xs text-gray-600 truncate">{stop.location.address}</p>
+                <p className="text-xs theme-text-secondary truncate" style={{ color: 'var(--theme-text-secondary)' }}>{stop.location.address}</p>
                 {stop.order && (
-                  <p className="text-xs text-gray-500">${stop.order.total_amount}</p>
+                  <p className="text-xs theme-text-muted" style={{ color: 'var(--theme-text-muted)' }}>${stop.order.total_amount}</p>
                 )}
               </div>
             </div>
