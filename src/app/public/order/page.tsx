@@ -358,10 +358,35 @@ export default function PublicOrderPage() {
 
         <div className="flex-1 flex flex-col">
         {/* Mapa - 100% horizontal */}
-        <div className="flex-1 p-4 relative">
-          {/* Buscador sobre el mapa */}
-          <div className="absolute top-4 left-4 right-4 z-50" style={{ zIndex: 9999 }}>
-            <div className="bg-white rounded-lg shadow-lg border theme-border p-3" style={{ borderColor: colors.border }}>
+        <div className="flex-1 p-4">
+          <div className="bg-white rounded-lg border theme-border overflow-hidden h-full" style={{ borderColor: colors.border }}>
+            <div className="h-[calc(100vh-300px)] relative">
+              {locationLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: colors.buttonPrimary1 }} />
+                    <p className="text-sm theme-text-secondary">Obteniendo tu ubicación...</p>
+                  </div>
+                </div>
+              ) : (
+                <OrdersMap
+                  key={mapKey}
+                  center={mapCenter}
+                  zoom={15}
+                  pickupLocation={null}
+                  deliveryLocation={deliveryLocation}
+                  onMapClick={handleMapClick}
+                  colors={colors}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Selector de ubicación - Debajo del mapa */}
+        <div className="p-4 border-t theme-border bg-white" style={{ borderColor: colors.border, backgroundColor: colors.background1 }}>
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg border theme-border p-4" style={{ borderColor: colors.border }}>
               <h3 className="font-semibold theme-text-primary flex items-center mb-3" style={{ color: colors.textPrimary }}>
                 <MapPin className="w-5 h-5 mr-2" />
                 Ubicación de entrega
@@ -417,29 +442,6 @@ export default function PublicOrderPage() {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg border theme-border overflow-hidden h-full" style={{ borderColor: colors.border }}>
-            <div className="h-[calc(100vh-200px)] relative">
-              {locationLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: colors.buttonPrimary1 }} />
-                    <p className="text-sm theme-text-secondary">Obteniendo tu ubicación...</p>
-                  </div>
-                </div>
-              ) : (
-                <OrdersMap
-                  key={mapKey}
-                  center={mapCenter}
-                  zoom={15}
-                  pickupLocation={null}
-                  deliveryLocation={deliveryLocation}
-                  onMapClick={handleMapClick}
-                  colors={colors}
-                />
-              )}
             </div>
           </div>
         </div>

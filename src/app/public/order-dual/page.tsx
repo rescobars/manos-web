@@ -346,79 +346,87 @@ export default function PublicOrderDualPage() {
   }
 
   return (
-    <div className="min-h-screen theme-bg-1 flex flex-col" style={{ backgroundColor: colors.background1 }}>
-      {/* Container con ancho responsivo */}
-      <div className="w-full max-w-none mx-auto lg:max-w-[80%] xl:max-w-[80%] 2xl:max-w-[80%]">
-        {/* Header */}
-        <div className="p-4 border-b" style={{ borderColor: colors.border }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-3">
-              {/* Logo de la organización */}
-              {branding?.logo_url && (
-                <img 
-                  src={branding.logo_url} 
-                  alt="Logo de la organización"
-                  className="w-8 h-8 object-contain"
-                />
-              )}
-              <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
-                Crear Encargo
-              </h2>
-            </div>
+    <div className="h-screen theme-bg-1 flex flex-col" style={{ backgroundColor: colors.background1 }}>
+      {/* Header fijo */}
+      <div className="flex-shrink-0 p-4 border-b" style={{ borderColor: colors.border }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            {/* Logo de la organización */}
+            {branding?.logo_url && (
+              <img 
+                src={branding.logo_url} 
+                alt="Logo de la organización"
+                className="w-8 h-8 object-contain"
+              />
+            )}
+            <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
+              Crear Encargo
+            </h2>
           </div>
         </div>
+      </div>
 
-        <div className="flex-1 flex flex-col">
-          {/* Selector de mapa */}
-          <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
-            <div className="flex space-x-4">
-              <Button
-                onClick={() => setActiveMap('pickup')}
-                variant={activeMap === 'pickup' ? 'primary' : 'outline'}
-                className="flex items-center"
-                style={{ 
-                  backgroundColor: activeMap === 'pickup' ? colors.buttonPrimary1 : 'transparent',
-                  color: activeMap === 'pickup' ? colors.buttonText : colors.textPrimary,
-                  borderColor: colors.border
-                }}
-              >
-                <Navigation className="w-4 h-4 mr-2" />
-                Ubicación de Recogida
-              </Button>
-              <Button
-                onClick={() => setActiveMap('delivery')}
-                variant={activeMap === 'delivery' ? 'primary' : 'outline'}
-                className="flex items-center"
-                style={{ 
-                  backgroundColor: activeMap === 'delivery' ? colors.buttonPrimary1 : 'transparent',
-                  color: activeMap === 'delivery' ? colors.buttonText : colors.textPrimary,
-                  borderColor: colors.border
-                }}
-              >
-                <Package className="w-4 h-4 mr-2" />
-                Ubicación de Entrega
-              </Button>
+      {/* Layout principal - Usa todo el espacio restante */}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+        {/* Columna izquierda - Selector de ubicación (desktop) / Arriba (mobile) */}
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r theme-border bg-white h-96 lg:h-full" style={{ borderColor: colors.border }}>
+          <div className="h-full flex flex-col">
+            {/* Header del selector */}
+            <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
+              <h3 className="font-semibold theme-text-primary flex items-center" style={{ color: colors.textPrimary }}>
+                <MapPin className="w-5 h-5 mr-2" />
+                Seleccionar Ubicaciones
+              </h3>
+              <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
+                Elige los puntos de recogida y entrega
+              </p>
             </div>
-          </div>
 
-          {/* Mapa - 100% horizontal */}
-          <div className="flex-1 p-4 relative">
-            {/* Buscador sobre el mapa */}
-            <div className="absolute top-4 left-4 right-4 z-50" style={{ zIndex: 9999 }}>
-              <div className="bg-white rounded-lg shadow-lg border theme-border p-3" style={{ borderColor: colors.border }}>
-                <h3 className="font-semibold theme-text-primary flex items-center mb-3" style={{ color: colors.textPrimary }}>
-                  <MapPin className="w-5 h-5 mr-2" />
-                  {activeMap === 'pickup' ? 'Ubicación de recogida' : 'Ubicación de entrega'}
-                </h3>
-                
-                {/* Buscador de direcciones */}
-                <div className="relative">
-                  <div className="flex">
+            {/* Botones de selección de tipo de ubicación */}
+            <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
+              <div className="space-y-2">
+                <Button
+                  onClick={() => setActiveMap('pickup')}
+                  variant={activeMap === 'pickup' ? 'primary' : 'outline'}
+                  className="w-full flex items-center justify-start"
+                  style={{ 
+                    backgroundColor: activeMap === 'pickup' ? colors.buttonPrimary1 : 'transparent',
+                    color: activeMap === 'pickup' ? colors.buttonText : colors.textPrimary,
+                    borderColor: colors.border
+                  }}
+                >
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Ubicación de Recogida
+                </Button>
+                <Button
+                  onClick={() => setActiveMap('delivery')}
+                  variant={activeMap === 'delivery' ? 'primary' : 'outline'}
+                  className="w-full flex items-center justify-start"
+                  style={{ 
+                    backgroundColor: activeMap === 'delivery' ? colors.buttonPrimary1 : 'transparent',
+                    color: activeMap === 'delivery' ? colors.buttonText : colors.textPrimary,
+                    borderColor: colors.border
+                  }}
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Ubicación de Entrega
+                </Button>
+              </div>
+            </div>
+
+            {/* Buscador de direcciones */}
+            <div className="p-4 flex-1 overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium theme-text-primary mb-2" style={{ color: colors.textPrimary }}>
+                    {activeMap === 'pickup' ? 'Buscar Dirección de Recogida' : 'Buscar Dirección de Entrega'}
+                  </h4>
+                  <div className="relative">
                     <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={`Buscar ${activeMap === 'pickup' ? 'dirección de recogida' : 'dirección de entrega'}...`}
-                      className="flex-1"
+                      className="w-full"
                     />
                     {isSearching && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -426,46 +434,84 @@ export default function PublicOrderDualPage() {
                       </div>
                     )}
                   </div>
-                  
-                  {/* Resultados de búsqueda */}
-                  {showSearchResults && searchResults.length > 0 && (
-                    <div 
-                      data-search-results
-                      className="absolute z-50 w-full mt-1 bg-white border theme-border rounded-lg shadow-lg max-h-60 overflow-y-auto" 
-                      style={{ borderColor: colors.border, zIndex: 10000 }}
-                    >
-                      {searchResults.map((result, index) => (
-                        <button
-                          key={index}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleSelectSearchResult(result);
-                          }}
-                          className="w-full p-3 text-left hover:bg-gray-50 border-b theme-border last:border-b-0"
-                          style={{ borderColor: colors.border }}
-                        >
-                          <div className="flex items-start">
-                            <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
-                                {result.address}
-                              </p>
-                              <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
-                                {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
-                              </p>
-                            </div>
+                </div>
+                
+                {/* Resultados de búsqueda */}
+                {showSearchResults && searchResults.length > 0 && (
+                  <div 
+                    data-search-results
+                    className="bg-white border theme-border rounded-lg shadow-lg max-h-60 overflow-y-auto" 
+                    style={{ borderColor: colors.border }}
+                  >
+                    {searchResults.map((result, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSelectSearchResult(result);
+                        }}
+                        className="w-full p-3 text-left hover:bg-gray-50 border-b theme-border last:border-b-0"
+                        style={{ borderColor: colors.border }}
+                      >
+                        <div className="flex items-start">
+                          <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
+                              {result.address}
+                            </p>
+                            <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
+                              {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
+                            </p>
                           </div>
-                        </button>
-                      ))}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Ubicaciones seleccionadas */}
+                <div className="space-y-3">
+                  {/* Ubicación de recogida seleccionada */}
+                  {pickupLocation && (
+                    <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
+                      <div className="flex items-start">
+                        <Navigation className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.warning }} />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>Recogida</p>
+                          <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
+                            {pickupLocation.address}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ubicación de entrega seleccionada */}
+                  {deliveryLocation && (
+                    <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
+                      <div className="flex items-start">
+                        <Package className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.success }} />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>Entrega</p>
+                          <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
+                            {deliveryLocation.address}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
             </div>
-            
+          </div>
+        </div>
+
+        {/* Columna central - Mapa prominente */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 p-4">
             <div className="bg-white rounded-lg border theme-border overflow-hidden h-full" style={{ borderColor: colors.border }}>
-              <div className="h-[calc(100vh-300px)] relative">
+              <div className="h-full relative">
                 {locationLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
@@ -487,139 +533,131 @@ export default function PublicOrderDualPage() {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Formulario - Abajo, optimizado */}
-          <div className="p-4 border-t theme-border bg-white" style={{ borderColor: colors.border, backgroundColor: colors.background1 }}>
-            <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold theme-text-primary mb-4" style={{ color: colors.textPrimary }}>
+        {/* Columna derecha - Formulario (desktop) / Abajo (mobile) */}
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-l theme-border bg-white h-96 lg:h-full" style={{ borderColor: colors.border }}>
+          <div className="h-full flex flex-col">
+            {/* Header del formulario */}
+            <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
+              <h3 className="font-semibold theme-text-primary flex items-center" style={{ color: colors.textPrimary }}>
+                <Package className="w-5 h-5 mr-2" />
                 Información del Encargo
               </h3>
-              
-              {/* Información de ubicaciones seleccionadas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                {/* Ubicación de recogida */}
-                <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
-                  <div className="flex items-start">
-                    <Navigation className="w-5 h-5 mr-3 mt-0.5" style={{ color: colors.warning }} />
-                    <div className="flex-1">
-                      <p className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>Punto de recogida</p>
-                      <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
-                        {pickupLocation ? pickupLocation.address : 'Selecciona una ubicación de recogida'}
-                      </p>
-                    </div>
+              <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
+                Completa los detalles del pedido
+              </p>
+            </div>
+
+            {/* Formulario */}
+            <div className="flex-1 p-4 overflow-y-auto">
+              <div className="space-y-4">
+                {/* Información del cliente */}
+                <div className="space-y-3">
+                  <h4 className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
+                    Información del Cliente
+                  </h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                      Nombre del cliente *
+                    </label>
+                    <Input
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Nombre completo"
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                      Teléfono del cliente *
+                    </label>
+                    <Input
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="Número de teléfono"
+                      type="tel"
+                      className="w-full"
+                    />
                   </div>
                 </div>
 
-                {/* Ubicación de entrega */}
-                <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
-                  <div className="flex items-start">
-                    <Package className="w-5 h-5 mr-3 mt-0.5" style={{ color: colors.success }} />
-                    <div className="flex-1">
-                      <p className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>Punto de entrega</p>
-                      <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
-                        {deliveryLocation ? deliveryLocation.address : 'Selecciona una ubicación de entrega'}
-                      </p>
-                    </div>
+                {/* Información del pedido */}
+                <div className="space-y-3">
+                  <h4 className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
+                    Información del Pedido
+                  </h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                      Monto total (Q)
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={totalAmount}
+                      onChange={(e) => setTotalAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <TextAreaField
+                      label="Descripción del pedido"
+                      value={description}
+                      onChange={setDescription}
+                      placeholder="¿Qué contiene el pedido?"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div>
+                    <TextAreaField
+                      label="Instrucciones especiales"
+                      value={specialInstructions}
+                      onChange={setSpecialInstructions}
+                      placeholder="Instrucciones adicionales para la entrega (opcional)"
+                      rows={2}
+                    />
                   </div>
                 </div>
+
+                {/* Error message */}
+                {error && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
               </div>
+            </div>
 
-              {/* Formulario en grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                {/* Nombre del cliente */}
-                <div>
-                  <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
-                    Nombre del cliente *
-                  </label>
-                  <Input
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Nombre completo"
-                  />
-                </div>
-
-                {/* Teléfono del cliente */}
-                <div>
-                  <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
-                    Teléfono del cliente *
-                  </label>
-                  <Input
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Número de teléfono"
-                    type="tel"
-                  />
-                </div>
-
-                {/* Monto total */}
-                <div>
-                  <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
-                    Monto total (Q)
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={totalAmount}
-                    onChange={(e) => setTotalAmount(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                {/* Botón de envío */}
-                <div className="flex items-end">
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone}
-                    className="w-full theme-btn-primary"
-                    style={{ 
-                      backgroundColor: colors.buttonPrimary1, 
-                      color: colors.buttonText 
-                    }}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Creando...
-                      </>
-                    ) : (
-                      <>
-                        <Package className="w-4 h-4 mr-2" />
-                        Crear pedido
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Descripción - Ancho completo */}
-              <div className="mb-4">
-                <TextAreaField
-                  label="Descripción del pedido"
-                  value={description}
-                  onChange={setDescription}
-                  placeholder="¿Qué contiene el pedido?"
-                  rows={2}
-                />
-              </div>
-
-              {/* Instrucciones especiales */}
-              <div>
-                <TextAreaField
-                  label="Instrucciones especiales"
-                  value={specialInstructions}
-                  onChange={setSpecialInstructions}
-                  placeholder="Instrucciones adicionales para la entrega (opcional)"
-                  rows={2}
-                />
-              </div>
-
-              {/* Error message */}
-              {error && (
-                <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200">
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
-              )}
+            {/* Botón de envío - Fijo en la parte inferior */}
+            <div className="p-4 border-t theme-border" style={{ borderColor: colors.border }}>
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone}
+                className="w-full theme-btn-primary"
+                style={{ 
+                  backgroundColor: colors.buttonPrimary1, 
+                  color: colors.buttonText 
+                }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <Package className="w-4 h-4 mr-2" />
+                    Crear Encargo
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { createTruckIcon, createFinishFlagIcon } from '@/lib/leaflet/custom-icons';
 
 // Importar Leaflet dinámicamente
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
@@ -79,9 +80,12 @@ export function OrdersMap({
         
         <MapClickHandler onMapClick={onMapClick} />
         
-        {/* Marcador de punto de recogida */}
+        {/* Marcador de punto de recogida - Camión */}
         {pickupLocation && (
-          <Marker position={[pickupLocation.lat, pickupLocation.lng]}>
+          <Marker 
+            position={[pickupLocation.lat, pickupLocation.lng]}
+            icon={createTruckIcon(colors.warning || '#F59E0B')}
+          >
             <Popup>
               <div className="text-center">
                 <div className="w-4 h-4 mx-auto mb-1 rounded-full" style={{ backgroundColor: colors.warning }}></div>
@@ -92,9 +96,12 @@ export function OrdersMap({
           </Marker>
         )}
 
-        {/* Marcador de punto de entrega */}
+        {/* Marcador de punto de entrega - Bandera de meta */}
         {deliveryLocation && (
-          <Marker position={[deliveryLocation.lat, deliveryLocation.lng]}>
+          <Marker 
+            position={[deliveryLocation.lat, deliveryLocation.lng]}
+            icon={createFinishFlagIcon(colors.success || '#10B981')}
+          >
             <Popup>
               <div className="text-center">
                 <div className="w-4 h-4 mx-auto mb-1 rounded-full" style={{ backgroundColor: colors.success }}></div>
