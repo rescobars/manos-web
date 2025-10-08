@@ -30,6 +30,9 @@ interface RouteData {
   processing_time: number;
 }
 
+// Precio por kilómetro
+const PRICE_PER_KM = 10.00;
+
 export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess, onError }: OrderDetailProps) {
   const [totalAmount, setTotalAmount] = useState<string>('');
   const [isAccepting, setIsAccepting] = useState(false);
@@ -37,11 +40,13 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
   const [showRouteDetails, setShowRouteDetails] = useState(false);
   const [showDetailedInfo, setShowDetailedInfo] = useState(false);
+  const [pricePerKm, setPricePerKm] = useState<string>(PRICE_PER_KM.toString());
 
   // Resetear el total_amount cuando se abre el modal y calcular ruta automáticamente
   React.useEffect(() => {
     if (isOpen && order) {
       setTotalAmount(order.total_amount ? order.total_amount.toString() : '');
+      setPricePerKm(PRICE_PER_KM.toString());
       // Resetear datos de ruta cuando se abre el modal
       setRouteData(null);
       setShowRouteDetails(false);
@@ -51,6 +56,22 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
       calculateRoute();
     }
   }, [isOpen, order]);
+
+  // Calcular el monto total incluyendo costo por distancia
+  const calculateTotalAmount = () => {
+    const baseAmount = parseFloat(totalAmount) || 0;
+    const kmPrice = parseFloat(pricePerKm) || 0;
+    const distance = routeData?.distance || 0;
+    const distanceCost = distance * kmPrice;
+    return baseAmount + distanceCost;
+  };
+
+  // Obtener el costo por distancia
+  const getDistanceCost = () => {
+    const kmPrice = parseFloat(pricePerKm) || 0;
+    const distance = routeData?.distance || 0;
+    return distance * kmPrice;
+  };
 
   const calculateRoute = async () => {
     if (!order) return;
@@ -96,17 +117,25 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
   const handleAcceptOrder = async () => {
     if (!order) return;
     
-    const amount = parseFloat(totalAmount);
-    if (isNaN(amount) || amount < 0) {
-      onError?.('Por favor ingresa un monto válido');
+    const baseAmount = parseFloat(totalAmount);
+    if (isNaN(baseAmount) || baseAmount < 0) {
+      onError?.('Por favor ingresa un monto base válido');
       return;
     }
+
+    const kmPrice = parseFloat(pricePerKm);
+    if (isNaN(kmPrice) || kmPrice < 0) {
+      onError?.('Por favor ingresa un precio por km válido');
+      return;
+    }
+
+    const finalAmount = calculateTotalAmount();
 
     setIsAccepting(true);
     try {
       const response = await ordersApiService.updateOrder(order.uuid, {
         status: 'PENDING',
-        total_amount: amount
+        total_amount: finalAmount
       });
       
       if (response.success) {
@@ -383,14 +412,15 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
                 </div>
                 <div>
                   <h3 className="font-bold text-lg theme-text-primary">Aceptar Pedido</h3>
-                  <p className="text-sm theme-text-muted">Establece el monto total del pedido</p>
+                  <p className="text-sm theme-text-muted">Establece el monto base y precio por km</p>
                 </div>
               </div>
               
               <div className="space-y-4">
+                {/* Monto base */}
                 <div className="p-3 theme-bg-2 rounded-lg border theme-border">
                   <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide mb-2">
-                    Monto Total (Q)
+                    Monto Base (Q)
                   </label>
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg theme-bg-1 opacity-10" style={{ backgroundColor: 'var(--button-primary-1)' }}>
@@ -407,6 +437,52 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
                     />
                   </div>
                 </div>
+
+                {/* Precio por km */}
+                <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                  <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide mb-2">
+                    Precio por Kilómetro (Q)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg theme-bg-1 opacity-10" style={{ backgroundColor: 'var(--button-primary-1)' }}>
+                      <Navigation className="w-4 h-4 theme-btn-primary" />
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={pricePerKm}
+                      onChange={(e) => setPricePerKm(e.target.value)}
+                      placeholder={PRICE_PER_KM.toString()}
+                      className="flex-1 px-3 py-2 theme-bg-1 theme-text-primary border theme-border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-lg font-semibold focus:ring-theme-btn-primary"
+                    />
+                  </div>
+                </div>
+
+                {/* Desglose de costos */}
+                {routeData && (
+                  <div className="p-3 theme-bg-2 rounded-lg border-2 border-dashed theme-border">
+                    <h4 className="text-sm font-semibold theme-text-primary mb-3">Desglose de Costos</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm theme-text-muted">Monto base:</span>
+                        <span className="text-sm font-semibold theme-text-primary">Q{(parseFloat(totalAmount) || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm theme-text-muted">
+                          Distancia ({routeData.distance.toFixed(2)} km × Q{parseFloat(pricePerKm).toFixed(2)}):
+                        </span>
+                        <span className="text-sm font-semibold theme-text-primary">Q{getDistanceCost().toFixed(2)}</span>
+                      </div>
+                      <div className="border-t theme-border pt-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-base font-bold theme-text-primary">Total:</span>
+                          <span className="text-lg font-bold theme-text-primary">Q{calculateTotalAmount().toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex justify-end gap-3">
                   <button
@@ -417,7 +493,7 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
                   </button>
                   <button
                     onClick={handleAcceptOrder}
-                    disabled={isAccepting || !totalAmount}
+                    disabled={isAccepting || !totalAmount || !pricePerKm}
                     className="px-6 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed theme-btn-primary disabled:theme-bg-3 disabled:theme-text-muted text-sm"
                   >
                     {isAccepting ? (
