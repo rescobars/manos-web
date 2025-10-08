@@ -382,7 +382,6 @@ export default function PublicOrderDualPage() {
           recipient_email: recipientEmail.trim()
         }
       };
-
       // Enviar a la API externa
       const response = await fetch('/api/orders/public-external', {
         method: 'POST',

@@ -61,9 +61,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validar datos del destinatario si están presentes
+    if (details?.recipient_name && !details?.recipient_phone?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Recipient phone is required when recipient name is provided' },
+        { status: 400 }
+      );
+    }
+
+    if (details?.recipient_name && !details?.recipient_email?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Recipient email is required when recipient name is provided' },
+        { status: 400 }
+      );
+    }
+
     console.log('Creating external order with data:', body);
 
-    // Preparar datos para la API externa
+    // Preparar datos para la API externa con estructura organizada
     const externalOrderData = {
       delivery_address: delivery_address.trim(),
       delivery_lat: parseFloat(delivery_lat),
@@ -72,11 +87,22 @@ export async function POST(request: NextRequest) {
       pickup_lat: pickup_lat ? parseFloat(pickup_lat) : undefined,
       pickup_lng: pickup_lng ? parseFloat(pickup_lng) : undefined,
       total_amount: parseFloat(total_amount) || 0,
-      description: description?.trim() || 'Pedido público',
+      description: description?.trim() || 'Encargo público',
       details: {
-        customer_name: details.customer_name.trim(),
-        phone: details.phone.trim(),
-        special_instructions: details.special_instructions?.trim() || ''
+        client_details: {
+          name: details.customer_name.trim(),
+          phone: details.phone.trim(),
+          email: details.email?.trim() || ''
+        },
+        order_details: {
+          description: description?.trim() || 'Encargo público',
+          special_instructions: details.special_instructions?.trim() || ''
+        },
+        recipient_details: {
+          name: details.recipient_name?.trim() || '',
+          phone: details.recipient_phone?.trim() || '',
+          email: details.recipient_email?.trim() || ''
+        }
       }
     };
 
