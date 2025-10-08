@@ -5,6 +5,7 @@ import { Order, OrderStatus } from '@/types';
 import { BaseModal } from './BaseModal';
 import { Package, MapPin, DollarSign, Clock, Calendar, Navigation, User, Mail, Phone, FileText, CheckCircle } from 'lucide-react';
 import { ordersApiService } from '@/lib/api/orders';
+import { OrderMap } from '@/components/ui/OrderMap';
 
 interface OrderDetailProps {
   isOpen: boolean;
@@ -500,6 +501,37 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mapa con marcadores de origen y destino */}
+        <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+          <div className="relative p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-xl theme-bg-1 text-white shadow-lg theme-btn-primary">
+                <Navigation className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg theme-text-primary">Ubicaciones en el Mapa</h3>
+                <p className="text-sm theme-text-muted">Visualiza los puntos de recogida y entrega</p>
+              </div>
+            </div>
+            
+            <div className="h-80 rounded-lg overflow-hidden border theme-border">
+              <OrderMap
+                pickupLocation={{
+                  lat: order.pickup_lat || 0,
+                  lng: order.pickup_lng || 0,
+                  address: order.pickup_address
+                }}
+                deliveryLocation={{
+                  lat: order.delivery_lat || 0,
+                  lng: order.delivery_lng || 0,
+                  address: order.delivery_address
+                }}
+              />
             </div>
           </div>
         </div>
