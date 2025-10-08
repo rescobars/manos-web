@@ -221,10 +221,15 @@ export default function OrdersPage() {
     setIsQuickOrderOpen(false);
   };
 
-  // Función para aceptar un pedido (cambiar de REQUESTED a PENDING)
-  const handleAcceptOrder = async (orderId: string) => {
+  // Función para aceptar un pedido (cambiar de REQUESTED a PENDING) con total_amount
+  const handleAcceptOrder = async (orderId: string, totalAmount?: number) => {
     try {
-      const response = await ordersApiService.updateOrderStatus(orderId, 'PENDING');
+      const updateData: any = { status: 'PENDING' };
+      if (totalAmount !== undefined) {
+        updateData.total_amount = totalAmount;
+      }
+      
+      const response = await ordersApiService.updateOrder(orderId, updateData);
       
       if (response.success) {
         success('Pedido aceptado exitosamente');
@@ -334,22 +339,11 @@ export default function OrdersPage() {
           <button
             onClick={() => handleViewOrder(item)}
             className="px-2 py-1 text-white text-xs font-medium rounded transition-colors flex items-center gap-1 theme-btn-primary"
-            title="Ver detalles"
+            title={item.status === 'REQUESTED' ? 'Aceptar pedido' : 'Ver detalles'}
           >
             <Eye className="w-3 h-3" />
-            Ver
+            {item.status === 'REQUESTED' ? 'Aceptar' : 'Ver'}
           </button>
-          {item.status === 'REQUESTED' && (
-            <button
-              onClick={() => handleAcceptOrder(item.uuid)}
-              className="px-2 py-1 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-              style={{ backgroundColor: colors.success }}
-              title="Aceptar pedido"
-            >
-              <CheckCircle className="w-3 h-3" />
-              Aceptar
-            </button>
-          )}
         </div>
       )
     }
@@ -616,6 +610,17 @@ export default function OrdersPage() {
         isOpen={isDetailModalOpen}
         onClose={handleCloseDetailModal}
         order={selectedOrderForDetail}
+        onOrderUpdated={() => {
+          // Recargar pedidos cuando se actualiza un pedido
+          if (currentOrganization) {
+            fetchAllOrders(currentOrganization.uuid);
+            fetchOrders(currentOrganization.uuid, {
+              status: filterStatus === 'all' ? undefined : filterStatus,
+              page: 1,
+              limit: itemsPerPage
+            });
+          }
+        }}
       />
 
     </>

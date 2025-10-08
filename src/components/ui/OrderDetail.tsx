@@ -1,17 +1,62 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Order, OrderStatus } from '@/types';
 import { BaseModal } from './BaseModal';
-import { Package, MapPin, DollarSign, Clock, Calendar, Navigation, User, Mail, Phone, FileText } from 'lucide-react';
+import { Package, MapPin, DollarSign, Clock, Calendar, Navigation, User, Mail, Phone, FileText, CheckCircle } from 'lucide-react';
+import { ordersApiService } from '@/lib/api/orders';
+import { useToast } from '@/hooks/useToast';
 
 interface OrderDetailProps {
   isOpen: boolean;
   onClose: () => void;
   order: Order | null;
+  onOrderUpdated?: () => void;
 }
 
-export function OrderDetail({ isOpen, onClose, order }: OrderDetailProps) {
+export function OrderDetail({ isOpen, onClose, order, onOrderUpdated }: OrderDetailProps) {
+  const [totalAmount, setTotalAmount] = useState<string>('');
+  const [isAccepting, setIsAccepting] = useState(false);
+  const { success, error: showError } = useToast();
+
+  // Resetear el total_amount cuando se abre el modal
+  React.useEffect(() => {
+    if (isOpen && order) {
+      setTotalAmount(order.total_amount ? order.total_amount.toString() : '');
+    }
+  }, [isOpen, order]);
+
+  const handleAcceptOrder = async () => {
+    if (!order) return;
+    
+    const amount = parseFloat(totalAmount);
+    if (isNaN(amount) || amount < 0) {
+      showError('Por favor ingresa un monto válido');
+      return;
+    }
+
+    setIsAccepting(true);
+    try {
+      const response = await ordersApiService.updateOrder(order.uuid, {
+        status: 'PENDING',
+        total_amount: amount
+      });
+      
+      if (response.success) {
+        success('Pedido aceptado exitosamente');
+        onOrderUpdated?.();
+        onClose();
+      } else {
+        showError(response.error || 'Error al aceptar el pedido');
+      }
+    } catch (error) {
+      console.error('Error accepting order:', error);
+      showError('Error al aceptar el pedido');
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
   if (!order) return null;
 
   const getStatusConfig = (status: OrderStatus) => {
@@ -166,6 +211,72 @@ export function OrderDetail({ isOpen, onClose, order }: OrderDetailProps) {
             </div>
           </div>
         </div>
+
+        {/* Campo para total_amount si el pedido está en estado REQUESTED */}
+        {order.status === 'REQUESTED' && (
+          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-50/50 to-transparent"></div>
+            <div className="relative p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
+                  <DollarSign className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg theme-text-primary">Aceptar Pedido</h3>
+                  <p className="text-sm theme-text-muted">Establece el monto total del pedido</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
+                  <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide mb-3">
+                    Monto Total (Q)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-green-100 text-green-600">
+                      <DollarSign className="w-5 h-5" />
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={totalAmount}
+                      onChange={(e) => setTotalAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="flex-1 px-4 py-3 theme-bg-1 theme-text-primary border theme-border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-lg font-semibold"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={onClose}
+                    className="px-6 py-3 theme-bg-1 hover:theme-bg-2 theme-text-primary rounded-xl border theme-border shadow-sm hover:shadow-md transition-all duration-200 font-semibold"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleAcceptOrder}
+                    disabled={isAccepting || !totalAmount}
+                    className="px-8 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 font-semibold flex items-center gap-2"
+                  >
+                    {isAccepting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Aceptando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        Aceptar Pedido
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Detalles del Cliente, Encargo y Destinatario */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -432,16 +543,18 @@ export function OrderDetail({ isOpen, onClose, order }: OrderDetailProps) {
           </div>
         </div>
 
-        {/* Botón de cerrar */}
-        <div className="flex justify-end pt-6">
-          <button
-            onClick={onClose}
-            className="group relative px-8 py-3 theme-bg-1 hover:theme-bg-2 theme-text-primary rounded-xl border theme-border shadow-sm hover:shadow-md transition-all duration-200 font-semibold"
-          >
-            <span className="relative z-10">Cerrar</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl"></div>
-          </button>
-        </div>
+        {/* Botón de cerrar - solo mostrar si no es un pedido REQUESTED */}
+        {order.status !== 'REQUESTED' && (
+          <div className="flex justify-end pt-6">
+            <button
+              onClick={onClose}
+              className="group relative px-8 py-3 theme-bg-1 hover:theme-bg-2 theme-text-primary rounded-xl border theme-border shadow-sm hover:shadow-md transition-all duration-200 font-semibold"
+            >
+              <span className="relative z-10">Cerrar</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl"></div>
+            </button>
+          </div>
+        )}
       </div>
     </BaseModal>
   );
