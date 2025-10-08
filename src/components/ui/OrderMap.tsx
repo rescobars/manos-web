@@ -10,6 +10,7 @@ const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapCo
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
+const Polyline = dynamic(() => import('react-leaflet').then(mod => mod.Polyline), { ssr: false });
 
 // Componente para manejar el autocentrado
 const MapBounds = dynamic(() => 
@@ -19,12 +20,14 @@ const MapBounds = dynamic(() =>
       pickupLocation, 
       deliveryLocation, 
       hasValidPickup, 
-      hasValidDelivery 
+      hasValidDelivery,
+      routePoints
     }: { 
       pickupLocation: Location; 
       deliveryLocation: Location; 
       hasValidPickup: boolean; 
-      hasValidDelivery: boolean; 
+      hasValidDelivery: boolean;
+      routePoints?: RoutePoint[];
     }) {
       const map = useMap();
       
@@ -41,13 +44,23 @@ const MapBounds = dynamic(() =>
           bounds.push([deliveryLocation.lat, deliveryLocation.lng]);
         }
         
+        // Si hay puntos de ruta, incluirlos en los bounds
+        if (routePoints && routePoints.length > 0) {
+          routePoints.forEach(point => {
+            if (!isNaN(point.lat) && !isNaN(point.lng) && point.lat !== 0 && point.lng !== 0 && 
+                point.lat >= -90 && point.lat <= 90 && point.lng >= -180 && point.lng <= 180) {
+              bounds.push([point.lat, point.lng]);
+            }
+          });
+        }
+        
         if (bounds.length > 0) {
           // Ajustar el mapa para mostrar todos los marcadores
           map.fitBounds(bounds, { 
             padding: [20, 20] // Padding en píxeles
           });
         }
-      }, [map, pickupLocation, deliveryLocation, hasValidPickup, hasValidDelivery]);
+      }, [map, pickupLocation, deliveryLocation, hasValidPickup, hasValidDelivery, routePoints]);
       
       return null;
     };
@@ -74,12 +87,21 @@ interface Location {
   address: string;
 }
 
+interface RoutePoint {
+  lat: number;
+  lng: number;
+  sequence: number;
+  distance_from_previous: number;
+  point_type: 'start' | 'waypoint' | 'end';
+}
+
 interface OrderMapProps {
   pickupLocation: Location;
   deliveryLocation: Location;
+  routePoints?: RoutePoint[];
 }
 
-export function OrderMap({ pickupLocation, deliveryLocation }: OrderMapProps) {
+export function OrderMap({ pickupLocation, deliveryLocation, routePoints }: OrderMapProps) {
   const { colors } = useDynamicTheme();
 
   // Función para validar coordenadas
@@ -121,6 +143,14 @@ export function OrderMap({ pickupLocation, deliveryLocation }: OrderMapProps) {
   const isValidMapCenter = isValidCoordinate(mapCenter[0], mapCenter[1]);
   const finalMapCenter: [number, number] = isValidMapCenter ? mapCenter : [14.6349, -90.5069];
 
+  // Preparar puntos de ruta para la línea
+  const routeLinePositions = routePoints && routePoints.length > 0 
+    ? routePoints
+        .filter(point => isValidCoordinate(point.lat, point.lng))
+        .sort((a, b) => a.sequence - b.sequence)
+        .map(point => [point.lat, point.lng] as [number, number])
+    : [];
+
   return (
     <div className="w-full h-full">
       <MapContainer
@@ -139,7 +169,21 @@ export function OrderMap({ pickupLocation, deliveryLocation }: OrderMapProps) {
           deliveryLocation={deliveryLocation}
           hasValidPickup={hasValidPickup}
           hasValidDelivery={hasValidDelivery}
+          routePoints={routePoints}
         />
+        
+        {/* Línea de ruta */}
+        {routeLinePositions.length > 0 && (
+          <Polyline
+            positions={routeLinePositions}
+            pathOptions={{
+              color: colors.buttonPrimary1 || '#3B82F6',
+              weight: 4,
+              opacity: 0.8,
+              dashArray: '10, 10'
+            }}
+          />
+        )}
         
         {/* Marcador de punto de recogida - Camión */}
         {hasValidPickup && (

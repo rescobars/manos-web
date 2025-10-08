@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Order, OrderStatus } from '@/types';
 import { BaseModal } from './BaseModal';
-import { Package, MapPin, DollarSign, Clock, Calendar, Navigation, User, Mail, Phone, FileText, CheckCircle } from 'lucide-react';
+import { Package, MapPin, DollarSign, Clock, Calendar, Navigation, User, Mail, Phone, FileText, CheckCircle, Route, Loader2 } from 'lucide-react';
 import { ordersApiService } from '@/lib/api/orders';
 import { OrderMap } from '@/components/ui/OrderMap';
 
@@ -16,16 +16,80 @@ interface OrderDetailProps {
   onError?: (message: string) => void;
 }
 
+interface RouteData {
+  distance: number;
+  estimated_time: number;
+  route_points: Array<{
+    lat: number;
+    lng: number;
+    sequence: number;
+    distance_from_previous: number;
+    point_type: 'start' | 'waypoint' | 'end';
+  }>;
+  total_points: number;
+  processing_time: number;
+}
+
 export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess, onError }: OrderDetailProps) {
   const [totalAmount, setTotalAmount] = useState<string>('');
   const [isAccepting, setIsAccepting] = useState(false);
+  const [routeData, setRouteData] = useState<RouteData | null>(null);
+  const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
+  const [showRouteDetails, setShowRouteDetails] = useState(false);
 
-  // Resetear el total_amount cuando se abre el modal
+  // Resetear el total_amount cuando se abre el modal y calcular ruta automáticamente
   React.useEffect(() => {
     if (isOpen && order) {
       setTotalAmount(order.total_amount ? order.total_amount.toString() : '');
+      // Resetear datos de ruta cuando se abre el modal
+      setRouteData(null);
+      setShowRouteDetails(false);
+      
+      // Calcular ruta automáticamente al abrir el modal
+      calculateRoute();
     }
   }, [isOpen, order]);
+
+  const calculateRoute = async () => {
+    if (!order) return;
+
+    setIsCalculatingRoute(true);
+    try {
+      const response = await fetch('/api/route-optimization-simple', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pickup: {
+            lat: order.pickup_lat || 0,
+            lng: order.pickup_lng || 0,
+            name: 'Punto de Recogida'
+          },
+          delivery: {
+            lat: order.delivery_lat || 0,
+            lng: order.delivery_lng || 0,
+            name: 'Punto de Entrega'
+          }
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setRouteData(result);
+        setShowRouteDetails(true);
+       
+      } else {
+        onError?.(result.error || 'Error al calcular la ruta');
+      }
+    } catch (error) {
+      console.error('Error calculating route:', error);
+      onError?.('Error al calcular la ruta');
+    } finally {
+      setIsCalculatingRoute(false);
+    }
+  };
 
   const handleAcceptOrder = async () => {
     if (!order) return;
@@ -515,11 +579,26 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
               </div>
               <div>
                 <h3 className="font-bold text-lg theme-text-primary">Ubicaciones en el Mapa</h3>
-                <p className="text-sm theme-text-muted">Visualiza los puntos de recogida y entrega</p>
+                <p className="text-sm theme-text-muted">
+                  {isCalculatingRoute ? 'Calculando ruta optimizada...' : 'Visualiza los puntos de recogida y entrega'}
+                </p>
               </div>
+              {isCalculatingRoute && (
+                <div className="ml-auto">
+                  <Loader2 className="w-5 h-5 animate-spin theme-text-primary" />
+                </div>
+              )}
             </div>
             
-            <div className="h-80 rounded-lg overflow-hidden border theme-border">
+            <div className="h-80 rounded-lg overflow-hidden border theme-border relative">
+              {isCalculatingRoute && (
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 flex items-center gap-3 shadow-lg">
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">Calculando ruta...</span>
+                  </div>
+                </div>
+              )}
               <OrderMap
                 pickupLocation={{
                   lat: order.pickup_lat || 0,
@@ -531,10 +610,78 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
                   lng: order.delivery_lng || 0,
                   address: order.delivery_address
                 }}
+                routePoints={routeData?.route_points}
               />
             </div>
           </div>
         </div>
+
+        {/* Detalles de la ruta calculada */}
+        {showRouteDetails && routeData && (
+          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+            <div className="relative p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
+                  <Route className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg theme-text-primary">Detalles de la Ruta</h3>
+                  <p className="text-sm theme-text-muted">Información de navegación calculada</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* Distancia total */}
+                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                      <Navigation className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Distancia Total</label>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold theme-text-primary">{routeData.distance.toFixed(2)} km</p>
+                </div>
+                
+                {/* Tiempo estimado */}
+                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 rounded-lg bg-green-100 text-green-600">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Tiempo Estimado</label>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold theme-text-primary">{routeData.estimated_time.toFixed(1)} min</p>
+                </div>
+                
+                {/* Puntos de ruta */}
+                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Puntos de Ruta</label>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold theme-text-primary">{routeData.total_points}</p>
+                </div>
+              </div>
+
+              {/* Tiempo de procesamiento */}
+              <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium theme-text-muted">Tiempo de procesamiento:</span>
+                  <span className="text-sm font-semibold theme-text-primary">{routeData.processing_time.toFixed(2)}s</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Información adicional */}
         <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
