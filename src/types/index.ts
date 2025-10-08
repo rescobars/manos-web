@@ -207,6 +207,35 @@ export interface Order {
   status: OrderStatus;
   created_at: string;
   updated_at: string;
+  details?: OrderDetails;
+}
+
+// Tipos para los detalles del pedido
+export interface OrderDetails {
+  // Estructura anidada (nueva)
+  client_details?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  order_details?: {
+    description?: string;
+    special_instructions?: string;
+  };
+  recipient_details?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  // Estructura plana (anterior - para compatibilidad)
+  customer_name?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  special_instructions?: string;
+  recipient_name?: string;
+  recipient_email?: string;
+  recipient_phone?: string;
 }
 
 export type OrderStatus = 'REQUESTED' | 'PENDING' | 'ASSIGNED' | 'IN_ROUTE' | 'COMPLETED' | 'CANCELLED';

@@ -70,7 +70,7 @@ export function OrderDetail({ isOpen, onClose, order }: OrderDetailProps) {
           phone: order.details.phone
         },
         order: {
-          description: order.details.description || order.details.special_instructions,
+          description: order.details.special_instructions,
           special_instructions: order.details.special_instructions
         },
         recipient: {
