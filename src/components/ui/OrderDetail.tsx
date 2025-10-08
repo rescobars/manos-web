@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Order, OrderStatus } from '@/types';
 import { BaseModal } from './BaseModal';
-import { Package, MapPin, DollarSign, Clock, Calendar, Navigation, User, Mail, Phone, FileText, CheckCircle, Route, Loader2 } from 'lucide-react';
+import { Package, MapPin, DollarSign, Clock, Calendar, Navigation, User, Mail, Phone, FileText, CheckCircle, Route, Loader2, Zap, Sparkles } from 'lucide-react';
 import { ordersApiService } from '@/lib/api/orders';
 import { OrderMap } from '@/components/ui/OrderMap';
 
@@ -366,6 +366,21 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
                 <div>
                   <h3 className="font-bold text-lg theme-text-primary">Información de la Ruta</h3>
                   <p className="text-sm theme-text-muted">Datos de navegación calculados</p>
+                </div>
+              </div>
+
+              {/* Banner informativo */}
+              <div className="mb-4 p-3 theme-bg-2 border theme-border rounded-lg" style={{ backgroundColor: 'var(--theme-background-2)', borderColor: 'var(--theme-border)' }}>
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium theme-text-primary" style={{ color: 'var(--theme-text-primary)' }}>
+                      <span className="font-semibold">Este es solo un cálculo individual</span> • 
+                      En el <span className="font-semibold theme-text-secondary" style={{ color: 'var(--theme-text-secondary)' }}>optimizador de rutas</span> puedes crear rutas completas con tráfico y múltiples pedidos
+                    </p>
+                  </div>
                 </div>
               </div>
               
