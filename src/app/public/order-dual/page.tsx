@@ -55,6 +55,47 @@ export default function PublicOrderDualPage() {
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estados de validación (ahora manejados por el componente Input)
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
+  // Funciones de validación para verificar estado antes del envío
+  const validatePhone = (phone: string): string | null => {
+    if (!phone.trim()) {
+      return 'El teléfono es requerido';
+    }
+    
+    // Remover espacios, guiones y paréntesis
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    
+    // Validar que sea un número
+    if (!/^\d+$/.test(cleanPhone)) {
+      return 'El teléfono debe contener solo números';
+    }
+    
+    // Validar longitud exacta para Guatemala (8 dígitos)
+    if (cleanPhone.length !== 8) {
+      return 'El teléfono debe tener exactamente 8 dígitos';
+    }
+    
+    return null;
+  };
+
+  const validateEmail = (email: string): string | null => {
+    if (!email.trim()) {
+      return 'El email es requerido';
+    }
+    
+    // Expresión regular para validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailRegex.test(email)) {
+      return 'Ingresa un email válido (ejemplo: correo@ejemplo.com)';
+    }
+    
+    return null;
+  };
 
   // Obtener ubicación actual al montar el componente
   useEffect(() => {
@@ -264,6 +305,28 @@ export default function PublicOrderDualPage() {
       return;
     }
 
+    // Validar campos requeridos
+    if (!customerName.trim()) {
+      setError('El nombre del cliente es requerido');
+      return;
+    }
+
+    // Validar teléfono
+    const phoneValidationError = validatePhone(customerPhone);
+    if (phoneValidationError) {
+      setPhoneError(phoneValidationError);
+      setError('Por favor corrige los errores en el formulario');
+      return;
+    }
+
+    // Validar email
+    const emailValidationError = validateEmail(customerEmail);
+    if (emailValidationError) {
+      setEmailError(emailValidationError);
+      setError('Por favor corrige los errores en el formulario');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -298,7 +361,7 @@ export default function PublicOrderDualPage() {
 
       if (response.ok && responseData.success) {
         // Mostrar mensaje de éxito
-        showSuccess('¡Encargo creado exitosamente!', 'Tu encargo ha sido registrado correctamente');
+        showSuccess('¡El encargo se ha creado!', 'Tu encargo está siendo revisado. Serás contactado por email o WhatsApp para recibir confirmación y detalles de entrega.');
         // Resetear formulario
         setDescription('');
         setCustomerName('');
@@ -308,6 +371,9 @@ export default function PublicOrderDualPage() {
         setPickupLocation(null);
         setDeliveryLocation(null);
         setSearchQuery('');
+        // Limpiar errores de validación
+        setPhoneError(null);
+        setEmailError(null);
       } else {
         showError('Error al crear el encargo', responseData.error || 'No se pudo crear el encargo');
       }
@@ -576,28 +642,28 @@ export default function PublicOrderDualPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
-                      Teléfono del cliente *
-                    </label>
                     <Input
+                      label="Teléfono del cliente"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
-                      placeholder="Número de teléfono"
+                      placeholder="12345678 (8 dígitos)"
                       type="tel"
                       className="w-full"
+                      required
+                      error={phoneError || undefined}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
-                      Email del cliente *
-                    </label>
                     <Input
+                      label="Email del cliente"
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
                       placeholder="correo@ejemplo.com"
                       type="email"
                       className="w-full"
+                      required
+                      error={emailError || undefined}
                     />
                   </div>
                 </div>
@@ -642,7 +708,7 @@ export default function PublicOrderDualPage() {
             <div className="p-2 sm:p-4 border-t theme-border" style={{ borderColor: colors.border }}>
               <Button
                 onClick={handleSubmit}
-                disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone || !customerEmail}
+                disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone || !customerEmail || !!phoneError || !!emailError}
                 className="w-full theme-btn-primary"
                 style={{ 
                   backgroundColor: colors.buttonPrimary1, 
