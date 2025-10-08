@@ -371,20 +371,15 @@ export default function PublicOrderDualPage() {
         pickup_lng: pickupLocation.lng,
         description: description || 'Encargo público',
         details: {
-          client_details: {
-            name: customerName.trim(),
-            phone: customerPhone.trim(),
-            email: customerEmail.trim()
-          },
-          order_details: {
-            description: description.trim() || 'Encargo público',
-            special_instructions: specialInstructions.trim()
-          },
-          recipient_details: {
-            name: recipientName.trim(),
-            phone: recipientPhone.trim(),
-            email: recipientEmail.trim()
-          }
+          // Estructura que espera el API actual
+          customer_name: customerName.trim(),
+          phone: customerPhone.trim(),
+          email: customerEmail.trim(),
+          special_instructions: specialInstructions.trim(),
+          // Datos adicionales del destinatario
+          recipient_name: recipientName.trim(),
+          recipient_phone: recipientPhone.trim(),
+          recipient_email: recipientEmail.trim()
         }
       };
 
