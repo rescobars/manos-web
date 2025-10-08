@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAndCleanCoordinate } from '@/lib/coordinate-utils';
-
-const FASTAPI_BASE_URL = process.env.FASTAPI_BASE_URL || 'http://localhost:8000';
+import { config } from '@/lib/config';
 
 interface RoutePoint {
   lat: number;
@@ -97,7 +96,7 @@ export async function GET(
     console.log('🔍 Fetching route with UUID:', uuid);
 
     // Llamar a FastAPI para obtener la ruta
-    const response = await fetch(`${FASTAPI_BASE_URL}/api/v1/routes/${uuid}`, {
+    const response = await fetch(`${config.api.fastapi}/api/v1/routes/${uuid}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

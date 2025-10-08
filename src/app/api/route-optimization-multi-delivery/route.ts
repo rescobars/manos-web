@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAndCleanCoordinate } from '@/lib/coordinate-utils';
-
-const FASTAPI_BASE_URL = process.env.FASTAPI_BASE_URL || 'http://localhost:8000';
+import { config } from '@/lib/config';
 
 interface Location {
   lat: number;
@@ -210,7 +209,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<MultiDeli
    console.log('🚀 Enviando solicitud de optimización multi-delivery a FastAPI');
    console.log('📍 Ubicación de inicio:', fastApiData);
     // Llamar a FastAPI
-    const response = await fetch(`${FASTAPI_BASE_URL}/api/v1/routes/optimize-multi-delivery`, {
+    const response = await fetch(`${config.api.fastapi}/api/v1/routes/optimize-multi-delivery`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { config } from '@/lib/config';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
 
     // Forward to backend API
-    const response = await fetch(`${process.env.API_BASE_URL || 'http://localhost:3000/api'}/auth/profile`, {
+    const response = await fetch(`${config.api.external}/api/auth/profile`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -9,8 +9,7 @@ import {
   Route, 
   TrafficOptimizationResponse 
 } from '@/types/traffic-optimization';
-
-const FASTAPI_BASE_URL = process.env.FASTAPI_BASE_URL || 'http://localhost:8000';
+import { config } from '@/lib/config';
 
 /**
  * POST /api/route-optimization-trafic
@@ -146,7 +145,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TrafficOp
     };
 
     // Verificar que la URL base esté configurada correctamente
-    if (!FASTAPI_BASE_URL) {
+    if (!config.api.fastapi) {
       console.error('FASTAPI_BASE_URL no está configurado');
       return NextResponse.json(
         {
@@ -160,7 +159,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TrafficOp
       );
     }
 
-    const apiUrl = `${FASTAPI_BASE_URL}/api/v1/routes/traffic/optimize-route`;
+    const apiUrl = `${config.api.fastapi}/api/v1/routes/traffic/optimize-route`;
     console.log('Intentando conectar a:', apiUrl);
     console.log('Datos a enviar:', JSON.stringify(requestBody, null, 2));
 
@@ -206,7 +205,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TrafficOp
             error: 'No se puede conectar al servidor FastAPI',
             details: {
               message: 'Verifica que tu FastAPI esté ejecutándose en el puerto 8000',
-              url: `${FASTAPI_BASE_URL}/api/v1/routes/traffic/optimize-route`,
+              url: `${config.api.fastapi}/api/v1/routes/traffic/optimize-route`,
               error: error.message
             }
           },
@@ -221,7 +220,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<TrafficOp
             error: 'URL del FastAPI no encontrada',
             details: {
               message: 'Verifica que FASTAPI_BASE_URL esté configurado correctamente',
-              url: FASTAPI_BASE_URL,
+              url: config.api.fastapi,
               error: error.message
             }
           },

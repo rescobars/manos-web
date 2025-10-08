@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { config } from '@/lib/config';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Forward to backend API
-    const response = await fetch(`${process.env.API_BASE_URL || 'http://localhost:3000/api'}/orders`, {
+    const response = await fetch(`${config.api.external}/api/orders`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Forward to backend API
-    const response = await fetch(`${process.env.API_BASE_URL || 'http://localhost:3000/api'}/orders`, {
+    const response = await fetch(`${config.api.external}/api/orders`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,

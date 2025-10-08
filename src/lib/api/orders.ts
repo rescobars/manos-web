@@ -97,7 +97,7 @@ class OrdersApiService {
 
   // Actualizar el estado de un pedido
   async updateOrderStatus(uuid: string, status: OrderStatus): Promise<ApiResponse<Order>> {
-    return this.request<Order>(`/orders/${uuid}/status`, {
+    return this.request<Order>(`/orders/${uuid}`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
