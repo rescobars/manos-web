@@ -53,12 +53,20 @@ export default function PublicOrderDualPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [specialInstructions, setSpecialInstructions] = useState('');
+  
+  // Estados para persona que recibirá el pedido
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Estados de validación (ahora manejados por el componente Input)
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [recipientPhoneError, setRecipientPhoneError] = useState<string | null>(null);
+  const [recipientEmailError, setRecipientEmailError] = useState<string | null>(null);
 
   // Funciones de validación para verificar estado antes del envío
   const validatePhone = (phone: string): string | null => {
@@ -305,13 +313,13 @@ export default function PublicOrderDualPage() {
       return;
     }
 
-    // Validar campos requeridos
+    // Validar campos requeridos del cliente
     if (!customerName.trim()) {
       setError('El nombre del cliente es requerido');
       return;
     }
 
-    // Validar teléfono
+    // Validar teléfono del cliente
     const phoneValidationError = validatePhone(customerPhone);
     if (phoneValidationError) {
       setPhoneError(phoneValidationError);
@@ -319,10 +327,32 @@ export default function PublicOrderDualPage() {
       return;
     }
 
-    // Validar email
+    // Validar email del cliente
     const emailValidationError = validateEmail(customerEmail);
     if (emailValidationError) {
       setEmailError(emailValidationError);
+      setError('Por favor corrige los errores en el formulario');
+      return;
+    }
+
+    // Validar campos requeridos del destinatario
+    if (!recipientName.trim()) {
+      setError('El nombre de quien recibirá el pedido es requerido');
+      return;
+    }
+
+    // Validar teléfono del destinatario
+    const recipientPhoneValidationError = validatePhone(recipientPhone);
+    if (recipientPhoneValidationError) {
+      setRecipientPhoneError(recipientPhoneValidationError);
+      setError('Por favor corrige los errores en el formulario');
+      return;
+    }
+
+    // Validar email del destinatario
+    const recipientEmailValidationError = validateEmail(recipientEmail);
+    if (recipientEmailValidationError) {
+      setRecipientEmailError(recipientEmailValidationError);
       setError('Por favor corrige los errores en el formulario');
       return;
     }
@@ -341,10 +371,20 @@ export default function PublicOrderDualPage() {
         pickup_lng: pickupLocation.lng,
         description: description || 'Encargo público',
         details: {
-          customer_name: customerName.trim(),
-          phone: customerPhone.trim(),
-          email: customerEmail.trim(),
-          special_instructions: specialInstructions.trim()
+          client_details: {
+            name: customerName.trim(),
+            phone: customerPhone.trim(),
+            email: customerEmail.trim()
+          },
+          order_details: {
+            description: description.trim() || 'Encargo público',
+            special_instructions: specialInstructions.trim()
+          },
+          recipient_details: {
+            name: recipientName.trim(),
+            phone: recipientPhone.trim(),
+            email: recipientEmail.trim()
+          }
         }
       };
 
@@ -368,12 +408,17 @@ export default function PublicOrderDualPage() {
         setCustomerPhone('');
         setCustomerEmail('');
         setSpecialInstructions('');
+        setRecipientName('');
+        setRecipientPhone('');
+        setRecipientEmail('');
         setPickupLocation(null);
         setDeliveryLocation(null);
         setSearchQuery('');
         // Limpiar errores de validación
         setPhoneError(null);
         setEmailError(null);
+        setRecipientPhoneError(null);
+        setRecipientEmailError(null);
       } else {
         showError('Error al crear el encargo', responseData.error || 'No se pudo crear el encargo');
       }
@@ -417,7 +462,7 @@ export default function PublicOrderDualPage() {
   }
 
   return (
-    <div className="h-screen theme-bg-1 flex flex-col" style={{ backgroundColor: colors.background1 }}>
+    <div className="min-h-screen theme-bg-1" style={{ backgroundColor: colors.background1 }}>
       {/* Header fijo */}
       <div className="flex-shrink-0 p-4 border-b" style={{ borderColor: colors.border }}>
         <div className="flex items-center justify-between">
@@ -437,11 +482,11 @@ export default function PublicOrderDualPage() {
         </div>
       </div>
 
-      {/* Layout principal - Usa todo el espacio restante */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+      {/* Layout principal - Responsive */}
+      <div className="flex flex-col lg:flex-row lg:overflow-hidden lg:min-h-0">
         {/* Columna izquierda - Selector de ubicación (desktop) / Arriba (mobile) */}
-        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r theme-border bg-white h-48 sm:h-56 lg:h-full" style={{ borderColor: colors.border }}>
-          <div className="h-full flex flex-col">
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r theme-border bg-white lg:h-auto lg:min-h-full" style={{ borderColor: colors.border }}>
+          <div className="flex flex-col">
             {/* Header del selector */}
             <div className="p-2 sm:p-4 border-b theme-border" style={{ borderColor: colors.border }}>
               <h3 className="font-semibold theme-text-primary flex items-center text-sm sm:text-base" style={{ color: colors.textPrimary }}>
@@ -581,7 +626,7 @@ export default function PublicOrderDualPage() {
         {/* Columna central - Mapa prominente */}
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 p-2 sm:p-4">
-            <div className="bg-white rounded-lg border theme-border overflow-hidden h-full" style={{ borderColor: colors.border }}>
+            <div className="bg-white rounded-lg border theme-border overflow-hidden h-64 sm:h-80 lg:h-full" style={{ borderColor: colors.border }}>
               <div className="h-full relative">
                 {locationLoading ? (
                   <div className="flex items-center justify-center h-full">
@@ -607,10 +652,10 @@ export default function PublicOrderDualPage() {
         </div>
 
         {/* Columna derecha - Formulario (desktop) / Abajo (mobile) */}
-        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-l theme-border bg-white h-48 sm:h-56 lg:h-full" style={{ borderColor: colors.border }}>
-          <div className="h-full flex flex-col">
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-l theme-border bg-white lg:h-auto lg:min-h-full" style={{ borderColor: colors.border }}>
+          <div className="flex flex-col">
             {/* Header del formulario */}
-            <div className="p-2 sm:p-4 border-b theme-border" style={{ borderColor: colors.border }}>
+            <div className="p-2 sm:p-4 border-b theme-border flex-shrink-0" style={{ borderColor: colors.border }}>
               <h3 className="font-semibold theme-text-primary flex items-center text-sm sm:text-base" style={{ color: colors.textPrimary }}>
                 <Package className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Información del Encargo
@@ -620,13 +665,13 @@ export default function PublicOrderDualPage() {
               </p>
             </div>
 
-            {/* Formulario */}
-            <div className="flex-1 p-2 sm:p-4 overflow-y-auto">
+            {/* Formulario - Scrollable en mobile */}
+            <div className="p-2 sm:p-4 lg:flex-1 lg:overflow-y-auto lg:pb-24">
               <div className="space-y-2 sm:space-y-4">
-                {/* Información del cliente */}
+                {/* Información del cliente (quien envía) */}
                 <div className="space-y-2 sm:space-y-3">
                   <h4 className="font-medium theme-text-primary text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
-                    Información del Cliente
+                    Información del Cliente (Quien Envía)
                   </h4>
                   
                   <div>
@@ -668,6 +713,75 @@ export default function PublicOrderDualPage() {
                   </div>
                 </div>
 
+                {/* División visual */}
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t" style={{ borderColor: colors.border }}></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-white theme-text-secondary" style={{ color: colors.textSecondary, backgroundColor: colors.background1 }}>
+                      Persona que recibirá el pedido
+                    </span>
+                  </div>
+                </div>
+
+                {/* Información de quien recibirá el pedido */}
+                <div className="space-y-2 sm:space-y-3">
+                  <h4 className="font-medium theme-text-primary text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
+                    Información de Quien Recibirá el Pedido
+                  </h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                      Nombre de quien recibirá *
+                    </label>
+                    <Input
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                      placeholder="Nombre completo"
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <Input
+                      label="Teléfono de quien recibirá"
+                      value={recipientPhone}
+                      onChange={(e) => setRecipientPhone(e.target.value)}
+                      placeholder="12345678 (8 dígitos)"
+                      type="tel"
+                      className="w-full"
+                      required
+                      error={recipientPhoneError || undefined}
+                    />
+                  </div>
+
+                  <div>
+                    <Input
+                      label="Email de quien recibirá"
+                      value={recipientEmail}
+                      onChange={(e) => setRecipientEmail(e.target.value)}
+                      placeholder="correo@ejemplo.com"
+                      type="email"
+                      className="w-full"
+                      required
+                      error={recipientEmailError || undefined}
+                    />
+                  </div>
+                </div>
+
+                {/* División visual */}
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t" style={{ borderColor: colors.border }}></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-white theme-text-secondary" style={{ color: colors.textSecondary, backgroundColor: colors.background1 }}>
+                      Detalles del encargo
+                    </span>
+                  </div>
+                </div>
+
                 {/* Información del encargo */}
                 <div className="space-y-2 sm:space-y-3">
                   <h4 className="font-medium theme-text-primary text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
@@ -704,11 +818,11 @@ export default function PublicOrderDualPage() {
               </div>
             </div>
 
-            {/* Botón de envío - Fijo en la parte inferior */}
-            <div className="p-2 sm:p-4 border-t theme-border" style={{ borderColor: colors.border }}>
+            {/* Botón de envío - Solo en mobile */}
+            <div className="lg:hidden p-2 sm:p-4 border-t theme-border flex-shrink-0" style={{ borderColor: colors.border }}>
               <Button
                 onClick={handleSubmit}
-                disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone || !customerEmail || !!phoneError || !!emailError}
+                disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone || !customerEmail || !recipientName || !recipientPhone || !recipientEmail || !!phoneError || !!emailError || !!recipientPhoneError || !!recipientEmailError}
                 className="w-full theme-btn-primary"
                 style={{ 
                   backgroundColor: colors.buttonPrimary1, 
@@ -734,6 +848,34 @@ export default function PublicOrderDualPage() {
       
       {/* Toast Container */}
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      
+      {/* Botón flotante para desktop */}
+      <div className="hidden lg:block fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[99999]">
+        <div className="bg-white rounded-2xl shadow-2xl border-2 p-4" style={{ borderColor: colors.border, boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px ${colors.border}` }}>
+          <Button
+            onClick={handleSubmit}
+            disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone || !customerEmail || !recipientName || !recipientPhone || !recipientEmail || !!phoneError || !!emailError || !!recipientPhoneError || !!recipientEmailError}
+            className="px-8 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+            style={{ 
+              backgroundColor: colors.buttonPrimary1, 
+              color: colors.buttonText,
+              minWidth: '200px'
+            }}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                Creando Encargo...
+              </>
+            ) : (
+              <>
+                <Package className="w-5 h-5 mr-3" />
+                Crear Encargo
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
