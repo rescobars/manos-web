@@ -5,19 +5,19 @@ import { Order, OrderStatus } from '@/types';
 import { BaseModal } from './BaseModal';
 import { Package, MapPin, DollarSign, Clock, Calendar, Navigation, User, Mail, Phone, FileText, CheckCircle } from 'lucide-react';
 import { ordersApiService } from '@/lib/api/orders';
-import { useToast } from '@/hooks/useToast';
 
 interface OrderDetailProps {
   isOpen: boolean;
   onClose: () => void;
   order: Order | null;
   onOrderUpdated?: () => void;
+  onSuccess?: (message: string) => void;
+  onError?: (message: string) => void;
 }
 
-export function OrderDetail({ isOpen, onClose, order, onOrderUpdated }: OrderDetailProps) {
+export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess, onError }: OrderDetailProps) {
   const [totalAmount, setTotalAmount] = useState<string>('');
   const [isAccepting, setIsAccepting] = useState(false);
-  const { success, error: showError } = useToast();
 
   // Resetear el total_amount cuando se abre el modal
   React.useEffect(() => {
@@ -31,7 +31,7 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated }: OrderDet
     
     const amount = parseFloat(totalAmount);
     if (isNaN(amount) || amount < 0) {
-      showError('Por favor ingresa un monto válido');
+      onError?.('Por favor ingresa un monto válido');
       return;
     }
 
@@ -43,15 +43,18 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated }: OrderDet
       });
       
       if (response.success) {
-        success('Pedido aceptado exitosamente');
+        // Primero actualizar la lista de pedidos
         onOrderUpdated?.();
+        // Mostrar el toast de éxito
+        onSuccess?.('Pedido aceptado exitosamente');
+        // Cerrar el modal
         onClose();
       } else {
-        showError(response.error || 'Error al aceptar el pedido');
+        onError?.(response.error || 'Error al aceptar el pedido');
       }
     } catch (error) {
       console.error('Error accepting order:', error);
-      showError('Error al aceptar el pedido');
+      onError?.('Error al aceptar el pedido');
     } finally {
       setIsAccepting(false);
     }
@@ -215,10 +218,10 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated }: OrderDet
         {/* Campo para total_amount si el pedido está en estado REQUESTED */}
         {order.status === 'REQUESTED' && (
           <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
-            <div className="absolute inset-0 bg-gradient-to-r from-green-50/50 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
             <div className="relative p-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
+                <div className="p-3 rounded-xl text-white shadow-lg theme-btn-primary">
                   <DollarSign className="w-6 h-6" />
                 </div>
                 <div>
@@ -233,8 +236,8 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated }: OrderDet
                     Monto Total (Q)
                   </label>
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-green-100 text-green-600">
-                      <DollarSign className="w-5 h-5" />
+                    <div className="p-2 rounded-lg theme-bg-1 opacity-10" style={{ backgroundColor: 'var(--button-primary-1)' }}>
+                      <DollarSign className="w-5 h-5 theme-btn-primary" />
                     </div>
                     <input
                       type="number"
@@ -243,7 +246,7 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated }: OrderDet
                       value={totalAmount}
                       onChange={(e) => setTotalAmount(e.target.value)}
                       placeholder="0.00"
-                      className="flex-1 px-4 py-3 theme-bg-1 theme-text-primary border theme-border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-lg font-semibold"
+                      className="flex-1 px-4 py-3 theme-bg-1 theme-text-primary border theme-border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-lg font-semibold focus:ring-theme-btn-primary"
                     />
                   </div>
                 </div>
@@ -258,7 +261,7 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated }: OrderDet
                   <button
                     onClick={handleAcceptOrder}
                     disabled={isAccepting || !totalAmount}
-                    className="px-8 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 font-semibold flex items-center gap-2"
+                    className="px-8 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed theme-btn-primary disabled:theme-bg-3 disabled:theme-text-muted"
                   >
                     {isAccepting ? (
                       <>

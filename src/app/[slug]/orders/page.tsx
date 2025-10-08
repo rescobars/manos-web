@@ -621,6 +621,8 @@ export default function OrdersPage() {
             });
           }
         }}
+        onSuccess={(message) => success('Éxito', message)}
+        onError={(message) => showError('Error', message)}
       />
 
     </>
