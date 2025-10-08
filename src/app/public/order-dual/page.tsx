@@ -10,6 +10,8 @@ import { OrdersMap } from '@/components/ui/leaflet/orders';
 import { useDebounce } from '@/hooks/useDebounce';
 import { PublicOrderUrl } from '@/components/ui/PublicOrderUrl';
 import { usePublicOrganizationTheme } from '@/hooks/usePublicOrganizationTheme';
+import { useToast } from '@/hooks/useToast';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 
 interface Location {
   lat: number;
@@ -23,6 +25,9 @@ export default function PublicOrderDualPage() {
   
   // Obtener tema de la organización
   const { colors, branding, isLoading: themeLoading, error: themeError } = usePublicOrganizationTheme(orgUuid);
+  
+  // Hook para toast
+  const { success: showSuccess, error: showError, toasts, removeToast } = useToast();
 
   // Estados del mapa
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
@@ -44,9 +49,9 @@ export default function PublicOrderDualPage() {
 
   // Estados del formulario
   const [description, setDescription] = useState('');
-  const [totalAmount, setTotalAmount] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -271,11 +276,11 @@ export default function PublicOrderDualPage() {
         pickup_address: pickupLocation.address,
         pickup_lat: pickupLocation.lat,
         pickup_lng: pickupLocation.lng,
-        total_amount: parseFloat(totalAmount) || 0,
-        description: description || 'Pedido público',
+        description: description || 'Encargo público',
         details: {
           customer_name: customerName.trim(),
           phone: customerPhone.trim(),
+          email: customerEmail.trim(),
           special_instructions: specialInstructions.trim()
         }
       };
@@ -293,22 +298,22 @@ export default function PublicOrderDualPage() {
 
       if (response.ok && responseData.success) {
         // Mostrar mensaje de éxito
-        alert('¡Pedido creado exitosamente!');
+        showSuccess('¡Encargo creado exitosamente!', 'Tu encargo ha sido registrado correctamente');
         // Resetear formulario
         setDescription('');
-        setTotalAmount('');
         setCustomerName('');
         setCustomerPhone('');
+        setCustomerEmail('');
         setSpecialInstructions('');
         setPickupLocation(null);
         setDeliveryLocation(null);
         setSearchQuery('');
       } else {
-        setError(responseData.error || 'Error al crear el pedido');
+        showError('Error al crear el encargo', responseData.error || 'No se pudo crear el encargo');
       }
     } catch (err) {
       console.error('Error creating order:', err);
-      setError('Error al crear el pedido. Inténtalo de nuevo.');
+      showError('Error al crear el encargo', 'Ocurrió un error inesperado. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -545,7 +550,7 @@ export default function PublicOrderDualPage() {
                 Información del Encargo
               </h3>
               <p className="text-xs sm:text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
-                Completa los detalles del pedido
+                Completa los detalles del encargo
               </p>
             </div>
 
@@ -582,35 +587,33 @@ export default function PublicOrderDualPage() {
                       className="w-full"
                     />
                   </div>
-                </div>
 
-                {/* Información del pedido */}
-                <div className="space-y-2 sm:space-y-3">
-                  <h4 className="font-medium theme-text-primary text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
-                    Información del Pedido
-                  </h4>
-                  
                   <div>
                     <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
-                      Monto total (Q)
+                      Email del cliente *
                     </label>
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={totalAmount}
-                      onChange={(e) => setTotalAmount(e.target.value)}
-                      placeholder="0.00"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder="correo@ejemplo.com"
+                      type="email"
                       className="w-full"
                     />
                   </div>
+                </div>
+
+                {/* Información del encargo */}
+                <div className="space-y-2 sm:space-y-3">
+                  <h4 className="font-medium theme-text-primary text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
+                    Información del Encargo
+                  </h4>
 
                   <div>
                     <TextAreaField
-                      label="Descripción del pedido"
+                      label="Descripción del encargo"
                       value={description}
                       onChange={setDescription}
-                      placeholder="¿Qué contiene el pedido?"
+                      placeholder="¿Qué contiene el encargo?"
                       rows={2}
                     />
                   </div>
@@ -639,7 +642,7 @@ export default function PublicOrderDualPage() {
             <div className="p-2 sm:p-4 border-t theme-border" style={{ borderColor: colors.border }}>
               <Button
                 onClick={handleSubmit}
-                disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone}
+                disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone || !customerEmail}
                 className="w-full theme-btn-primary"
                 style={{ 
                   backgroundColor: colors.buttonPrimary1, 
@@ -662,6 +665,9 @@ export default function PublicOrderDualPage() {
           </div>
         </div>
       </div>
+      
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
 }
