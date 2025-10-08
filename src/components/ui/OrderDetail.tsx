@@ -36,6 +36,7 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
   const [routeData, setRouteData] = useState<RouteData | null>(null);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
   const [showRouteDetails, setShowRouteDetails] = useState(false);
+  const [showDetailedInfo, setShowDetailedInfo] = useState(false);
 
   // Resetear el total_amount cuando se abre el modal y calcular ruta automáticamente
   React.useEffect(() => {
@@ -44,6 +45,7 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
       // Resetear datos de ruta cuando se abre el modal
       setRouteData(null);
       setShowRouteDetails(false);
+      setShowDetailedInfo(false);
       
       // Calcular ruta automáticamente al abrir el modal
       calculateRoute();
@@ -79,7 +81,7 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
       if (result.success) {
         setRouteData(result);
         setShowRouteDetails(true);
-       
+        
       } else {
         onError?.(result.error || 'Error al calcular la ruta');
       }
@@ -242,343 +244,50 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
       maxWidth="max-w-4xl"
     >
       <div className="space-y-6">
-        {/* Header del pedido */}
+        {/* Header del pedido - Compacto */}
         <div className="relative overflow-hidden theme-bg-2 rounded-xl border theme-border shadow-sm">
-          {/* Gradiente de fondo sutil */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
           
-          <div className="relative p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex items-center gap-3">
-                  <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border-2 shadow-sm ${statusConfig.color}`}>
-                    <div className="w-2 h-2 rounded-full bg-current"></div>
-                    {statusConfig.text}
-                  </span>
-                  <span className="text-sm font-mono theme-text-muted theme-bg-3 px-3 py-1.5 rounded-lg border theme-border font-medium">
-                    #{order.order_number}
-                  </span>
-                </div>
+          <div className="relative p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold border-2 shadow-sm ${statusConfig.color}`}>
+                  <div className="w-2 h-2 rounded-full bg-current"></div>
+                  {statusConfig.text}
+                </span>
+                <span className="text-sm font-mono theme-text-muted theme-bg-3 px-3 py-1.5 rounded-lg border theme-border font-medium">
+                  #{order.order_number}
+                </span>
               </div>
               
-              <div className="flex items-center gap-6">
-                <div className="text-center lg:text-right">
-                  <div className="text-3xl font-bold theme-text-primary mb-1">
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-2xl font-bold theme-text-primary">
                     Q{typeof order.total_amount === 'number' ? order.total_amount.toFixed(2) : '0.00'}
                   </div>
-                  <div className="text-sm theme-text-muted font-medium">Monto total</div>
+                  <div className="text-xs theme-text-muted">Monto total</div>
                 </div>
-                <div className="hidden lg:block w-px h-12 theme-bg-3"></div>
-                <div className="text-center lg:text-right">
-                  <div className="text-lg font-semibold theme-text-primary">
+                <div className="text-right">
+                  <div className="text-sm font-semibold theme-text-primary">
                     {formatDate(order.created_at).split(',')[0]}
                   </div>
-                  <div className="text-sm theme-text-muted">Fecha de creación</div>
+                  <div className="text-xs theme-text-muted">Fecha</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Campo para total_amount si el pedido está en estado REQUESTED */}
-        {order.status === 'REQUESTED' && (
-          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-            <div className="relative p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl text-white shadow-lg theme-btn-primary">
-                  <DollarSign className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg theme-text-primary">Aceptar Pedido</h3>
-                  <p className="text-sm theme-text-muted">Establece el monto total del pedido</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
-                  <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide mb-3">
-                    Monto Total (Q)
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg theme-bg-1 opacity-10" style={{ backgroundColor: 'var(--button-primary-1)' }}>
-                      <DollarSign className="w-5 h-5 theme-btn-primary" />
-                    </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={totalAmount}
-                      onChange={(e) => setTotalAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="flex-1 px-4 py-3 theme-bg-1 theme-text-primary border theme-border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-lg font-semibold focus:ring-theme-btn-primary"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={onClose}
-                    className="px-6 py-3 theme-bg-1 hover:theme-bg-2 theme-text-primary rounded-xl border theme-border shadow-sm hover:shadow-md transition-all duration-200 font-semibold"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleAcceptOrder}
-                    disabled={isAccepting || !totalAmount}
-                    className="px-8 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed theme-btn-primary disabled:theme-bg-3 disabled:theme-text-muted"
-                  >
-                    {isAccepting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Aceptando...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-4 h-4" />
-                        Aceptar Pedido
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Detalles del Cliente, Encargo y Destinatario */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Información del Cliente */}
-          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-            <div className="relative p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
-                  <User className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg theme-text-primary">Cliente</h3>
-                  <p className="text-sm theme-text-muted">Información de contacto</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                {orderDetails.client.name && (
-                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Nombre completo</label>
-                    <p className="theme-text-primary font-medium">{orderDetails.client.name}</p>
-                  </div>
-                )}
-                
-                {orderDetails.client.email && (
-                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Correo electrónico</label>
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
-                        <Mail className="w-4 h-4" />
-                      </div>
-                      <p className="theme-text-primary text-sm font-medium">{orderDetails.client.email}</p>
-                    </div>
-                  </div>
-                )}
-                
-                {orderDetails.client.phone && (
-                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Teléfono</label>
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-green-100 text-green-600">
-                        <Phone className="w-4 h-4" />
-                      </div>
-                      <p className="theme-text-primary text-sm font-medium">{orderDetails.client.phone}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Detalles del Encargo */}
-          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-            <div className="relative p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg">
-                  <FileText className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg theme-text-primary">Encargo</h3>
-                  <p className="text-sm theme-text-muted">Detalles del servicio</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                {orderDetails.order.description && (
-                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Descripción</label>
-                    <p className="theme-text-primary text-sm leading-relaxed">{orderDetails.order.description}</p>
-                  </div>
-                )}
-                
-                {orderDetails.order.special_instructions && (
-                  <div className="p-4 theme-bg-2 rounded-lg border-2 border-dashed theme-border">
-                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-3">Instrucciones Especiales</label>
-                    <div className="flex items-start gap-3">
-                      <div className="p-1.5 rounded-lg bg-amber-100 text-amber-600 mt-0.5">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <p className="theme-text-secondary text-sm leading-relaxed italic">
-                        "{orderDetails.order.special_instructions}"
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Información del Destinatario */}
-          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-            <div className="relative p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
-                  <User className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg theme-text-primary">Destinatario</h3>
-                  <p className="text-sm theme-text-muted">Quien recibe el encargo</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                {orderDetails.recipient.name && (
-                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Nombre completo</label>
-                    <p className="theme-text-primary font-medium">{orderDetails.recipient.name}</p>
-                  </div>
-                )}
-                
-                {orderDetails.recipient.email && (
-                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Correo electrónico</label>
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
-                        <Mail className="w-4 h-4" />
-                      </div>
-                      <p className="theme-text-primary text-sm font-medium">{orderDetails.recipient.email}</p>
-                    </div>
-                  </div>
-                )}
-                
-                {orderDetails.recipient.phone && (
-                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Teléfono</label>
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-green-100 text-green-600">
-                        <Phone className="w-4 h-4" />
-                      </div>
-                      <p className="theme-text-primary text-sm font-medium">{orderDetails.recipient.phone}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Información de ubicaciones */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Punto de recogida */}
-          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-            <div className="relative p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
-                  <MapPin className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg theme-text-primary">Punto de Recogida</h3>
-                  <p className="text-sm theme-text-muted">Origen del encargo</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
-                  <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-3">Dirección completa</label>
-                  <div className="flex items-start gap-3">
-                    <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600 mt-0.5">
-                      <MapPin className="w-4 h-4" />
-                    </div>
-                    <p className="theme-text-primary font-medium leading-relaxed">{order.pickup_address}</p>
-                  </div>
-                </div>
-                
-                <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                  <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Coordenadas GPS</label>
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 rounded-lg bg-gray-100 text-gray-600">
-                      <Navigation className="w-3 h-3" />
-                    </div>
-                    <p className="text-sm font-mono theme-text-secondary font-medium">
-                      {formatCoordinates(order.pickup_lat, order.pickup_lng)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Punto de entrega */}
-          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-            <div className="relative p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
-                  <Navigation className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg theme-text-primary">Punto de Entrega</h3>
-                  <p className="text-sm theme-text-muted">Destino del encargo</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
-                  <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-3">Dirección completa</label>
-                  <div className="flex items-start gap-3">
-                    <div className="p-1.5 rounded-lg bg-green-100 text-green-600 mt-0.5">
-                      <Navigation className="w-4 h-4" />
-                    </div>
-                    <p className="theme-text-primary font-medium leading-relaxed">{order.delivery_address}</p>
-                  </div>
-                </div>
-                
-                <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                  <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Coordenadas GPS</label>
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 rounded-lg bg-gray-100 text-gray-600">
-                      <Navigation className="w-3 h-3" />
-                    </div>
-                    <p className="text-sm font-mono theme-text-secondary font-medium">
-                      {formatCoordinates(order.delivery_lat, order.delivery_lng)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Mapa con marcadores de origen y destino */}
+        {/* Mapa con marcadores de origen y destino - PRIMERO */}
         <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-          <div className="relative p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 rounded-xl theme-bg-1 text-white shadow-lg theme-btn-primary">
-                <Navigation className="w-6 h-6" />
+          <div className="relative p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-xl theme-bg-1 text-white shadow-lg theme-btn-primary">
+                <Navigation className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-lg theme-text-primary">Ubicaciones en el Mapa</h3>
+                <h3 className="font-bold text-lg theme-text-primary">Ruta del Pedido</h3>
                 <p className="text-sm theme-text-muted">
                   {isCalculatingRoute ? 'Calculando ruta optimizada...' : 'Visualiza los puntos de recogida y entrega'}
                 </p>
@@ -590,7 +299,7 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
               )}
             </div>
             
-            <div className="h-80 rounded-lg overflow-hidden border theme-border relative">
+            <div className="h-64 rounded-lg overflow-hidden border theme-border relative">
               {isCalculatingRoute && (
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
                   <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 flex items-center gap-3 shadow-lg">
@@ -616,124 +325,410 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
           </div>
         </div>
 
-        {/* Detalles de la ruta calculada */}
+        {/* Detalles de la ruta calculada - Si está disponible */}
         {showRouteDetails && routeData && (
           <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-            <div className="relative p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
-                  <Route className="w-6 h-6" />
+            <div className="relative p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
+                  <Route className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg theme-text-primary">Detalles de la Ruta</h3>
-                  <p className="text-sm theme-text-muted">Información de navegación calculada</p>
+                  <h3 className="font-bold text-lg theme-text-primary">Información de la Ruta</h3>
+                  <p className="text-sm theme-text-muted">Datos de navegación calculados</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* Distancia total */}
-                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                      <Navigation className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Distancia Total</label>
-                    </div>
+                <div className="p-3 theme-bg-2 rounded-lg border theme-border text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Navigation className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs font-semibold theme-text-muted uppercase tracking-wide">Distancia</span>
                   </div>
-                  <p className="text-2xl font-bold theme-text-primary">{routeData.distance.toFixed(2)} km</p>
+                  <p className="text-xl font-bold theme-text-primary">{routeData.distance.toFixed(2)} km</p>
                 </div>
                 
                 {/* Tiempo estimado */}
-                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 rounded-lg bg-green-100 text-green-600">
-                      <Clock className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Tiempo Estimado</label>
-                    </div>
+                <div className="p-3 theme-bg-2 rounded-lg border theme-border text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Clock className="w-4 h-4 text-green-600" />
+                    <span className="text-xs font-semibold theme-text-muted uppercase tracking-wide">Tiempo</span>
                   </div>
-                  <p className="text-2xl font-bold theme-text-primary">{routeData.estimated_time.toFixed(1)} min</p>
+                  <p className="text-xl font-bold theme-text-primary">{routeData.estimated_time.toFixed(1)} min</p>
                 </div>
                 
                 {/* Puntos de ruta */}
-                <div className="p-4 theme-bg-2 rounded-lg border theme-border">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
-                      <MapPin className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Puntos de Ruta</label>
-                    </div>
+                <div className="p-3 theme-bg-2 rounded-lg border theme-border text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <MapPin className="w-4 h-4 text-purple-600" />
+                    <span className="text-xs font-semibold theme-text-muted uppercase tracking-wide">Puntos</span>
                   </div>
-                  <p className="text-2xl font-bold theme-text-primary">{routeData.total_points}</p>
-                </div>
-              </div>
-
-              {/* Tiempo de procesamiento */}
-              <div className="p-3 theme-bg-2 rounded-lg border theme-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium theme-text-muted">Tiempo de procesamiento:</span>
-                  <span className="text-sm font-semibold theme-text-primary">{routeData.processing_time.toFixed(2)}s</span>
+                  <p className="text-xl font-bold theme-text-primary">{routeData.total_points}</p>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Información adicional */}
-        <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-          <div className="relative p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-gray-500 to-gray-600 text-white shadow-lg">
-                <Clock className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-bold text-lg theme-text-primary">Información del Sistema</h3>
-                <p className="text-sm theme-text-muted">Timestamps y metadatos</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-4 theme-bg-2 rounded-lg border theme-border">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Fecha de Creación</label>
-                  </div>
+        {/* Campo para total_amount si el pedido está en estado REQUESTED - Compacto */}
+        {order.status === 'REQUESTED' && (
+          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+            <div className="relative p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl text-white shadow-lg theme-btn-primary">
+                  <DollarSign className="w-5 h-5" />
                 </div>
-                <p className="theme-text-primary font-medium">{formatDate(order.created_at)}</p>
+                <div>
+                  <h3 className="font-bold text-lg theme-text-primary">Aceptar Pedido</h3>
+                  <p className="text-sm theme-text-muted">Establece el monto total del pedido</p>
+                </div>
               </div>
               
-              <div className="p-4 theme-bg-2 rounded-lg border theme-border">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-green-100 text-green-600">
-                    <Clock className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Última Actualización</label>
+              <div className="space-y-4">
+                <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                  <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide mb-2">
+                    Monto Total (Q)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg theme-bg-1 opacity-10" style={{ backgroundColor: 'var(--button-primary-1)' }}>
+                      <DollarSign className="w-4 h-4 theme-btn-primary" />
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={totalAmount}
+                      onChange={(e) => setTotalAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="flex-1 px-3 py-2 theme-bg-1 theme-text-primary border theme-border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-lg font-semibold focus:ring-theme-btn-primary"
+                    />
                   </div>
                 </div>
-                <p className="theme-text-primary font-medium">{formatDate(order.updated_at)}</p>
+                
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={onClose}
+                    className="px-4 py-2 theme-bg-1 hover:theme-bg-2 theme-text-primary rounded-lg border theme-border shadow-sm hover:shadow-md transition-all duration-200 font-semibold text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleAcceptOrder}
+                    disabled={isAccepting || !totalAmount}
+                    className="px-6 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed theme-btn-primary disabled:theme-bg-3 disabled:theme-text-muted text-sm"
+                  >
+                    {isAccepting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Aceptando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        Aceptar Pedido
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Botón para ver más detalles */}
+        <div className="flex justify-center">
+          <button
+            onClick={() => setShowDetailedInfo(!showDetailedInfo)}
+            className="flex items-center gap-2 px-4 py-2 theme-bg-2 hover:theme-bg-3 theme-text-primary rounded-lg border theme-border shadow-sm hover:shadow-md transition-all duration-200 font-semibold"
+          >
+            <FileText className="w-4 h-4" />
+            {showDetailedInfo ? 'Ver menos detalles' : 'Ver más detalles'}
+          </button>
         </div>
+
+        {/* Detalles del Cliente, Encargo y Destinatario - Colapsable */}
+        {showDetailedInfo && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Información del Cliente */}
+            <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <div className="relative p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg theme-text-primary">Cliente</h3>
+                    <p className="text-sm theme-text-muted">Información de contacto</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {orderDetails.client.name && (
+                    <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                      <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Nombre completo</label>
+                      <p className="theme-text-primary font-medium text-sm">{orderDetails.client.name}</p>
+                    </div>
+                  )}
+                  
+                  {orderDetails.client.email && (
+                    <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                      <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Correo electrónico</label>
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <p className="theme-text-primary text-sm font-medium">{orderDetails.client.email}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {orderDetails.client.phone && (
+                    <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                      <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Teléfono</label>
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-lg bg-green-100 text-green-600">
+                          <Phone className="w-4 h-4" />
+                        </div>
+                        <p className="theme-text-primary text-sm font-medium">{orderDetails.client.phone}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Detalles del Encargo */}
+            <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <div className="relative p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg theme-text-primary">Encargo</h3>
+                    <p className="text-sm theme-text-muted">Detalles del servicio</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {orderDetails.order.description && (
+                    <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                      <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Descripción</label>
+                      <p className="theme-text-primary text-sm leading-relaxed">{orderDetails.order.description}</p>
+                    </div>
+                  )}
+                  
+                  {orderDetails.order.special_instructions && (
+                    <div className="p-3 theme-bg-2 rounded-lg border-2 border-dashed theme-border">
+                      <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Instrucciones Especiales</label>
+                      <div className="flex items-start gap-3">
+                        <div className="p-1.5 rounded-lg bg-amber-100 text-amber-600 mt-0.5">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <p className="theme-text-secondary text-sm leading-relaxed italic">
+                          "{orderDetails.order.special_instructions}"
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Información del Destinatario */}
+            <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <div className="relative p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg theme-text-primary">Destinatario</h3>
+                    <p className="text-sm theme-text-muted">Quien recibe el encargo</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {orderDetails.recipient.name && (
+                    <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                      <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Nombre completo</label>
+                      <p className="theme-text-primary font-medium text-sm">{orderDetails.recipient.name}</p>
+                    </div>
+                  )}
+                  
+                  {orderDetails.recipient.email && (
+                    <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                      <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Correo electrónico</label>
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <p className="theme-text-primary text-sm font-medium">{orderDetails.recipient.email}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {orderDetails.recipient.phone && (
+                    <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                      <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Teléfono</label>
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-lg bg-green-100 text-green-600">
+                          <Phone className="w-4 h-4" />
+                        </div>
+                        <p className="theme-text-primary text-sm font-medium">{orderDetails.recipient.phone}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Información de ubicaciones - También colapsable */}
+        {showDetailedInfo && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Punto de recogida */}
+            <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <div className="relative p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg theme-text-primary">Punto de Recogida</h3>
+                    <p className="text-sm theme-text-muted">Origen del encargo</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Dirección completa</label>
+                    <div className="flex items-start gap-3">
+                      <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600 mt-0.5">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <p className="theme-text-primary font-medium leading-relaxed text-sm">{order.pickup_address}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Coordenadas GPS</label>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded-lg bg-gray-100 text-gray-600">
+                        <Navigation className="w-3 h-3" />
+                      </div>
+                      <p className="text-xs font-mono theme-text-secondary font-medium">
+                        {formatCoordinates(order.pickup_lat, order.pickup_lng)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Punto de entrega */}
+            <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <div className="relative p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg">
+                    <Navigation className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg theme-text-primary">Punto de Entrega</h3>
+                    <p className="text-sm theme-text-muted">Destino del encargo</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Dirección completa</label>
+                    <div className="flex items-start gap-3">
+                      <div className="p-1.5 rounded-lg bg-green-100 text-green-600 mt-0.5">
+                        <Navigation className="w-4 h-4" />
+                      </div>
+                      <p className="theme-text-primary font-medium leading-relaxed text-sm">{order.delivery_address}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                    <label className="block text-xs font-semibold theme-text-muted uppercase tracking-wide mb-2">Coordenadas GPS</label>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded-lg bg-gray-100 text-gray-600">
+                        <Navigation className="w-3 h-3" />
+                      </div>
+                      <p className="text-xs font-mono theme-text-secondary font-medium">
+                        {formatCoordinates(order.delivery_lat, order.delivery_lng)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Información del sistema - También colapsable */}
+        {showDetailedInfo && (
+          <div className="group relative overflow-hidden theme-bg-3 border theme-border rounded-xl shadow-sm">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+            <div className="relative p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-gray-500 to-gray-600 text-white shadow-lg">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg theme-text-primary">Información del Sistema</h3>
+                  <p className="text-sm theme-text-muted">Timestamps y metadatos</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Fecha de Creación</label>
+                    </div>
+                  </div>
+                  <p className="theme-text-primary font-medium text-sm">{formatDate(order.created_at)}</p>
+                </div>
+                
+                <div className="p-3 theme-bg-2 rounded-lg border theme-border">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-1.5 rounded-lg bg-green-100 text-green-600">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold theme-text-muted uppercase tracking-wide">Última Actualización</label>
+                    </div>
+                  </div>
+                  <p className="theme-text-primary font-medium text-sm">{formatDate(order.updated_at)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Botón de cerrar - solo mostrar si no es un pedido REQUESTED */}
         {order.status !== 'REQUESTED' && (
-          <div className="flex justify-end pt-6">
+          <div className="flex justify-end pt-4">
             <button
               onClick={onClose}
-              className="group relative px-8 py-3 theme-bg-1 hover:theme-bg-2 theme-text-primary rounded-xl border theme-border shadow-sm hover:shadow-md transition-all duration-200 font-semibold"
+              className="group relative px-6 py-2 theme-bg-1 hover:theme-bg-2 theme-text-primary rounded-lg border theme-border shadow-sm hover:shadow-md transition-all duration-200 font-semibold"
             >
               <span className="relative z-10">Cerrar</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg"></div>
             </button>
           </div>
         )}
