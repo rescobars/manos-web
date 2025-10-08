@@ -56,6 +56,21 @@ export function DataTable<T extends Record<string, any>>({
   gridItemRender
 }: DataTableProps<T>) {
   const { colors } = useDynamicTheme();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Hook para detectar si estamos en móvil
+  React.useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  // En móvil, forzar vista de grid
+  const effectiveViewMode = isMobile ? 'grid' : viewMode;
   const handleSort = (key: keyof T) => {
     if (!onSort || !columns.find(col => col.key === key)?.sortable) return;
     
@@ -100,8 +115,8 @@ export function DataTable<T extends Record<string, any>>({
         </div>
         
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Switch de vista */}
-          {onViewModeChange && (
+          {/* Switch de vista - Solo visible en desktop */}
+          {onViewModeChange && !isMobile && (
             <div 
               className="flex rounded-lg p-1"
               style={{ backgroundColor: colors.background1 }}
@@ -294,13 +309,14 @@ export function DataTable<T extends Record<string, any>>({
       );
     }
 
+    // Configuración de columnas responsive - siempre 1 columna en móvil
     const gridCols = {
       1: 'grid-cols-1',
-      2: 'grid-cols-1 sm:grid-cols-2',
-      3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-      4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
-      5: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
-      6: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
+      2: 'grid-cols-1 md:grid-cols-2',
+      3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+      4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+      5: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+      6: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
     };
 
     return (
@@ -326,76 +342,76 @@ export function DataTable<T extends Record<string, any>>({
       {renderPagination()}
       
       {/* Contenido según el modo de vista */}
-    {viewMode === 'table' ? (
-      <div className="overflow-x-auto mobile-scroll">
-        <table 
-          className="w-full table-fixed min-w-[800px] sm:min-w-[600px]"
-          style={{ borderColor: colors.tableBorder }}
-        >
-            <thead 
-              className="theme-table-header"
-              style={{ backgroundColor: colors.tableHeader }}
-            >
-              <tr>
-                {columns.map((column) => (
-                  <th
-                    key={String(column.key)}
-                    className={`px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      column.sortable ? 'cursor-pointer hover:opacity-80' : ''
-                    } ${column.className || ''}`}
-                    style={{
-                      color: 'white',
-                    }}
-                    onClick={() => column.sortable && handleSort(column.key)}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span className="truncate">{column.label}</span>
-                      {column.sortable && (
-                        <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                          {getSortIcon(column.key)}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody 
-              className="theme-table-row"
-              style={{ 
-                backgroundColor: colors.tableRow,
-                borderColor: colors.tableBorder,
-              }}
-            >
-              {data.map((item, index) => (
-                <tr 
-                  key={index} 
-                  className="theme-table-row hover:theme-table-row-hover"
-                  style={{
-                    backgroundColor: colors.tableRow,
-                  }}
-                >
+      {effectiveViewMode === 'table' ? (
+        <div className="overflow-x-auto mobile-scroll">
+          <table 
+            className="w-full table-fixed min-w-[800px] sm:min-w-[600px]"
+            style={{ borderColor: colors.tableBorder }}
+          >
+              <thead 
+                className="theme-table-header"
+                style={{ backgroundColor: colors.tableHeader }}
+              >
+                <tr>
                   {columns.map((column) => (
-                    <td
+                    <th
                       key={String(column.key)}
-                      className={`px-2 sm:px-4 lg:px-6 py-3 sm:py-4 text-xs sm:text-sm theme-text-primary ${column.className || ''}`}
+                      className={`px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                        column.sortable ? 'cursor-pointer hover:opacity-80' : ''
+                      } ${column.className || ''}`}
+                      style={{
+                        color: 'white',
+                      }}
+                      onClick={() => column.sortable && handleSort(column.key)}
                     >
-                      <div className="truncate">
-                        {column.render 
-                          ? column.render(item[column.key], item)
-                          : String(item[column.key] || '')
-                        }
+                      <div className="flex items-center space-x-1">
+                        <span className="truncate">{column.label}</span>
+                        {column.sortable && (
+                          <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                            {getSortIcon(column.key)}
+                          </span>
+                        )}
                       </div>
-                    </td>
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        renderGrid()
-      )}
+              </thead>
+              <tbody 
+                className="theme-table-row"
+                style={{ 
+                  backgroundColor: colors.tableRow,
+                  borderColor: colors.tableBorder,
+                }}
+              >
+                {data.map((item, index) => (
+                  <tr 
+                    key={index} 
+                    className="theme-table-row hover:theme-table-row-hover"
+                    style={{
+                      backgroundColor: colors.tableRow,
+                    }}
+                  >
+                    {columns.map((column) => (
+                      <td
+                        key={String(column.key)}
+                        className={`px-2 sm:px-4 lg:px-6 py-3 sm:py-4 text-xs sm:text-sm theme-text-primary ${column.className || ''}`}
+                      >
+                        <div className="truncate">
+                          {column.render 
+                            ? column.render(item[column.key], item)
+                            : String(item[column.key] || '')
+                          }
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          renderGrid()
+        )}
     </div>
   );
 }
