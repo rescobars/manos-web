@@ -209,7 +209,7 @@ export interface Order {
   updated_at: string;
 }
 
-export type OrderStatus = 'PENDING' | 'ASSIGNED' | 'IN_ROUTE' | 'COMPLETED' | 'CANCELLED';
+export type OrderStatus = 'REQUESTED' | 'PENDING' | 'ASSIGNED' | 'IN_ROUTE' | 'COMPLETED' | 'CANCELLED';
 
 export type RouteStatus = 'PLANNED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PAUSED';
 export type RoutePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';

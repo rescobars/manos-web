@@ -1,4 +1,4 @@
-import { ApiResponse, Order, CreateOrderFormData, UpdateOrderFormData, BulkCreateOrderData, OrderFilters } from '@/types';
+import { ApiResponse, Order, CreateOrderFormData, UpdateOrderFormData, BulkCreateOrderData, OrderFilters, OrderStatus } from '@/types';
 
 const API_BASE_URL = '/api';
 
@@ -92,6 +92,14 @@ class OrdersApiService {
   async deleteOrder(uuid: string): Promise<ApiResponse> {
     return this.request(`/orders/${uuid}`, {
       method: 'DELETE',
+    });
+  }
+
+  // Actualizar el estado de un pedido
+  async updateOrderStatus(uuid: string, status: OrderStatus): Promise<ApiResponse<Order>> {
+    return this.request<Order>(`/orders/${uuid}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
     });
   }
 

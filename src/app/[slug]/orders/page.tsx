@@ -141,6 +141,7 @@ export default function OrdersPage() {
   // Funciones de utilidad para colores y textos
   const getOrderStatusColor = (status: string) => {
     switch (status) {
+      case 'REQUESTED': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'PENDING': return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'ASSIGNED': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'IN_ROUTE': return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -152,6 +153,11 @@ export default function OrdersPage() {
 
   const getOrderStatusStyle = (status: string) => {
     switch (status) {
+      case 'REQUESTED': return {
+        backgroundColor: '#f9731620',
+        color: '#f97316',
+        borderColor: '#f9731640'
+      };
       case 'PENDING': return {
         backgroundColor: colors.warning + '20',
         color: colors.warning,
@@ -187,6 +193,7 @@ export default function OrdersPage() {
 
   const getOrderStatusText = (status: string) => {
     switch (status) {
+      case 'REQUESTED': return 'Solicitado';
       case 'PENDING': return 'Pendiente';
       case 'ASSIGNED': return 'Asignado';
       case 'IN_ROUTE': return 'En Camino';
@@ -212,6 +219,31 @@ export default function OrdersPage() {
 
   const handleCloseQuickOrder = () => {
     setIsQuickOrderOpen(false);
+  };
+
+  // Función para aceptar un pedido (cambiar de REQUESTED a PENDING)
+  const handleAcceptOrder = async (orderId: string) => {
+    try {
+      const response = await ordersApiService.updateOrderStatus(orderId, 'PENDING');
+      
+      if (response.success) {
+        success('Pedido aceptado exitosamente');
+        // Recargar pedidos
+        if (currentOrganization) {
+          fetchAllOrders(currentOrganization.uuid);
+          fetchOrders(currentOrganization.uuid, {
+            status: filterStatus === 'all' ? undefined : filterStatus,
+            page: 1,
+            limit: itemsPerPage
+          });
+        }
+      } else {
+        showError(response.error || 'Error al aceptar el pedido');
+      }
+    } catch (error) {
+      console.error('Error accepting order:', error);
+      showError('Error al aceptar el pedido');
+    }
   };
 
   // Definir columnas para la tabla
@@ -296,7 +328,7 @@ export default function OrdersPage() {
       key: 'actions' as keyof Order,
       label: 'Acciones',
       sortable: false,
-      className: 'w-20',
+      className: 'w-24',
       render: (value: any, item: Order) => (
         <div className="flex items-center gap-1">
           <button
@@ -307,6 +339,17 @@ export default function OrdersPage() {
             <Eye className="w-3 h-3" />
             Ver
           </button>
+          {item.status === 'REQUESTED' && (
+            <button
+              onClick={() => handleAcceptOrder(item.uuid)}
+              className="px-2 py-1 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+              style={{ backgroundColor: colors.success }}
+              title="Aceptar pedido"
+            >
+              <CheckCircle className="w-3 h-3" />
+              Aceptar
+            </button>
+          )}
         </div>
       )
     }
@@ -314,6 +357,7 @@ export default function OrdersPage() {
 
   // Calcular contadores para las tarjetas KPI
   const totalOrders = allOrders.length;
+  const requestedOrders = allOrders.filter(order => order.status === 'REQUESTED').length;
   const pendingOrders = allOrders.filter(order => order.status === 'PENDING').length;
   const assignedOrders = allOrders.filter(order => order.status === 'ASSIGNED').length;
   const inRouteOrders = allOrders.filter(order => order.status === 'IN_ROUTE').length;
@@ -380,7 +424,7 @@ export default function OrdersPage() {
           </div>
         </div>
         {/* Stats Cards - Clickables para filtrar */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 px-2 sm:px-4 lg:px-6 xl:px-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 lg:gap-4 px-2 sm:px-4 lg:px-6 xl:px-8">
           <div 
             onClick={() => handleFilterChange('all')}
             className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
@@ -396,6 +440,24 @@ export default function OrdersPage() {
               icon={Package}
               iconColor={colors.textPrimary}
               iconBgColor={colors.background2}
+            />
+          </div>
+          
+          <div 
+            onClick={() => handleFilterChange('REQUESTED')}
+            className={`cursor-pointer transition-all duration-200 hover:scale-105 rounded-2xl ${
+              filterStatus === 'REQUESTED' ? 'ring-2' : ''
+            }`}
+            style={{
+              '--tw-ring-color': filterStatus === 'REQUESTED' ? '#f97316' : 'transparent'
+            } as React.CSSProperties}
+          >
+            <StatCard
+              title="Solicitados"
+              value={requestedOrders}
+              icon={Package}
+              iconColor="#f97316"
+              iconBgColor="#f9731620"
             />
           </div>
           
