@@ -369,21 +369,21 @@ export default function PublicOrderDualPage() {
       {/* Layout principal - Usa todo el espacio restante */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Columna izquierda - Selector de ubicación (desktop) / Arriba (mobile) */}
-        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r theme-border bg-white h-96 lg:h-full" style={{ borderColor: colors.border }}>
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r theme-border bg-white h-48 sm:h-56 lg:h-full" style={{ borderColor: colors.border }}>
           <div className="h-full flex flex-col">
             {/* Header del selector */}
-            <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
-              <h3 className="font-semibold theme-text-primary flex items-center" style={{ color: colors.textPrimary }}>
-                <MapPin className="w-5 h-5 mr-2" />
+            <div className="p-2 sm:p-4 border-b theme-border" style={{ borderColor: colors.border }}>
+              <h3 className="font-semibold theme-text-primary flex items-center text-sm sm:text-base" style={{ color: colors.textPrimary }}>
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Seleccionar Ubicaciones
               </h3>
-              <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
+              <p className="text-xs sm:text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
                 Elige los puntos de recogida y entrega
               </p>
             </div>
 
             {/* Botones de selección de tipo de ubicación */}
-            <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
+            <div className="p-2 sm:p-4 border-b theme-border" style={{ borderColor: colors.border }}>
               <div className="space-y-2">
                 <Button
                   onClick={() => setActiveMap('pickup')}
@@ -415,10 +415,10 @@ export default function PublicOrderDualPage() {
             </div>
 
             {/* Buscador de direcciones */}
-            <div className="p-4 flex-1 overflow-y-auto">
-              <div className="space-y-4">
+            <div className="p-2 sm:p-4 flex-1 overflow-y-auto">
+              <div className="space-y-2 sm:space-y-4">
                 <div>
-                  <h4 className="font-medium theme-text-primary mb-2" style={{ color: colors.textPrimary }}>
+                  <h4 className="font-medium theme-text-primary mb-1 sm:mb-2 text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
                     {activeMap === 'pickup' ? 'Buscar Dirección de Recogida' : 'Buscar Dirección de Entrega'}
                   </h4>
                   <div className="relative">
@@ -471,7 +471,7 @@ export default function PublicOrderDualPage() {
                 )}
 
                 {/* Ubicaciones seleccionadas */}
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {/* Ubicación de recogida seleccionada */}
                   {pickupLocation && (
                     <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
@@ -509,7 +509,7 @@ export default function PublicOrderDualPage() {
 
         {/* Columna central - Mapa prominente */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-2 sm:p-4">
             <div className="bg-white rounded-lg border theme-border overflow-hidden h-full" style={{ borderColor: colors.border }}>
               <div className="h-full relative">
                 {locationLoading ? (
@@ -536,25 +536,25 @@ export default function PublicOrderDualPage() {
         </div>
 
         {/* Columna derecha - Formulario (desktop) / Abajo (mobile) */}
-        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-l theme-border bg-white h-96 lg:h-full" style={{ borderColor: colors.border }}>
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-l theme-border bg-white h-48 sm:h-56 lg:h-full" style={{ borderColor: colors.border }}>
           <div className="h-full flex flex-col">
             {/* Header del formulario */}
-            <div className="p-4 border-b theme-border" style={{ borderColor: colors.border }}>
-              <h3 className="font-semibold theme-text-primary flex items-center" style={{ color: colors.textPrimary }}>
-                <Package className="w-5 h-5 mr-2" />
+            <div className="p-2 sm:p-4 border-b theme-border" style={{ borderColor: colors.border }}>
+              <h3 className="font-semibold theme-text-primary flex items-center text-sm sm:text-base" style={{ color: colors.textPrimary }}>
+                <Package className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Información del Encargo
               </h3>
-              <p className="text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
+              <p className="text-xs sm:text-sm theme-text-secondary mt-1" style={{ color: colors.textSecondary }}>
                 Completa los detalles del pedido
               </p>
             </div>
 
             {/* Formulario */}
-            <div className="flex-1 p-4 overflow-y-auto">
-              <div className="space-y-4">
+            <div className="flex-1 p-2 sm:p-4 overflow-y-auto">
+              <div className="space-y-2 sm:space-y-4">
                 {/* Información del cliente */}
-                <div className="space-y-3">
-                  <h4 className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
+                <div className="space-y-2 sm:space-y-3">
+                  <h4 className="font-medium theme-text-primary text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
                     Información del Cliente
                   </h4>
                   
@@ -585,8 +585,8 @@ export default function PublicOrderDualPage() {
                 </div>
 
                 {/* Información del pedido */}
-                <div className="space-y-3">
-                  <h4 className="font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
+                <div className="space-y-2 sm:space-y-3">
+                  <h4 className="font-medium theme-text-primary text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
                     Información del Pedido
                   </h4>
                   
@@ -636,7 +636,7 @@ export default function PublicOrderDualPage() {
             </div>
 
             {/* Botón de envío - Fijo en la parte inferior */}
-            <div className="p-4 border-t theme-border" style={{ borderColor: colors.border }}>
+            <div className="p-2 sm:p-4 border-t theme-border" style={{ borderColor: colors.border }}>
               <Button
                 onClick={handleSubmit}
                 disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone}
