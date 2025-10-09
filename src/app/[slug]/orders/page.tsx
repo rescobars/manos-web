@@ -41,7 +41,7 @@ export default function OrdersPage() {
     fetchAllOrders 
   } = useOrders();
   
-  const [filterStatus, setFilterStatus] = useState<string>('PENDING');
+  const [filterStatus, setFilterStatus] = useState<string>('REQUESTED');
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
