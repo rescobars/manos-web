@@ -3,16 +3,18 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Order } from '@/types';
-import { XCircle, Route, AlertCircle, MapPin, Package, ArrowLeft, ArrowRight, CheckCircle, Info, Truck, Navigation } from 'lucide-react';
+import { XCircle, Route, AlertCircle, MapPin, Package, ArrowLeft, ArrowRight, CheckCircle, Truck, Navigation, Clock, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useMultiDeliveryOptimization } from '@/hooks/useMultiDeliveryOptimization';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { useRouteCreation } from '@/hooks/useRouteCreation';
 import { ordersApiService } from '@/lib/api/orders';
 import { BRANCH_LOCATION } from '@/lib/constants';
-import { LocationSelectorMap, MultiDeliveryRouteMap } from '@/components/ui/leaflet';
 import { IndividualRoutesMap } from '@/components/ui/leaflet/IndividualRoutesMap';
+import { MultiDeliveryRouteMap } from '@/components/ui/leaflet';
 import { ToastContainer } from '@/components/ui/ToastContainer';
+import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 
 interface PickupLocation {
   lat: number;
@@ -20,7 +22,7 @@ interface PickupLocation {
   address: string;
 }
 
-type FlowStep = 'select' | 'review';
+type Step = 'select' | 'optimize' | 'review';
 
 interface RouteCreationModalProps {
   onClose: () => void;
@@ -37,32 +39,12 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [pickupLocation, setPickupLocation] = useState<PickupLocation | null>(null);
-  const [queueMode, setQueueMode] = useState<boolean>(false);
-  const [currentStep, setCurrentStep] = useState<FlowStep>('select');
+  const [startLocation, setStartLocation] = useState<PickupLocation | null>(null);
+  const [currentStep, setCurrentStep] = useState<Step>('select');
   const [routeSaved, setRouteSaved] = useState<boolean>(false);
-  const [createdRouteUuid, setCreatedRouteUuid] = useState<string>('');
-  const [optimizationMode, setOptimizationMode] = useState<'efficiency' | 'order'>('efficiency');
   const [saving, setSaving] = useState<boolean>(false);
   
-  // Estados para multi-delivery
-  const [startLocation, setStartLocation] = useState<PickupLocation | null>(null);
-  const [endLocation, setEndLocation] = useState<PickupLocation | null>(null);
-  const [useMultiDelivery, setUseMultiDelivery] = useState<boolean>(true);
-  
-
-  // Callbacks con logs para debug
-  const handleStartLocationSelect = (location: PickupLocation) => {
-    console.log('🎯 Start location selected:', location);
-    setStartLocation(location);
-  };
-
-  const handleEndLocationSelect = (location: PickupLocation) => {
-    console.log('🎯 End location selected:', location);
-    setEndLocation(location);
-  };
-
   // Hooks
   const {
     data: multiDeliveryData,
@@ -91,6 +73,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         const response = await ordersApiService.getPendingOrders(currentOrganization.uuid);
         if (response.success && response.data) {
           setOrders(response.data);
+          // Auto-seleccionar todos los pedidos por defecto
           const allOrderIds = response.data.map(order => order.uuid);
           setSelectedOrders(allOrderIds);
         }
@@ -127,88 +110,81 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     }));
   }, [orders]);
 
-  // Filtrar pedidos por término de búsqueda
-  const filteredOrders = useMemo(() => {
-    if (!searchTerm) return orders;
-    return orders.filter(order => 
-      order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.delivery_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.pickup_address.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [orders, searchTerm]);
-
-  // Configuración de pasos
+  // Configuración de pasos simplificados
   const steps = [
     {
-      key: 'select',
-      title: 'Seleccionar Pedidos y Ubicación',
-      description: 'Elige los pedidos y la ubicación inicial para los mandados',
+      key: 'select' as Step,
+      title: 'Seleccionar Pedidos',
+      description: 'Elige los pedidos y la ubicación inicial',
       icon: Package,
       canNext: selectedOrders.length > 0 && !!startLocation,
-      nextText: 'Optimizar Mandados'
+      nextText: 'Optimizar Ruta'
     },
     {
-      key: 'review',
-      title: 'Revisar Mandados',
-      description: routeSaved ? 'Ruta de mandados guardada exitosamente' : 'Revisa la ruta de mandados optimizada antes de guardarla',
+      key: 'optimize' as Step,
+      title: 'Optimizando',
+      description: 'Calculando la mejor ruta...',
       icon: Route,
+      canNext: false,
+      nextText: 'Optimizando...'
+    },
+    {
+      key: 'review' as Step,
+      title: 'Revisar Ruta',
+      description: routeSaved ? 'Ruta guardada exitosamente' : 'Revisa la ruta optimizada',
+      icon: CheckCircle,
       canNext: !!(multiDeliveryData && !routeSaved),
-      nextText: routeSaved ? 'Mandados Guardados' : 'Guardar Mandados'
+      nextText: routeSaved ? 'Ruta Guardada' : 'Guardar Ruta'
     },
   ];
 
   const currentStepIndex = steps.findIndex(step => step.key === currentStep);
   const stepInfo = steps[currentStepIndex] || steps[0];
-  
 
-  // Funciones de navegación
+  // Navegación entre pasos
   const canGoBack = currentStepIndex > 0 && !routeSaved;
   const goBack = () => {
     if (canGoBack) {
-      setCurrentStep(steps[currentStepIndex - 1].key as FlowStep);
+      setCurrentStep(steps[currentStepIndex - 1].key);
     }
   };
 
-  // Función para ejecutar la acción del paso actual
+  const goNext = () => {
+    if (currentStepIndex < steps.length - 1) {
+      setCurrentStep(steps[currentStepIndex + 1].key);
+    }
+  };
+
+  // Ejecutar acción del paso actual
   const executeCurrentStepAction = async () => {
-    console.log('🎯 executeCurrentStepAction called, currentStep:', currentStep);
     switch (currentStep) {
       case 'select':
         if (selectedOrders.length > 0 && startLocation) {
-          console.log('📝 Moving to review step for multi-delivery');
-          setCurrentStep('review');
-          setTimeout(() => {
-            handleOptimizeMultiDelivery();
-          }, 100);
+          setCurrentStep('optimize');
+          await handleOptimizeMultiDelivery();
         } else if (selectedOrders.length === 0) {
           showError('Pedidos requeridos', 'Debes seleccionar al menos un pedido para continuar.', 3000);
         } else if (!startLocation) {
-          showError('Ubicación requerida', 'Debes seleccionar la ubicación inicial para continuar.', 3000);
+          showError('Ubicación requerida', 'Haz clic en el mapa para seleccionar la ubicación inicial.', 3000);
         }
         break;
         
       case 'review':
         if (multiDeliveryData && !routeSaved) {
           await handleSaveRoute();
-        } else if (!multiDeliveryData) {
-          await handleOptimizeMultiDelivery();
         }
         break;
-        
     }
   };
 
 
   const handleOptimizeMultiDelivery = async () => {
-    if (selectedOrders.length < 1 || !startLocation) {
-      return;
-    }
+    if (selectedOrders.length < 1 || !startLocation) return;
     
     const selectedOrdersData = getOrdersForMap().filter(order => 
       selectedOrders.includes(order.id)
     );
     
-    // Convertir pedidos al formato multi-delivery
     const deliveryOrders = selectedOrdersData.map(order => ({
       id: order.id,
       order_number: order.orderNumber,
@@ -229,8 +205,6 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
       estimated_delivery_time: 3
     }));
 
-
-    // Crear un punto de fin por defecto basado en el último punto de entrega
     const lastDeliveryPoint = deliveryOrders[deliveryOrders.length - 1]?.destination;
     const defaultEndLocation = lastDeliveryPoint || {
       lat: startLocation.lat,
@@ -254,10 +228,10 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     );
     
     if (result.success) {
-      console.log('✅ Multi-delivery optimization successful');
+      setCurrentStep('review');
     } else {
-      console.error('❌ Error optimizing multi-delivery route:', result.error);
-      showError('Error en optimización', result.error || 'No se pudo optimizar la ruta multi-delivery', 5000);
+      showError('Error en optimización', result.error || 'No se pudo optimizar la ruta', 5000);
+      setCurrentStep('select');
     }
   };
 
@@ -267,87 +241,40 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     setSaving(true);
     const optimizedRoute = multiDeliveryData.optimized_route;
     
-    // Los waypoints son directamente los stops del FastAPI
-    const waypoints = optimizedRoute.stops;
-    
-    // Console log para debug - mostrar la salida del FastAPI (excepto route_points)
-    console.log('🚀 FastAPI Response (sin route_points):', {
-      success: multiDeliveryData.success,
-      optimized_route: {
-        total_distance: optimizedRoute.total_distance,
-        total_time: optimizedRoute.total_time,
-        total_traffic_delay: optimizedRoute.total_traffic_delay,
-        stops: optimizedRoute.stops,
-        orders_delivered: optimizedRoute.orders_delivered,
-        route_efficiency: optimizedRoute.route_efficiency
-      },
-      processing_time: multiDeliveryData.processing_time,
-      traffic_conditions: multiDeliveryData.traffic_conditions
-    });
-
-    // Mapear route_points a points (TODOS los puntos de navegación detallados)
-    const routePoints = optimizedRoute.route_points?.map((point, index) => {
-      // Mapear congestion_level a los valores esperados por FastAPI
-      let congestionLevel = 'free_flow';
-      if (point.traffic_delay > 60) {
-        congestionLevel = 'severe';
-      } else if (point.traffic_delay > 30) {
-        congestionLevel = 'heavy';
-      } else if (point.traffic_delay > 15) {
-        congestionLevel = 'moderate';
-      } else if (point.traffic_delay > 5) {
-        congestionLevel = 'light';
-      }
-
-      return {
-        lat: point.lat,
-        lon: point.lng,
-        name: point.instruction || `Punto ${index + 1}`,
-        traffic_delay: point.traffic_delay || 0,
-        speed: 35, // Velocidad por defecto
-        congestion_level: congestionLevel,
-        waypoint_type: 'route' as const,
-        waypoint_index: null
-      };
-    }) || [];
-
-    // Mapear stops ordenados a visit_order (TODAS las paradas en orden)
-    const visitOrder = optimizedRoute.stops
-      .map((stop, index) => ({
-        name: stop.location.address,
-        waypoint_index: index,
-        order_id: stop.order?.id || null, // Incluir order_id si existe
-        waypoint_type: stop.stop_type // Incluir tipo de parada
-      }));
-
-
-
-      console.log("waypoints", waypoints);
-    // Convertir datos multi-delivery al formato esperado por createRoute
+    // Mapear datos para createRoute (simplificado)
     const routeData = {
       route_info: {
-        origin: startLocation ? {
-          lat: startLocation.lat,
-          lon: startLocation.lng,
-          name: startLocation.address
-        } : {
-          lat: 0,
-          lon: 0,
-          name: 'Origen no definido'
+        origin: {
+          lat: startLocation!.lat,
+          lon: startLocation!.lng,
+          name: startLocation!.address
         },
-        destination: waypoints.length > 0 ? {
-          lat: waypoints[waypoints.length - 1].location.lat,
-          lon: waypoints[waypoints.length - 1].location.lng,
-          name: waypoints[waypoints.length - 1].location.address
-        } : {
-          lat: 0,
-          lon: 0,
-          name: 'Destino no definido'
+        destination: {
+          lat: optimizedRoute.stops[optimizedRoute.stops.length - 1]?.location.lat || 0,
+          lon: optimizedRoute.stops[optimizedRoute.stops.length - 1]?.location.lng || 0,
+          name: optimizedRoute.stops[optimizedRoute.stops.length - 1]?.location.address || 'Destino'
         },
-        waypoints: waypoints,
-        total_waypoints: waypoints.length,
-        optimized_waypoints: waypoints,
-        visit_order: visitOrder
+        waypoints: optimizedRoute.stops.map((stop, index) => ({
+          lat: stop.location.lat,
+          lon: stop.location.lng,
+          name: stop.location.address,
+          waypoint_type: stop.stop_type,
+          waypoint_index: index
+        })),
+        total_waypoints: optimizedRoute.stops.length,
+        optimized_waypoints: optimizedRoute.stops.map((stop, index) => ({
+          lat: stop.location.lat,
+          lon: stop.location.lng,
+          name: stop.location.address,
+          waypoint_type: stop.stop_type,
+          waypoint_index: index
+        })),
+        visit_order: optimizedRoute.stops.map((stop, index) => ({
+          name: stop.location.address,
+          waypoint_index: index,
+          order_id: stop.order?.id || null,
+          waypoint_type: stop.stop_type
+        }))
       },
       primary_route: {
         summary: {
@@ -358,24 +285,53 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
           traffic_time: optimizedRoute.total_traffic_delay,
           fuel_consumption: null
         },
-        points: routePoints, // route_points mapeados a points
+        points: optimizedRoute.route_points?.map((point, index) => ({
+          lat: point.lat,
+          lon: point.lng,
+          name: point.instruction || `Punto ${index + 1}`,
+          traffic_delay: point.traffic_delay || 0,
+          speed: 35,
+          congestion_level: point.traffic_delay > 60 ? 'severe' : 
+                          point.traffic_delay > 30 ? 'heavy' : 
+                          point.traffic_delay > 15 ? 'moderate' : 
+                          point.traffic_delay > 5 ? 'light' : 'free_flow',
+          waypoint_type: 'route' as const,
+          waypoint_index: null
+        })) || [],
         route_id: `multi-delivery-${Date.now()}`,
-        visit_order: visitOrder, // stops ordenados mapeados a visit_order
-        optimized_waypoints: waypoints // stops mapeados a waypoints
+        visit_order: optimizedRoute.stops.map((stop, index) => ({
+          name: stop.location.address,
+          waypoint_index: index,
+          order_id: stop.order?.id || null,
+          waypoint_type: stop.stop_type
+        })),
+        optimized_waypoints: optimizedRoute.stops.map((stop, index) => ({
+          lat: stop.location.lat,
+          lon: stop.location.lng,
+          name: stop.location.address,
+          waypoint_type: stop.stop_type,
+          waypoint_index: index
+        }))
       },
       alternative_routes: [],
       request_info: {
-        origin: startLocation ? {
-          lat: startLocation.lat,
-          lon: startLocation.lng,
-          name: startLocation.address
-        } : null,
-        destination: waypoints.length > 0 ? {
-          lat: waypoints[waypoints.length - 1].location.lat,
-          lon: waypoints[waypoints.length - 1].location.lng,
-          name: waypoints[waypoints.length - 1].location.address
-        } : null,
-        waypoints: waypoints
+        origin: {
+          lat: startLocation!.lat,
+          lon: startLocation!.lng,
+          name: startLocation!.address
+        },
+        destination: {
+          lat: optimizedRoute.stops[optimizedRoute.stops.length - 1]?.location.lat || 0,
+          lon: optimizedRoute.stops[optimizedRoute.stops.length - 1]?.location.lng || 0,
+          name: optimizedRoute.stops[optimizedRoute.stops.length - 1]?.location.address || 'Destino'
+        },
+        waypoints: optimizedRoute.stops.map((stop, index) => ({
+          lat: stop.location.lat,
+          lon: stop.location.lng,
+          name: stop.location.address,
+          waypoint_type: stop.stop_type,
+          waypoint_index: index
+        }))
       },
       traffic_conditions: {
         overall_congestion: multiDeliveryData.traffic_conditions?.overall_congestion || 'low',
@@ -389,39 +345,33 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
         routeData: routeData,
         selectedOrders: selectedOrders,
         organizationId: currentOrganization.uuid,
-        routeName: `Mandados ${currentOrganization.name} - ${new Date().toLocaleDateString()}`,
-        description: `Ruta de mandados optimizada con ${selectedOrders.length} pedidos`
+        routeName: `Ruta ${currentOrganization.name} - ${new Date().toLocaleDateString()}`,
+        description: `Ruta optimizada con ${selectedOrders.length} pedidos`
       });
       
       if (result.success) {
-        const routeUuid = result.data?.route_id;
-        if (routeUuid) {
-          setCreatedRouteUuid(routeUuid);
-        }
-        
         success(
-          '¡Mandados guardados exitosamente!',
-          `La ruta de mandados con ${selectedOrders.length} pedidos ha sido guardada.`,
+          '¡Ruta guardada exitosamente!',
+          `La ruta con ${selectedOrders.length} pedidos ha sido guardada.`,
           5000
         );
         setRouteSaved(true);
         
-        // Cerrar el modal automáticamente después de crear la ruta
         if (!asPage) {
           onRouteCreated();
           onClose();
         }
       } else {
         showError(
-          'Error al guardar los mandados',
-          result.error || 'No se pudo guardar la ruta de mandados. Por favor, inténtalo de nuevo.',
+          'Error al guardar la ruta',
+          result.error || 'No se pudo guardar la ruta. Por favor, inténtalo de nuevo.',
           6000
         );
       }
     } catch (error) {
       showError(
         'Error inesperado',
-        'Ocurrió un error inesperado al guardar los mandados. Por favor, inténtalo de nuevo.',
+        'Ocurrió un error inesperado al guardar la ruta. Por favor, inténtalo de nuevo.',
         6000
       );
     } finally {
@@ -450,9 +400,9 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
     setSelectedOrders([]);
   }, []);
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchTerm(value);
-  }, []);
+  const handleStartLocationSelect = (location: PickupLocation) => {
+    setStartLocation(location);
+  };
 
   // Memoizar los datos del mapa
   const ordersForMap = useMemo(() => getOrdersForMap(), [getOrdersForMap]);
@@ -463,128 +413,111 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
 
   if (!pickupLocation) {
     return (
-      asPage ? (
-        <div className="p-4 sm:p-6 md:p-8">
-          <div className="rounded-xl shadow max-w-xl w-full mx-auto p-6 text-center theme-bg-3" style={{ backgroundColor: colors.background3 }}>
-            <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
-            <h3 className="text-lg font-semibold mb-2 theme-text-primary">Ubicación no configurada</h3>
-            <p className="mb-4 theme-text-secondary">Configura la ubicación de tu sucursal para continuar.</p>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg"
-              style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
-            >
-              Cerrar
-            </button>
-          </div>
+      <div className={asPage ? "p-4 sm:p-6 md:p-8" : "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"}>
+        <div className="rounded-xl shadow max-w-md w-full mx-auto p-6 text-center theme-bg-3">
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 theme-text-warning" />
+          <h3 className="text-lg font-semibold mb-2 theme-text-primary">Ubicación no configurada</h3>
+          <p className="mb-4 theme-text-secondary">Configura la ubicación de tu sucursal para continuar.</p>
+          <Button onClick={onClose} variant="primary">
+            Cerrar
+          </Button>
         </div>
-      ) : (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="rounded-xl shadow-2xl max-w-md w-full p-6 text-center theme-bg-3" style={{ backgroundColor: colors.background3 }}>
-            <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
-            <h3 className="text-lg font-semibold mb-2 theme-text-primary">Ubicación no configurada</h3>
-            <p className="mb-4 theme-text-secondary">Configura la ubicación de tu sucursal para continuar.</p>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg"
-              style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )
+      </div>
     );
   }
 
   if (loading) {
     return (
-      asPage ? (
-        <div className="p-4 sm:p-6 md:p-8">
-          <div className="rounded-xl shadow max-w-xl w-full mx-auto p-6 text-center theme-bg-3" style={{ backgroundColor: colors.background3 }}>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
-            <p className="theme-text-secondary">Cargando pedidos...</p>
-          </div>
+      <div className={asPage ? "p-4 sm:p-6 md:p-8" : "fixed inset-0 flex items-center justify-center z-50 p-4"}>
+        <div className="rounded-xl shadow max-w-md w-full mx-auto p-6 text-center theme-bg-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4 theme-border-primary"></div>
+          <p className="theme-text-secondary">Cargando pedidos...</p>
         </div>
-      ) : (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className="rounded-xl shadow-2xl max-w-md w-full p-6 text-center theme-bg-3" style={{ backgroundColor: colors.background3 }}>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
-            <p className="theme-text-secondary">Cargando pedidos...</p>
-          </div>
-        </div>
-      )
+      </div>
     );
   }
 
   return (
-    <div className={asPage ? "p-4 sm:p-6 md:p-8" : "fixed inset-0 flex items-center justify-center z-50 p-4"}>
+    <div className={asPage ? "p-2 sm:p-4 md:p-6 lg:p-8" : "fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4"}>
       <div 
-        className={asPage ? "rounded-xl shadow theme-bg-3 w-full max-w-[1400px] mx-auto flex flex-col" : "rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] flex flex-col theme-bg-3"}
-        style={{ backgroundColor: colors.background3 }}
+        className={asPage ? "rounded-xl shadow theme-bg-3 w-full max-w-[1400px] mx-auto flex flex-col" : "rounded-xl shadow-2xl max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col theme-bg-3"}
       >
-        <div 
-          className={asPage ? "p-3 sm:p-4 lg:p-6 border-b theme-divider" : "p-4 sm:p-6 border-b theme-divider"}
-          style={{ borderColor: colors.divider }}
-        >
+        {/* Header con contador de pasos */}
+        <div className="p-4 sm:p-6 border-b theme-divider">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
-              <h3 className={asPage ? "text-lg sm:text-xl lg:text-2xl font-semibold theme-text-primary" : "text-base sm:text-lg font-semibold theme-text-primary"}>Crear Mandados</h3>
-              <p className="text-xs sm:text-sm theme-text-secondary mt-1">Selecciona pedidos y crea una ruta de mandados optimizada</p>
+              <h3 className="text-lg sm:text-xl font-semibold theme-text-primary">Crear Ruta de Mandados</h3>
+              <p className="text-sm theme-text-secondary mt-1">Proceso simple en 3 pasos</p>
             </div>
-            {asPage ? (
-              <button
-                onClick={onClose}
-                aria-label="Cerrar"
-                title="Cerrar"
-                className="p-2 rounded-lg transition-colors theme-text-muted hover:theme-text-primary hover:theme-bg-2"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            ) : (
-              <button
-                onClick={onClose}
-                className="p-2 theme-text-muted hover:theme-text-primary hover:theme-bg-2 rounded-lg transition-colors"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            )}
+            <Button onClick={onClose} variant="ghost" size="sm">
+              <XCircle className="w-5 h-5" />
+            </Button>
           </div>
-        </div>
-        
-        <div className={asPage ? "" : "overflow-y-auto max-h-[calc(90vh-120px)]"}>
-          {/* Información del paso actual */}
-          <div className={asPage ? "flex items-center justify-center h-12 sm:h-14 px-3 sm:px-4 lg:px-6 theme-bg-2 sticky top-0 z-20" : "flex items-center justify-center h-14 sm:h-16 px-4 sm:px-6 theme-bg-2"} style={{ backgroundColor: colors.background2 }}>
+          
+          {/* Contador de pasos mejorado - Mobile friendly */}
+          <div className="mt-4">
+            {/* Información del paso actual - Mobile */}
+            <div className="text-center mb-4 sm:hidden">
+              <h4 className="text-sm font-medium theme-text-primary">{stepInfo.title}</h4>
+              <p className="text-xs theme-text-secondary">{stepInfo.description}</p>
+            </div>
             
-            {/* Progreso + Acciones (arriba) */}
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="hidden sm:flex items-center gap-2 sm:gap-3">
-                <span className="text-xs sm:text-sm theme-text-secondary">Paso {currentStepIndex + 1} de {steps.length}</span>
-                <div className="flex items-center gap-1">
-                  {steps.map((_, index) => {
-                    const isActive = index <= currentStepIndex;
-                    return (
-                      <div
-                        key={index}
-                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full"
-                        style={{ backgroundColor: isActive ? colors.buttonPrimary1 : colors.divider }}
-                      />
-                    );
-                  })}
-                </div>
+            {/* Steps centrados horizontalmente */}
+            <div className="flex flex-col items-center space-y-4">
+              <div className="flex items-center space-x-2">
+                {steps.map((step, index) => {
+                  const isActive = index <= currentStepIndex;
+                  const isCompleted = index < currentStepIndex;
+                  return (
+                    <div
+                      key={step.key}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
+                        isCompleted 
+                          ? 'theme-btn-primary' 
+                          : isActive 
+                            ? 'theme-btn-primary' 
+                            : 'theme-bg-2 theme-text-muted'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                      ) : (
+                        index + 1
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Información del paso actual - Desktop */}
+              <div className="hidden sm:block text-center">
+                <h4 className="text-sm font-medium theme-text-primary">{stepInfo.title}</h4>
+                <p className="text-xs theme-text-secondary">{stepInfo.description}</p>
+              </div>
+              
+              {/* Contador de pasos - Mobile */}
+              <div className="sm:hidden">
+                <span className="text-xs theme-text-secondary">Paso {currentStepIndex + 1} de {steps.length}</span>
               </div>
             </div>
           </div>
-
-          {/* Contenido del paso actual */}
-          <div className={asPage ? "p-2 sm:p-3 lg:p-4" : "p-3 sm:p-4 overflow-y-auto flex-1"}>
+        </div>
+        
+        <div className={asPage ? "" : "overflow-y-auto max-h-[calc(95vh-200px)] sm:max-h-[calc(90vh-200px)]"}>
+          <div className="p-3 sm:p-4 md:p-6">
+            {/* Paso 1: Selección de pedidos */}
             {currentStep === 'select' && (
-              <div className="space-y-1 sm:space-y-2">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h4 className="text-lg font-semibold theme-text-primary mb-2">Selecciona los pedidos</h4>
+                  <p className="text-sm theme-text-secondary">
+                    {selectedOrders.length} de {orders.length} pedidos seleccionados
+                  </p>
+                </div>
 
-                {/* Mapa unificado de pedidos y selección de ubicación */}
-                <div className="space-y-1">
-
-                  <div className={asPage ? "h-[80vh] rounded-lg overflow-hidden shadow-sm" : "h-[40rem] rounded-lg overflow-hidden shadow-sm"}>
+                {/* Mapa de selección */}
+                <div className="bg-white rounded-lg border theme-border overflow-hidden h-64 sm:h-80 lg:h-96" style={{ borderColor: colors.border }}>
+                  <div className="h-full relative">
                     <IndividualRoutesMap
                       pickupLocation={pickupLocation}
                       orders={ordersForMap}
@@ -592,168 +525,179 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                       onOrderSelection={handleOrderSelection}
                       onSelectAll={handleSelectAll}
                       onClearAll={handleClearAll}
-                      searchTerm={searchTerm}
-                      onSearchChange={handleSearchChange}
+                      searchTerm=""
+                      onSearchChange={() => {}}
                       startLocation={startLocation}
                       onStartLocationSelect={handleStartLocationSelect}
-                      optimizationMode={optimizationMode}
-                      onOptimizationModeChange={setOptimizationMode}
                       colors={colors}
                     />
                   </div>
+                </div>
 
-
-                  {/* Nota sobre selección de ubicación inicial */}
-                  <div className="text-center">
-                    <p className="text-sm theme-text-secondary">
-                      💡 Haz clic en el mapa para seleccionar la posición inicial de la ruta
-                    </p>
+                {/* Instrucciones */}
+                <div className="p-4 rounded-lg theme-bg-2 theme-border border">
+                  <div className="flex items-start space-x-3">
+                    <MapPin className="w-5 h-5 theme-text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h5 className="text-sm font-medium theme-text-primary mb-1">Instrucciones</h5>
+                      <ul className="text-xs theme-text-secondary space-y-1">
+                        <li>• Haz clic en el mapa para seleccionar la ubicación inicial</li>
+                        <li>• Usa los checkboxes para seleccionar/deseleccionar pedidos</li>
+                        <li>• Todos los pedidos están seleccionados por defecto</li>
+                      </ul>
+                    </div>
                   </div>
+                </div>
 
-                  {/* Botón para optimizar mandados */}
-                  <div className="flex justify-center pt-1">
-                    <button
-                      onClick={executeCurrentStepAction}
-                      disabled={!stepInfo.canNext}
-                      className={`px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
-                        stepInfo.canNext
-                          ? 'shadow-sm hover:shadow-md theme-btn-primary'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                      style={stepInfo.canNext ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
+                {/* Botones de acción */}
+                <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                    <Button
+                      onClick={handleSelectAll}
+                      variant="outline"
+                      disabled={selectedOrders.length === orders.length}
+                      className="w-full sm:w-auto"
                     >
-                      <span>Optimizar Mandados</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                      Seleccionar Todos
+                    </Button>
+                    <Button
+                      onClick={handleClearAll}
+                      variant="outline"
+                      disabled={selectedOrders.length === 0}
+                      className="w-full sm:w-auto"
+                    >
+                      Limpiar Selección
+                    </Button>
                   </div>
-
+                  <Button
+                    onClick={executeCurrentStepAction}
+                    disabled={!stepInfo.canNext}
+                    variant="primary"
+                    className="w-full sm:w-auto"
+                  >
+                    Optimizar Ruta
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </div>
               </div>
             )}
 
+            {/* Paso 2: Optimizando */}
+            {currentStep === 'optimize' && (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto mb-6 theme-border-primary"></div>
+                <h4 className="text-lg font-semibold theme-text-primary mb-2">Optimizando ruta...</h4>
+                <p className="text-sm theme-text-secondary">
+                  Calculando la mejor ruta para {selectedOrders.length} pedidos
+                </p>
+              </div>
+            )}
 
+            {/* Paso 3: Revisar y guardar */}
             {currentStep === 'review' && (
-              <div className="space-y-4">
-                {/* Header de la ruta optimizada */}
+              <div className="space-y-6">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold theme-text-primary mb-2">Ruta Optimizada Multi-Delivery</h3>
+                  <h4 className="text-lg font-semibold theme-text-primary mb-2">Ruta Optimizada</h4>
                   <p className="text-sm theme-text-secondary">
                     {multiDeliveryData?.optimized_route ? 
-                      `${multiDeliveryData.optimized_route.orders_delivered || 0} mandados optimizados` : 
-                      'Preparando optimización...'
+                      `${multiDeliveryData.optimized_route.orders_delivered || 0} pedidos optimizados` : 
+                      'Preparando ruta...'
                     }
                   </p>
                 </div>
 
                 {multiDeliveryLoading ? (
                   <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: colors.buttonPrimary1 }}></div>
-                    <p className="theme-text-secondary">Optimizando ruta de mandados...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4 theme-border-primary"></div>
+                    <p className="theme-text-secondary">Optimizando ruta...</p>
                   </div>
                 ) : multiDeliveryData?.optimized_route ? (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {/* Mapa de la ruta optimizada */}
-                    <div className="w-full rounded-lg overflow-hidden border shadow-sm" style={{ borderColor: colors.border }}>
-                      <MultiDeliveryRouteMap
-                        optimizedRoute={multiDeliveryData.optimized_route}
-                        className="w-full"
-                        style={{ height: asPage ? '60vh' : '32rem' }}
-                      />
+                    <div className="bg-white rounded-lg border theme-border overflow-hidden h-64 sm:h-80 lg:h-96" style={{ borderColor: colors.border }}>
+                      <div className="h-full relative">
+                        <MultiDeliveryRouteMap
+                          optimizedRoute={multiDeliveryData.optimized_route}
+                          className="w-full h-full"
+                        />
+                      </div>
                     </div>
 
-                    {/* Información de la ruta */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-lg" style={{ backgroundColor: colors.background2 }}>
+                    {/* Estadísticas de la ruta */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-4 sm:p-6 rounded-lg theme-bg-2">
                       <div className="text-center">
-                        <div className="text-2xl font-bold theme-text-primary">
+                        <div className="text-xl sm:text-2xl font-bold theme-text-primary">
                           {multiDeliveryData.optimized_route.total_distance?.toFixed(1) || '0'} km
                         </div>
-                        <div className="text-xs theme-text-secondary">Distancia Total</div>
+                        <div className="text-xs sm:text-sm theme-text-secondary">Distancia Total</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold theme-text-primary">
+                        <div className="text-xl sm:text-2xl font-bold theme-text-primary">
                           {Math.round(multiDeliveryData.optimized_route.total_time || 0)} min
                         </div>
-                        <div className="text-xs theme-text-secondary">Tiempo Estimado</div>
+                        <div className="text-xs sm:text-sm theme-text-secondary">Tiempo Estimado</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold theme-text-primary">
+                        <div className="text-xl sm:text-2xl font-bold theme-text-primary">
                           {multiDeliveryData.optimized_route.orders_delivered || 0}
                         </div>
-                        <div className="text-xs theme-text-secondary">Mandados</div>
+                        <div className="text-xs sm:text-sm theme-text-secondary">Pedidos</div>
                       </div>
                     </div>
 
                     {/* Botones de acción */}
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      <button
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                      <Button
                         onClick={() => setCurrentStep('select')}
                         disabled={routeSaved}
-                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 border-2 ${
-                          routeSaved 
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300' 
-                            : 'hover:shadow-md'
-                        }`}
-                        style={!routeSaved ? { 
-                          borderColor: colors.border, 
-                          color: colors.textPrimary,
-                          backgroundColor: colors.background3
-                        } : undefined}
+                        variant="outline"
+                        className="w-full sm:w-auto"
                       >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>{routeSaved ? 'Ruta Guardada' : 'Volver a Editar'}</span>
-                      </button>
-                      <button
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        {routeSaved ? 'Ruta Guardada' : 'Volver a Editar'}
+                      </Button>
+                      <Button
                         onClick={handleSaveRoute}
                         disabled={saving || routeSaved}
-                        className={`px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
-                          saving || routeSaved
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'shadow-sm hover:shadow-md'
-                        }`}
-                        style={!saving && !routeSaved ? { backgroundColor: colors.buttonPrimary1, color: colors.buttonText } : undefined}
+                        variant="primary"
+                        loading={saving}
+                        className="w-full sm:w-auto"
                       >
-                        {saving ? (
+                        {routeSaved ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Guardando...</span>
-                          </>
-                        ) : routeSaved ? (
-                          <>
-                            <CheckCircle className="w-4 h-4" />
-                            <span>Ruta Guardada</span>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Ruta Guardada
                           </>
                         ) : (
                           <>
-                            <CheckCircle className="w-4 h-4" />
-                            <span>Guardar Ruta</span>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Guardar Ruta
                           </>
                         )}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: colors.warning }} />
+                    <AlertCircle className="w-12 h-12 mx-auto mb-4 theme-text-warning" />
                     <h3 className="text-lg font-semibold theme-text-primary mb-2">Error en la optimización</h3>
-                    <p className="theme-text-secondary mb-4">No se pudo optimizar la ruta de mandados. Inténtalo de nuevo.</p>
-                    <button
+                    <p className="theme-text-secondary mb-4">No se pudo optimizar la ruta. Inténtalo de nuevo.</p>
+                    <Button
                       onClick={() => setCurrentStep('select')}
-                      className="px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2 mx-auto"
-                      style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
+                      variant="primary"
                     >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Volver a Editar</span>
-                    </button>
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Volver a Editar
+                    </Button>
                   </div>
                 )}
               </div>
             )}
-
           </div>
         </div>
-
       </div>
-      {/* Toasts locales */}
+      
+      {/* Toasts */}
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
