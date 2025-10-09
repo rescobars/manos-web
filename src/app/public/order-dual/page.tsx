@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, Package, MapPin, Loader2, Navigation } from 'lucide-react';
+import { Package, MapPin, Loader2, Navigation } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
+import { GoogleAutocomplete } from '@/components/ui/GoogleAutocomplete';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField } from '@/components/ui/FormField';
 import { OrdersMap } from '@/components/ui/leaflet/orders';
-import { useDebounce } from '@/hooks/useDebounce';
 import { PublicOrderUrl } from '@/components/ui/PublicOrderUrl';
 import { usePublicOrganizationTheme } from '@/hooks/usePublicOrganizationTheme';
 import { useToast } from '@/hooks/useToast';
@@ -45,12 +45,6 @@ export default function PublicOrderDualPage() {
 
   // Estados del buscador
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Location[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-
-  // Debounce para la búsqueda (500ms de delay)
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   // Estados del formulario
   const [description, setDescription] = useState('');
@@ -135,33 +129,6 @@ export default function PublicOrderDualPage() {
     return () => clearTimeout(fallbackTimeout);
   }, []);
 
-  // Cerrar resultados de búsqueda al hacer clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showSearchResults) {
-        // Verificar si el clic fue en los resultados de búsqueda
-        const searchResults = document.querySelector('[data-search-results]');
-        if (searchResults && !searchResults.contains(event.target as Node)) {
-          setShowSearchResults(false);
-        }
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [showSearchResults]);
-
-  // Ejecutar búsqueda cuando cambie el debouncedSearchQuery
-  useEffect(() => {
-    if (debouncedSearchQuery.trim()) {
-      handleSearch(debouncedSearchQuery);
-    } else {
-      setSearchResults([]);
-      setShowSearchResults(false);
-    }
-  }, [debouncedSearchQuery]);
 
   // Obtener ubicación actual
   const getCurrentLocation = () => {
@@ -217,47 +184,8 @@ export default function PublicOrderDualPage() {
     );
   };
 
-  // Buscar direcciones
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      setShowSearchResults(false);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      // Agregar "Guatemala" a la búsqueda para limitar resultados
-      const fullSearchQuery = `${query} Guatemala`;
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullSearchQuery)}&limit=5&addressdetails=1&countrycodes=gt`,
-        {
-          headers: {
-            'User-Agent': 'MovigoApp/1.0'
-          }
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const results: Location[] = data.map((item: any) => ({
-          lat: parseFloat(item.lat),
-          lng: parseFloat(item.lon),
-          address: item.display_name
-        }));
-        
-        setSearchResults(results);
-        setShowSearchResults(true);
-      }
-    } catch (err) {
-      console.error('Error searching addresses:', err);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Seleccionar resultado de búsqueda
-  const handleSelectSearchResult = (location: Location) => {
+  // Seleccionar ubicación desde Google Autocomplete
+  const handleLocationSelect = (location: Location) => {
     if (activeMap === 'pickup') {
       setPickupLocation(location);
     } else {
@@ -266,7 +194,6 @@ export default function PublicOrderDualPage() {
     setMapCenter([location.lat, location.lng]);
     setMapKey(prev => prev + 1);
     setSearchQuery(location.address);
-    setShowSearchResults(false);
   };
 
   // Manejar clic en el mapa para seleccionar punto
@@ -564,53 +491,14 @@ export default function PublicOrderDualPage() {
                 <h4 className="font-medium theme-text-primary mb-2 text-sm" style={{ color: colors.textPrimary }}>
                   {activeMap === 'pickup' ? 'Buscar Dirección de Recogida' : 'Buscar Dirección de Entrega'}
                 </h4>
-                <div className="relative">
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={`Buscar ${activeMap === 'pickup' ? 'dirección de recogida' : 'dirección de entrega'}...`}
-                    className="w-full"
-                  />
-                  {isSearching && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <Loader2 className="w-4 h-4 animate-spin" style={{ color: colors.buttonPrimary1 }} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Resultados */}
-                {showSearchResults && searchResults.length > 0 && (
-                  <div
-                    data-search-results
-                    className="mt-2 bg-white border theme-border rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                    style={{ borderColor: colors.border }}
-                  >
-                    {searchResults.map((result, index) => (
-                      <button
-                        key={index}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSelectSearchResult(result);
-                        }}
-                        className="w-full p-3 text-left hover:bg-gray-50 border-b theme-border last:border-b-0"
-                        style={{ borderColor: colors.border }}
-                      >
-                        <div className="flex items-start">
-                          <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
-                              {result.address}
-                            </p>
-                            <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
-                              {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <GoogleAutocomplete
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  onLocationSelect={handleLocationSelect}
+                  placeholder={`Buscar ${activeMap === 'pickup' ? 'dirección de recogida' : 'dirección de entrega'}...`}
+                  className="w-full"
+                  colors={colors}
+                />
               </div>
 
               {/* Mapa */}
@@ -937,63 +825,26 @@ export default function PublicOrderDualPage() {
             </div>
 
             {/* Buscador de direcciones */}
-            <div className="p-2 sm:p-4 flex-1 overflow-y-auto">
+            <div className="p-2 sm:p-4 flex-1">
               <div className="space-y-2 sm:space-y-4">
-                <div>
+                <div className="relative z-[9999]">
                   <h4 className="font-medium theme-text-primary mb-1 sm:mb-2 text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
                     {activeMap === 'pickup' ? 'Buscar Dirección de Recogida' : 'Buscar Dirección de Entrega'}
                   </h4>
-                  <div className="relative">
-                    <Input
+                  <div className="relative" style={{ zIndex: 9999 }}>
+                    <GoogleAutocomplete
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={setSearchQuery}
+                      onLocationSelect={handleLocationSelect}
                       placeholder={`Buscar ${activeMap === 'pickup' ? 'dirección de recogida' : 'dirección de entrega'}...`}
                       className="w-full"
+                      colors={colors}
                     />
-                    {isSearching && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: colors.buttonPrimary1 }} />
-                      </div>
-                    )}
                   </div>
                 </div>
-                
-                {/* Resultados de búsqueda */}
-                {showSearchResults && searchResults.length > 0 && (
-                  <div 
-                    data-search-results
-                    className="bg-white border theme-border rounded-lg shadow-lg max-h-60 overflow-y-auto" 
-                    style={{ borderColor: colors.border }}
-                  >
-                    {searchResults.map((result, index) => (
-                      <button
-                        key={index}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSelectSearchResult(result);
-                        }}
-                        className="w-full p-3 text-left hover:bg-gray-50 border-b theme-border last:border-b-0"
-                        style={{ borderColor: colors.border }}
-                      >
-                        <div className="flex items-start">
-                          <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
-                              {result.address}
-                            </p>
-                            <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
-                              {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
 
                 {/* Ubicaciones seleccionadas */}
-                <div className="space-y-2 sm:space-y-3">
+                <div className="space-y-2 sm:space-y-3 overflow-y-auto max-h-96">
                   {/* Ubicación de recogida seleccionada */}
                   {pickupLocation && (
                     <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>

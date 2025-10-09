@@ -4,6 +4,7 @@ export { Card } from './Card';
 export { ConfirmDialog } from './ConfirmDialog';
 export { FormTemplate, type FieldConfig, type FormState, type FormErrors, type ValidationRule, type InputType } from './Form';
 export { Input } from './Input';
+export { GoogleAutocomplete } from './GoogleAutocomplete';
 export { Checkbox } from './Checkbox';
 export { QuickOrderScreen } from './QuickOrderScreen';
 export { OrderCard } from './OrderCard';
