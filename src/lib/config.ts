@@ -4,7 +4,7 @@ export const config = {
     fastapi: process.env.FASTAPI_BASE_URL || 'http://localhost:8000',
   },
   google: {
-    mapsApiKey: 'AIzaSyClvIum6qxkhDZeUsGtNHYQP8VZioOgtAE',
+    mapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API || '',
   },
   app: {
     name: 'Manos Platform',

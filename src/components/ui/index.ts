@@ -5,6 +5,8 @@ export { ConfirmDialog } from './ConfirmDialog';
 export { FormTemplate, type FieldConfig, type FormState, type FormErrors, type ValidationRule, type InputType } from './Form';
 export { Input } from './Input';
 export { GoogleAutocomplete } from './GoogleAutocomplete';
+export { GooglePlacesAutocomplete } from './GooglePlacesAutocomplete';
+export { GoogleMapsWrapper } from './GoogleMapsWrapper';
 export { Checkbox } from './Checkbox';
 export { QuickOrderScreen } from './QuickOrderScreen';
 export { OrderCard } from './OrderCard';

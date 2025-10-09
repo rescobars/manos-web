@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Package, MapPin, Loader2, Navigation } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
-import { GoogleAutocomplete } from '@/components/ui/GoogleAutocomplete';
+import { GooglePlacesAutocomplete, GoogleMapsWrapper } from '@/components/ui';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField } from '@/components/ui/FormField';
 import { OrdersMap } from '@/components/ui/leaflet/orders';
@@ -399,7 +399,8 @@ export default function PublicOrderDualPage() {
   }
 
   return (
-    <div className="min-h-screen theme-bg-1" style={{ backgroundColor: colors.background1 }}>
+    <GoogleMapsWrapper>
+      <div className="min-h-screen theme-bg-1" style={{ backgroundColor: colors.background1 }}>
       {/* Header fijo */}
       <div className="flex-shrink-0 p-4 border-b" style={{ borderColor: colors.border }}>
         <div className="flex items-center justify-between">
@@ -491,7 +492,7 @@ export default function PublicOrderDualPage() {
                 <h4 className="font-medium theme-text-primary mb-2 text-sm" style={{ color: colors.textPrimary }}>
                   {activeMap === 'pickup' ? 'Buscar Dirección de Recogida' : 'Buscar Dirección de Entrega'}
                 </h4>
-                <GoogleAutocomplete
+                <GooglePlacesAutocomplete
                   value={searchQuery}
                   onChange={setSearchQuery}
                   onLocationSelect={handleLocationSelect}
@@ -832,7 +833,7 @@ export default function PublicOrderDualPage() {
                     {activeMap === 'pickup' ? 'Buscar Dirección de Recogida' : 'Buscar Dirección de Entrega'}
                   </h4>
                   <div className="relative" style={{ zIndex: 9999 }}>
-                    <GoogleAutocomplete
+                    <GooglePlacesAutocomplete
                       value={searchQuery}
                       onChange={setSearchQuery}
                       onLocationSelect={handleLocationSelect}
@@ -1041,10 +1042,6 @@ export default function PublicOrderDualPage() {
 
                 {/* Información del encargo */}
                 <div className="space-y-2 sm:space-y-3">
-                  <h4 className="font-medium theme-text-primary text-xs sm:text-sm" style={{ color: colors.textPrimary }}>
-                    Información del Encargo
-                  </h4>
-
                   <div>
                     <TextAreaField
                       label="Descripción del encargo"
@@ -1123,6 +1120,7 @@ export default function PublicOrderDualPage() {
           </Button>
         </div>
       </div>
-    </div>
+      </div>
+    </GoogleMapsWrapper>
   );
 }
