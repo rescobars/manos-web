@@ -208,6 +208,25 @@ export interface Order {
   created_at: string;
   updated_at: string;
   details?: OrderDetails;
+  route_points?: RoutePoint[];
+  route_details?: RouteDetails;
+}
+
+// Tipos para los puntos de ruta
+export interface RoutePoint {
+  lat: number;
+  lng: number;
+  sequence: number;
+  distance_from_previous: number;
+  point_type: 'start' | 'waypoint' | 'end';
+}
+
+// Tipos para los detalles de la ruta
+export interface RouteDetails {
+  distance: number;
+  estimated_time: number;
+  total_points: number;
+  processing_time: number;
 }
 
 // Tipos para los detalles del pedido
@@ -266,6 +285,8 @@ export interface UpdateOrderFormData {
   delivery_lat?: number;
   delivery_lng?: number;
   status?: OrderStatus;
+  route_points?: RoutePoint[] | string; // Puede ser array o string JSON
+  route_details?: RouteDetails | string; // Puede ser objeto o string JSON
 }
 
 export interface BulkCreateOrderData {

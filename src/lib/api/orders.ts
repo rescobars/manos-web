@@ -82,9 +82,16 @@ class OrdersApiService {
 
   // Actualizar un pedido
   async updateOrder(uuid: string, data: UpdateOrderFormData): Promise<ApiResponse<Order>> {
+    // Serializar campos JSON antes de enviar
+    const serializedData = {
+      ...data,
+      route_points: data.route_points ? JSON.stringify(data.route_points) : undefined,
+      route_details: data.route_details ? JSON.stringify(data.route_details) : undefined,
+    };
+    
     return this.request<Order>(`/orders/${uuid}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(serializedData),
     });
   }
 

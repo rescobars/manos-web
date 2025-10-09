@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Order, OrderStatus } from '@/types';
+import { Order, OrderStatus, RoutePoint, RouteDetails } from '@/types';
 import { BaseModal } from './BaseModal';
 import { Package, MapPin, DollarSign, Clock, Calendar, Navigation, User, Mail, Phone, FileText, CheckCircle, Route, Loader2, Zap, Sparkles } from 'lucide-react';
 import { ordersApiService } from '@/lib/api/orders';
@@ -19,13 +19,7 @@ interface OrderDetailProps {
 interface RouteData {
   distance: number;
   estimated_time: number;
-  route_points: Array<{
-    lat: number;
-    lng: number;
-    sequence: number;
-    distance_from_previous: number;
-    point_type: 'start' | 'waypoint' | 'end';
-  }>;
+  route_points: RoutePoint[];
   total_points: number;
   processing_time: number;
 }
@@ -47,13 +41,29 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
     if (isOpen && order) {
       setTotalAmount(order.total_amount ? order.total_amount.toString() : '');
       setPricePerKm(PRICE_PER_KM.toString());
-      // Resetear datos de ruta cuando se abre el modal
-      setRouteData(null);
-      setShowRouteDetails(false);
       setShowDetailedInfo(false);
       
-      // Calcular ruta automáticamente al abrir el modal
-      calculateRoute();
+      // Verificar si ya existe una ruta guardada en el pedido
+      if (order.route_points && order.route_details) {
+        // Usar la ruta guardada
+        setRouteData({
+          distance: order.route_details.distance,
+          estimated_time: order.route_details.estimated_time,
+          route_points: order.route_points,
+          total_points: order.route_details.total_points,
+          processing_time: order.route_details.processing_time
+        });
+        setShowRouteDetails(true);
+        setIsCalculatingRoute(false);
+      } else {
+        // Resetear datos de ruta y calcular nueva
+        setRouteData(null);
+        setShowRouteDetails(false);
+        setIsCalculatingRoute(false);
+        
+        // Calcular ruta automáticamente al abrir el modal
+        calculateRoute();
+      }
     }
   }, [isOpen, order]);
 
@@ -102,6 +112,22 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
       if (result.success) {
         setRouteData(result);
         setShowRouteDetails(true);
+        
+        // Actualizar el pedido con la información de la ruta
+        try {
+          await ordersApiService.updateOrder(order.uuid, {
+            route_points: result.route_points,
+            route_details: {
+              distance: result.distance,
+              estimated_time: result.estimated_time,
+              total_points: result.total_points,
+              processing_time: result.processing_time
+            }
+          });
+        } catch (updateError) {
+          console.error('Error updating order with route data:', updateError);
+          // No mostrar error al usuario ya que la ruta se calculó correctamente
+        }
         
       } else {
         onError?.(result.error || 'Error al calcular la ruta');
@@ -318,7 +344,12 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
               <div>
                 <h3 className="font-bold text-lg theme-text-primary">Ruta del Pedido</h3>
                 <p className="text-sm theme-text-muted">
-                  {isCalculatingRoute ? 'Calculando ruta optimizada...' : 'Visualiza los puntos de recogida y entrega'}
+                  {isCalculatingRoute 
+                    ? 'Calculando ruta optimizada...' 
+                    : order?.route_points && order?.route_details 
+                      ? 'Ruta guardada - Visualiza los puntos de recogida y entrega'
+                      : 'Visualiza los puntos de recogida y entrega'
+                  }
                 </p>
               </div>
               {isCalculatingRoute && (
@@ -377,8 +408,17 @@ export function OrderDetail({ isOpen, onClose, order, onOrderUpdated, onSuccess,
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium theme-text-primary" style={{ color: 'var(--theme-text-primary)' }}>
-                      <span className="font-semibold">Este es solo un cálculo individual</span> • 
-                      En el <span className="font-semibold theme-text-secondary" style={{ color: 'var(--theme-text-secondary)' }}>optimizador de rutas</span> puedes crear rutas completas con tráfico y múltiples pedidos
+                      {order?.route_points && order?.route_details ? (
+                        <>
+                          <span className="font-semibold">Ruta guardada previamente</span> • 
+                          Esta ruta fue calculada y guardada anteriormente
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-semibold">Este es solo un cálculo individual</span> • 
+                          En el <span className="font-semibold theme-text-secondary" style={{ color: 'var(--theme-text-secondary)' }}>optimizador de rutas</span> puedes crear rutas completas con tráfico y múltiples pedidos
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
