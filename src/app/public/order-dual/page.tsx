@@ -38,6 +38,11 @@ export default function PublicOrderDualPage() {
   const [locationLoading, setLocationLoading] = useState(true);
   const [activeMap, setActiveMap] = useState<'pickup' | 'delivery'>('pickup');
 
+  // Mobile steps: 0 = ubicaciones, 1 = datos cliente/destinatario, 2 = detalles encargo
+  const [activeStep, setActiveStep] = useState<0 | 1 | 2>(0);
+
+  // Helpers para habilitar siguiente en cada paso (solo mobile)
+
   // Estados del buscador
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Location[]>([]);
@@ -104,6 +109,17 @@ export default function PublicOrderDualPage() {
     
     return null;
   };
+
+  // Helpers para habilitar siguiente en cada paso (solo mobile)
+  const canContinueStep1 = !!pickupLocation && !!deliveryLocation;
+
+  const canContinueStep2 =
+    !!customerName.trim() &&
+    !validatePhone(customerPhone) &&
+    !validateEmail(customerEmail) &&
+    !!recipientName.trim() &&
+    !validatePhone(recipientPhone) &&
+    !validateEmail(recipientEmail);
 
   // Obtener ubicación actual al montar el componente
   useEffect(() => {
@@ -476,8 +492,404 @@ export default function PublicOrderDualPage() {
         </div>
       </div>
 
-      {/* Layout principal - Responsive */}
-      <div className="flex flex-col lg:flex-row lg:overflow-hidden lg:min-h-0">
+      {/* Mobile-only 3-step flow */}
+      <div className="lg:hidden">
+        {/* Progress header */}
+        <div className="px-4 pt-4">
+          <div className="flex items-center justify-center space-x-4">
+            {[0,1,2].map((step) => (
+              <div key={step} className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold`}
+                  style={{
+                    backgroundColor: activeStep === step ? colors.buttonPrimary1 : colors.background2,
+                    color: activeStep === step ? colors.buttonText : colors.textSecondary,
+                    border: `1px solid ${colors.border}`
+                  }}
+                >
+                  {step + 1}
+                </div>
+                {step < 2 && (
+                  <div
+                    className="w-10 h-0.5 mx-2"
+                    style={{ backgroundColor: colors.border }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-3 text-sm" style={{ color: colors.textSecondary }}>
+            {activeStep === 0 && 'Seleccionar ubicaciones'}
+            {activeStep === 1 && 'Datos de cliente y destinatario'}
+            {activeStep === 2 && 'Detalles del encargo'}
+          </div>
+        </div>
+
+        {/* Step content */}
+        <div className="p-4 space-y-4">
+          {activeStep === 0 && (
+            <div className="space-y-4">
+              {/* Selector de tipo de ubicación */}
+              <div className="space-y-2">
+                <Button
+                  onClick={() => setActiveMap('pickup')}
+                  variant={activeMap === 'pickup' ? 'primary' : 'outline'}
+                  className="w-full flex items-center justify-start"
+                  style={{
+                    backgroundColor: activeMap === 'pickup' ? colors.buttonPrimary1 : 'transparent',
+                    color: activeMap === 'pickup' ? colors.buttonText : colors.textPrimary,
+                    borderColor: colors.border
+                  }}
+                >
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Ubicación de Recogida
+                </Button>
+                <Button
+                  onClick={() => setActiveMap('delivery')}
+                  variant={activeMap === 'delivery' ? 'primary' : 'outline'}
+                  className="w-full flex items-center justify-start"
+                  style={{
+                    backgroundColor: activeMap === 'delivery' ? colors.buttonPrimary1 : 'transparent',
+                    color: activeMap === 'delivery' ? colors.buttonText : colors.textPrimary,
+                    borderColor: colors.border
+                  }}
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Ubicación de Entrega
+                </Button>
+              </div>
+
+              {/* Buscador */}
+              <div>
+                <h4 className="font-medium theme-text-primary mb-2 text-sm" style={{ color: colors.textPrimary }}>
+                  {activeMap === 'pickup' ? 'Buscar Dirección de Recogida' : 'Buscar Dirección de Entrega'}
+                </h4>
+                <div className="relative">
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={`Buscar ${activeMap === 'pickup' ? 'dirección de recogida' : 'dirección de entrega'}...`}
+                    className="w-full"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="w-4 h-4 animate-spin" style={{ color: colors.buttonPrimary1 }} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Resultados */}
+                {showSearchResults && searchResults.length > 0 && (
+                  <div
+                    data-search-results
+                    className="mt-2 bg-white border theme-border rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                    style={{ borderColor: colors.border }}
+                  >
+                    {searchResults.map((result, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSelectSearchResult(result);
+                        }}
+                        className="w-full p-3 text-left hover:bg-gray-50 border-b theme-border last:border-b-0"
+                        style={{ borderColor: colors.border }}
+                      >
+                        <div className="flex items-start">
+                          <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium theme-text-primary" style={{ color: colors.textPrimary }}>
+                              {result.address}
+                            </p>
+                            <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
+                              {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Mapa */}
+              <div className="bg-white rounded-lg border theme-border overflow-hidden h-72" style={{ borderColor: colors.border }}>
+                <div className="h-full relative">
+                  {locationLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: colors.buttonPrimary1 }} />
+                        <p className="text-sm theme-text-secondary">Obteniendo tu ubicación...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <OrdersMap
+                      key={mapKey}
+                      center={mapCenter}
+                      zoom={15}
+                      pickupLocation={pickupLocation}
+                      deliveryLocation={deliveryLocation}
+                      onMapClick={handleMapClick}
+                      colors={colors}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Ubicaciones seleccionadas */}
+              <div className="space-y-2">
+                {pickupLocation && (
+                  <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
+                    <div className="flex items-start">
+                      <Navigation className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.warning }} />
+                      <div className="flex-1">
+                        <p className="text-xs font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>Recogida</p>
+                        <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
+                          {pickupLocation.address}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {deliveryLocation && (
+                  <div className="p-3 rounded-lg theme-bg-2 border theme-border" style={{ backgroundColor: colors.background2, borderColor: colors.border }}>
+                    <div className="flex items-start">
+                      <Package className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: colors.success }} />
+                      <div className="flex-1">
+                        <p className="text-xs font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>Entrega</p>
+                        <p className="text-xs theme-text-secondary" style={{ color: colors.textSecondary }}>
+                          {deliveryLocation.address}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeStep === 1 && (
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <h4 className="font-medium theme-text-primary text-sm" style={{ color: colors.textPrimary }}>
+                  Información del Cliente (Quien Envía)
+                </h4>
+                <div>
+                  <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                    Nombre del cliente *
+                  </label>
+                  <Input
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Nombre completo"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Input
+                    label="Teléfono del cliente"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="12345678 (8 dígitos)"
+                    type="tel"
+                    className="w-full"
+                    required
+                    error={phoneError || undefined}
+                  />
+                </div>
+                <div>
+                  <Input
+                    label="Email del cliente"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="correo@ejemplo.com"
+                    type="email"
+                    className="w-full"
+                    required
+                    error={emailError || undefined}
+                  />
+                </div>
+              </div>
+
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t" style={{ borderColor: colors.border }}></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-3 bg-white theme-text-secondary" style={{ color: colors.textSecondary, backgroundColor: colors.background1 }}>
+                    Persona que recibirá el pedido
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium theme-text-primary text-sm" style={{ color: colors.textPrimary }}>
+                  Información de Quien Recibirá el Pedido
+                </h4>
+                <div>
+                  <label className="block text-sm font-medium theme-text-primary mb-1" style={{ color: colors.textPrimary }}>
+                    Nombre de quien recibirá *
+                  </label>
+                  <Input
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    placeholder="Nombre completo"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Input
+                    label="Teléfono de quien recibirá"
+                    value={recipientPhone}
+                    onChange={(e) => setRecipientPhone(e.target.value)}
+                    placeholder="12345678 (8 dígitos)"
+                    type="tel"
+                    className="w-full"
+                    required
+                    error={recipientPhoneError || undefined}
+                  />
+                </div>
+                <div>
+                  <Input
+                    label="Email de quien recibirá"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    placeholder="correo@ejemplo.com"
+                    type="email"
+                    className="w-full"
+                    required
+                    error={recipientEmailError || undefined}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeStep === 2 && (
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <h4 className="font-medium theme-text-primary text-sm" style={{ color: colors.textPrimary }}>
+                  Información del Encargo
+                </h4>
+                <div>
+                  <TextAreaField
+                    label="Descripción del encargo"
+                    value={description}
+                    onChange={setDescription}
+                    placeholder="¿Qué contiene el encargo?"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <TextAreaField
+                    label="Instrucciones especiales"
+                    value={specialInstructions}
+                    onChange={setSpecialInstructions}
+                    placeholder="Instrucciones adicionales para la entrega (opcional)"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
+              <div className="pt-2">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={
+                    loading ||
+                    !pickupLocation ||
+                    !deliveryLocation ||
+                    !customerName ||
+                    !customerPhone ||
+                    !customerEmail ||
+                    !recipientName ||
+                    !recipientPhone ||
+                    !recipientEmail ||
+                    !!phoneError ||
+                    !!emailError ||
+                    !!recipientPhoneError ||
+                    !!recipientEmailError
+                  }
+                  className="w-full theme-btn-primary"
+                  style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creando...
+                    </>
+                  ) : (
+                    <>
+                      <Package className="w-4 h-4 mr-2" />
+                      Crear Encargo
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Step navigation (sticky bottom) */}
+        <div
+          className="sticky bottom-0 bg-white border-t theme-border p-3 flex items-center justify-between"
+          style={{ borderColor: colors.border }}
+        >
+          <Button
+            onClick={() => setActiveStep((s) => (s > 0 ? ((s - 1) as 0 | 1 | 2) : s))}
+            variant="outline"
+            className="min-w-[100px]"
+            style={{ borderColor: colors.border, color: colors.textPrimary }}
+            disabled={activeStep === 0 || loading}
+          >
+            Atrás
+          </Button>
+
+          {activeStep < 2 ? (
+            <Button
+              onClick={() => setActiveStep((s) => (s < 2 ? ((s + 1) as 0 | 1 | 2) : s))}
+              className="min-w-[140px]"
+              style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
+              disabled={loading || (activeStep === 0 && !canContinueStep1) || (activeStep === 1 && !canContinueStep2)}
+            >
+              Siguiente
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              className="min-w-[140px]"
+              style={{ backgroundColor: colors.buttonPrimary1, color: colors.buttonText }}
+              disabled={
+                loading ||
+                !pickupLocation ||
+                !deliveryLocation ||
+                !customerName ||
+                !customerPhone ||
+                !customerEmail ||
+                !recipientName ||
+                !recipientPhone ||
+                !recipientEmail ||
+                !!phoneError ||
+                !!emailError ||
+                !!recipientPhoneError ||
+                !!recipientEmailError
+              }
+            >
+              {loading ? 'Creando...' : 'Crear Encargo'}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop layout (unchanged) */}
+      {/* Layout principal - Desktop only */}
+      <div className="hidden lg:flex lg:overflow-hidden lg:min-h-0">
         {/* Columna izquierda - Selector de ubicación (desktop) / Arriba (mobile) */}
         <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r theme-border bg-white lg:h-auto lg:min-h-full" style={{ borderColor: colors.border }}>
           <div className="flex flex-col">
@@ -812,28 +1224,18 @@ export default function PublicOrderDualPage() {
               </div>
             </div>
 
-            {/* Botón de envío - Solo en mobile */}
-            <div className="lg:hidden p-2 sm:p-4 border-t theme-border flex-shrink-0" style={{ borderColor: colors.border }}>
+            {/* Botón de envío - Solo en mobile (reemplazado por el stepper, se oculta) */}
+            <div className="hidden p-2 sm:p-4 border-t theme-border flex-shrink-0" style={{ borderColor: colors.border }}>
               <Button
                 onClick={handleSubmit}
-                disabled={loading || !pickupLocation || !deliveryLocation || !customerName || !customerPhone || !customerEmail || !recipientName || !recipientPhone || !recipientEmail || !!phoneError || !!emailError || !!recipientPhoneError || !!recipientEmailError}
+                disabled={true}
                 className="w-full theme-btn-primary"
                 style={{ 
                   backgroundColor: colors.buttonPrimary1, 
                   color: colors.buttonText 
                 }}
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creando...
-                  </>
-                ) : (
-                  <>
-                    <Package className="w-4 h-4 mr-2" />
-                    Crear Encargo
-                  </>
-                )}
+                Crear Encargo
               </Button>
             </div>
           </div>
