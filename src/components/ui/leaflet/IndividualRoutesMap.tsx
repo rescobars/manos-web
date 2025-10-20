@@ -310,28 +310,28 @@ export function IndividualRoutesMap({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header mejorado */}
-      <div className="p-4 border-b theme-bg-2 theme-border" style={{ backgroundColor: 'var(--theme-bg-2)', borderColor: 'var(--theme-border)' }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold theme-text-primary" style={{ color: 'var(--theme-text-primary)' }}>Rutas de Pedidos</h3>
-            <p className="text-sm theme-text-secondary mt-1" style={{ color: 'var(--theme-text-secondary)' }}>
+      {/* Header compacto */}
+      <div className="p-2 sm:p-4 border-b theme-bg-2 theme-border" style={{ backgroundColor: 'var(--theme-bg-2)', borderColor: 'var(--theme-border)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm sm:text-lg font-semibold theme-text-primary truncate" style={{ color: 'var(--theme-text-primary)' }}>Rutas de Pedidos</h3>
+            <p className="text-xs sm:text-sm theme-text-secondary mt-1" style={{ color: 'var(--theme-text-secondary)' }}>
               {selectedOrders.length} de {orders.filter(order => order.deliveryLocation && order.pickupLocation).length} pedidos seleccionados
             </p>
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-xs theme-text-secondary" style={{ color: 'var(--theme-text-secondary)' }}>
-                  {driversLoading ? 'Cargando...' : `${driverPositions.length} conductores activos`}
-                </span>
-              </div>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
+              <span className="text-xs theme-text-secondary whitespace-nowrap" style={{ color: 'var(--theme-text-secondary)' }}>
+                {driversLoading ? 'Cargando...' : `${driverPositions.length} conductores activos`}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Mapa */}
-      <div className="flex-1 relative theme-bg-2" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
+      <div className="h-96 sm:h-[28rem] lg:h-[32rem] relative theme-bg-2" style={{ backgroundColor: 'var(--theme-bg-2)' }}>
         {filteredOrders.length === 0 ? (
           <div className="flex items-center justify-center h-full theme-bg-3" style={{ backgroundColor: 'var(--theme-bg-3)' }}>
             <div className="text-center">
@@ -346,7 +346,7 @@ export function IndividualRoutesMap({
           <MapContainer
             center={mapCenter}
             zoom={13}
-            style={{ height: '100%', width: '100%', minHeight: '400px' }}
+            style={{ height: '100%', width: '100%' }}
             className="z-0"
           >
           <TileLayer

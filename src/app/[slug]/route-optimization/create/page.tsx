@@ -2,24 +2,25 @@
 
 import React from 'react';
 import { RouteCreationModal } from '@/features/route-optimization/components/RouteCreationModal';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export default function CreateRoutePage() {
   const router = useRouter();
-  const params = useParams();
 
   const handleClose = () => {
-    const slug = Array.isArray(params?.slug) ? params?.slug[0] : params?.slug;
-    router.push(`/${slug}/route-optimization`);
+    router.back();
+  };
+
+  const handleRouteCreated = () => {
+    // Redirigir a la página de rutas después de crear
+    router.push('../routes');
   };
 
   return (
     <RouteCreationModal
-      asPage
       onClose={handleClose}
-      onRouteCreated={handleClose}
+      onRouteCreated={handleRouteCreated}
+      asPage={true}
     />
   );
 }
-
-

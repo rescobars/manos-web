@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Order } from '@/types';
-import { XCircle, Route, AlertCircle, MapPin, Package, ArrowLeft, ArrowRight, CheckCircle, Truck, Navigation, Clock, DollarSign } from 'lucide-react';
+import { XCircle, Route, AlertCircle, MapPin, Package, ArrowLeft, ArrowRight, CheckCircle, Truck, Navigation, Clock, DollarSign, ArrowLeft as BackIcon } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useMultiDeliveryOptimization } from '@/hooks/useMultiDeliveryOptimization';
 import { useDynamicTheme } from '@/hooks/useDynamicTheme';
@@ -438,86 +438,86 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
   }
 
   return (
-    <div className={asPage ? "p-2 sm:p-4 md:p-6 lg:p-8" : "fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4"}>
+    <div className={asPage ? "min-h-screen theme-bg-1" : "fixed inset-0 flex items-center justify-center z-50 p-1 sm:p-4"}>
       <div 
-        className={asPage ? "rounded-xl shadow theme-bg-3 w-full max-w-[1400px] mx-auto flex flex-col" : "rounded-xl shadow-2xl max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col theme-bg-3"}
+        className={asPage ? "w-full max-w-[1600px] mx-auto flex flex-col min-h-screen" : "rounded-xl shadow-2xl max-w-[95vw] w-full h-[95vh] sm:h-[90vh] flex flex-col theme-bg-3"}
       >
         {/* Header con contador de pasos */}
-        <div className="p-4 sm:p-6 border-b theme-divider">
-          <div className="flex items-center justify-between">
+        <div className="p-3 sm:p-6 border-b theme-divider">
+          <div className="flex items-center justify-between mb-3">
             <div className="min-w-0 flex-1">
-              <h3 className="text-lg sm:text-xl font-semibold theme-text-primary">Crear Ruta de Mandados</h3>
-              <p className="text-sm theme-text-secondary mt-1">Proceso simple en 3 pasos</p>
+              <h3 className="text-base sm:text-xl font-semibold theme-text-primary">Crear Ruta de Mandados</h3>
+              <p className="text-xs sm:text-sm theme-text-secondary mt-1">Proceso simple en 3 pasos</p>
             </div>
             <Button onClick={onClose} variant="ghost" size="sm">
-              <XCircle className="w-5 h-5" />
+              {asPage ? (
+                <>
+                  <BackIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1" />
+                  <span className="hidden sm:inline">Volver</span>
+                </>
+              ) : (
+                <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+              )}
             </Button>
           </div>
           
-          {/* Contador de pasos mejorado - Mobile friendly */}
-          <div className="mt-4">
-            {/* Información del paso actual - Mobile */}
-            <div className="text-center mb-4 sm:hidden">
+          {/* Contador de pasos compacto */}
+          <div className="flex items-center justify-between">
+            {/* Steps compactos */}
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              {steps.map((step, index) => {
+                const isActive = index <= currentStepIndex;
+                const isCompleted = index < currentStepIndex;
+                return (
+                  <div
+                    key={step.key}
+                    className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all duration-200 ${
+                      isCompleted 
+                        ? 'theme-btn-primary' 
+                        : isActive 
+                          ? 'theme-btn-primary' 
+                          : 'theme-bg-2 theme-text-muted'
+                    }`}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                    ) : (
+                      index + 1
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Información del paso actual - Solo en desktop */}
+            <div className="hidden sm:block text-right">
               <h4 className="text-sm font-medium theme-text-primary">{stepInfo.title}</h4>
               <p className="text-xs theme-text-secondary">{stepInfo.description}</p>
             </div>
             
-            {/* Steps centrados horizontalmente */}
-            <div className="flex flex-col items-center space-y-4">
-              <div className="flex items-center space-x-2">
-                {steps.map((step, index) => {
-                  const isActive = index <= currentStepIndex;
-                  const isCompleted = index < currentStepIndex;
-                  return (
-                    <div
-                      key={step.key}
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
-                        isCompleted 
-                          ? 'theme-btn-primary' 
-                          : isActive 
-                            ? 'theme-btn-primary' 
-                            : 'theme-bg-2 theme-text-muted'
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                      ) : (
-                        index + 1
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              
-              {/* Información del paso actual - Desktop */}
-              <div className="hidden sm:block text-center">
-                <h4 className="text-sm font-medium theme-text-primary">{stepInfo.title}</h4>
-                <p className="text-xs theme-text-secondary">{stepInfo.description}</p>
-              </div>
-              
-              {/* Contador de pasos - Mobile */}
-              <div className="sm:hidden">
-                <span className="text-xs theme-text-secondary">Paso {currentStepIndex + 1} de {steps.length}</span>
-              </div>
+            {/* Información del paso actual - Mobile */}
+            <div className="sm:hidden text-right">
+              <span className="text-xs theme-text-secondary">Paso {currentStepIndex + 1}/{steps.length}</span>
             </div>
           </div>
         </div>
         
-        <div className={asPage ? "" : "overflow-y-auto max-h-[calc(95vh-200px)] sm:max-h-[calc(90vh-200px)]"}>
-          <div className="p-3 sm:p-4 md:p-6">
+        <div className={asPage ? "" : "overflow-y-auto flex-1"}>
+          <div className="p-2 sm:p-4 md:p-6">
             {/* Paso 1: Selección de pedidos */}
             {currentStep === 'select' && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h4 className="text-lg font-semibold theme-text-primary mb-2">Selecciona los pedidos</h4>
-                  <p className="text-sm theme-text-secondary">
+              <div className="space-y-3 sm:space-y-4">
+                {/* Header compacto */}
+                <div className="text-center mb-3">
+                  <h4 className="text-base sm:text-lg font-semibold theme-text-primary mb-1">Selecciona los pedidos</h4>
+                  <p className="text-xs sm:text-sm theme-text-secondary">
                     {selectedOrders.length} de {orders.length} pedidos seleccionados
                   </p>
                 </div>
 
-                {/* Mapa de selección */}
-                <div className="bg-white rounded-lg border theme-border overflow-hidden h-64 sm:h-80 lg:h-96" style={{ borderColor: colors.border }}>
-                  <div className="h-full relative">
+                {/* Mapa de selección - como en formulario público */}
+                <div className="bg-white rounded-lg border theme-border overflow-hidden" style={{ borderColor: colors.border }}>
+                  <div className="h-96 sm:h-[28rem] lg:h-[32rem] relative">
                     <IndividualRoutesMap
                       pickupLocation={pickupLocation}
                       orders={ordersForMap}
@@ -534,13 +534,13 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                   </div>
                 </div>
 
-                {/* Instrucciones */}
-                <div className="p-4 rounded-lg theme-bg-2 theme-border border">
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="w-5 h-5 theme-text-primary mt-0.5 flex-shrink-0" />
+                {/* Instrucciones compactas */}
+                <div className="p-2 sm:p-3 rounded-lg theme-bg-2 theme-border border">
+                  <div className="flex items-start space-x-2">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 theme-text-primary mt-0.5 flex-shrink-0" />
                     <div>
-                      <h5 className="text-sm font-medium theme-text-primary mb-1">Instrucciones</h5>
-                      <ul className="text-xs theme-text-secondary space-y-1">
+                      <h5 className="text-xs font-medium theme-text-primary mb-1">Instrucciones</h5>
+                      <ul className="text-xs theme-text-secondary space-y-0.5">
                         <li>• Haz clic en el mapa para seleccionar la ubicación inicial</li>
                         <li>• Usa los checkboxes para seleccionar/deseleccionar pedidos</li>
                         <li>• Todos los pedidos están seleccionados por defecto</li>
@@ -549,14 +549,14 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                   </div>
                 </div>
 
-                {/* Botones de acción */}
-                <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                {/* Botones de acción compactos */}
+                <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       onClick={handleSelectAll}
                       variant="outline"
                       disabled={selectedOrders.length === orders.length}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto text-xs sm:text-sm px-3 py-2"
                     >
                       Seleccionar Todos
                     </Button>
@@ -564,7 +564,7 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                       onClick={handleClearAll}
                       variant="outline"
                       disabled={selectedOrders.length === 0}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto text-xs sm:text-sm px-3 py-2"
                     >
                       Limpiar Selección
                     </Button>
@@ -573,10 +573,10 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                     onClick={executeCurrentStepAction}
                     disabled={!stepInfo.canNext}
                     variant="primary"
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto text-xs sm:text-sm px-4 py-2"
                   >
                     Optimizar Ruta
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
                   </Button>
                 </div>
               </div>
@@ -595,9 +595,10 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
 
             {/* Paso 3: Revisar y guardar */}
             {currentStep === 'review' && (
-              <div className="space-y-6">
+              <div className="space-y-3 sm:space-y-4">
+                {/* Header compacto */}
                 <div className="text-center">
-                  <h4 className="text-lg font-semibold theme-text-primary mb-2">Ruta Optimizada</h4>
+                  <h4 className="text-lg font-semibold theme-text-primary mb-1">Ruta Optimizada</h4>
                   <p className="text-sm theme-text-secondary">
                     {multiDeliveryData?.optimized_route ? 
                       `${multiDeliveryData.optimized_route.orders_delivered || 0} pedidos optimizados` : 
@@ -607,15 +608,15 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                 </div>
 
                 {multiDeliveryLoading ? (
-                  <div className="text-center py-12">
+                  <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4 theme-border-primary"></div>
                     <p className="theme-text-secondary">Optimizando ruta...</p>
                   </div>
                 ) : multiDeliveryData?.optimized_route ? (
-                  <div className="space-y-6">
-                    {/* Mapa de la ruta optimizada */}
-                    <div className="bg-white rounded-lg border theme-border overflow-hidden h-64 sm:h-80 lg:h-96" style={{ borderColor: colors.border }}>
-                      <div className="h-full relative">
+                  <div className="space-y-3 sm:space-y-4">
+                    {/* Mapa de la ruta optimizada - como en formulario público */}
+                    <div className="bg-white rounded-lg border theme-border overflow-hidden" style={{ borderColor: colors.border }}>
+                      <div className="h-96 sm:h-[28rem] lg:h-[32rem] relative">
                         <MultiDeliveryRouteMap
                           optimizedRoute={multiDeliveryData.optimized_route}
                           className="w-full h-full"
@@ -623,37 +624,79 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                       </div>
                     </div>
 
-                    {/* Estadísticas de la ruta */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-4 sm:p-6 rounded-lg theme-bg-2">
+                    {/* Estadísticas de la ruta - más compactas */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg theme-bg-2">
                       <div className="text-center">
-                        <div className="text-xl sm:text-2xl font-bold theme-text-primary">
+                        <div className="text-lg sm:text-xl font-bold theme-text-primary">
                           {multiDeliveryData.optimized_route.total_distance?.toFixed(1) || '0'} km
                         </div>
-                        <div className="text-xs sm:text-sm theme-text-secondary">Distancia Total</div>
+                        <div className="text-xs theme-text-secondary">Distancia</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xl sm:text-2xl font-bold theme-text-primary">
+                        <div className="text-lg sm:text-xl font-bold theme-text-primary">
                           {Math.round(multiDeliveryData.optimized_route.total_time || 0)} min
                         </div>
-                        <div className="text-xs sm:text-sm theme-text-secondary">Tiempo Estimado</div>
+                        <div className="text-xs theme-text-secondary">Tiempo</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xl sm:text-2xl font-bold theme-text-primary">
+                        <div className="text-lg sm:text-xl font-bold theme-text-primary">
                           {multiDeliveryData.optimized_route.orders_delivered || 0}
                         </div>
-                        <div className="text-xs sm:text-sm theme-text-secondary">Pedidos</div>
+                        <div className="text-xs theme-text-secondary">Pedidos</div>
                       </div>
                     </div>
 
-                    {/* Botones de acción */}
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                    {/* Orden de paradas optimizado */}
+                    <div className="p-3 sm:p-4 rounded-lg theme-bg-2 border theme-border">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Navigation className="w-4 h-4 theme-text-primary" />
+                        <h5 className="text-sm font-medium theme-text-primary">Orden de Paradas Optimizado</h5>
+                      </div>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {multiDeliveryData.optimized_route.stops?.map((stop, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-2 rounded-lg theme-bg-3 border theme-border"
+                          >
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full theme-btn-primary flex items-center justify-center text-xs font-bold theme-text-primary">
+                              {stop.stop_number}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium theme-text-primary">
+                                  {stop.stop_type === 'start' ? '🚀 Inicio' :
+                                   stop.stop_type === 'pickup' ? '📦 Recogida' :
+                                   stop.stop_type === 'delivery' ? '🏁 Entrega' :
+                                   '🏁 Fin'}
+                                </span>
+                                {stop.order && (
+                                  <span className="text-xs theme-text-secondary">
+                                    (Pedido #{stop.order.order_number})
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs theme-text-secondary truncate">
+                                {stop.location.address}
+                              </p>
+                              <div className="flex items-center gap-3 text-xs theme-text-muted mt-1">
+                                <span>Distancia: {stop.distance_from_previous?.toFixed(1) || '0'} km</span>
+                                <span>Tiempo: {Math.round(stop.estimated_time || 0)} min</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Botones de acción compactos */}
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
                       <Button
                         onClick={() => setCurrentStep('select')}
                         disabled={routeSaved}
                         variant="outline"
-                        className="w-full sm:w-auto"
+                        className="w-full sm:w-auto text-xs sm:text-sm px-3 py-2"
                       >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         {routeSaved ? 'Ruta Guardada' : 'Volver a Editar'}
                       </Button>
                       <Button
@@ -661,16 +704,16 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                         disabled={saving || routeSaved}
                         variant="primary"
                         loading={saving}
-                        className="w-full sm:w-auto"
+                        className="w-full sm:w-auto text-xs sm:text-sm px-4 py-2"
                       >
                         {routeSaved ? (
                           <>
-                            <CheckCircle className="w-4 h-4 mr-2" />
+                            <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Ruta Guardada
                           </>
                         ) : (
                           <>
-                            <CheckCircle className="w-4 h-4 mr-2" />
+                            <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Guardar Ruta
                           </>
                         )}
@@ -678,15 +721,16 @@ export function RouteCreationModal({ onClose, onRouteCreated, asPage = false }: 
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-4 theme-text-warning" />
-                    <h3 className="text-lg font-semibold theme-text-primary mb-2">Error en la optimización</h3>
-                    <p className="theme-text-secondary mb-4">No se pudo optimizar la ruta. Inténtalo de nuevo.</p>
+                  <div className="text-center py-8">
+                    <AlertCircle className="w-10 h-10 mx-auto mb-3 theme-text-warning" />
+                    <h3 className="text-base font-semibold theme-text-primary mb-2">Error en la optimización</h3>
+                    <p className="text-sm theme-text-secondary mb-4">No se pudo optimizar la ruta. Inténtalo de nuevo.</p>
                     <Button
                       onClick={() => setCurrentStep('select')}
                       variant="primary"
+                      className="text-xs sm:text-sm px-3 py-2"
                     >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       Volver a Editar
                     </Button>
                   </div>

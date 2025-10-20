@@ -37,8 +37,6 @@ export default function RoutesPage() {
   } | undefined>(undefined);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
 
-  // Estados para modales
-  const [showCreateRouteModal, setShowCreateRouteModal] = useState(false);
 
   // Función para obtener rutas filtradas
   const fetchRoutes = useCallback(async (status?: string, page: number = 1, limit: number = 10) => {
