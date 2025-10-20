@@ -356,18 +356,15 @@ export function DataTable<T extends Record<string, any>>({
                   {columns.map((column) => (
                     <th
                       key={String(column.key)}
-                      className={`px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                      className={`px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-xs font-medium uppercase tracking-wider theme-text-primary ${
                         column.sortable ? 'cursor-pointer hover:opacity-80' : ''
                       } ${column.className || ''}`}
-                      style={{
-                        color: 'white',
-                      }}
                       onClick={() => column.sortable && handleSort(column.key)}
                     >
                       <div className="flex items-center space-x-1">
                         <span className="truncate">{column.label}</span>
                         {column.sortable && (
-                          <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                          <span className="theme-text-muted">
                             {getSortIcon(column.key)}
                           </span>
                         )}

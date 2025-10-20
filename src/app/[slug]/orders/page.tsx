@@ -235,10 +235,10 @@ export default function OrdersPage() {
       key: 'status' as keyof Order,
       label: 'Estado',
       sortable: true,
-      className: 'w-20',
+      className: 'w-28 min-w-[112px]',
       render: (value: string) => (
         <span 
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border"
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border whitespace-nowrap"
           style={getOrderStatusStyle(value)}
         >
           {getOrderStatusText(value)}
@@ -249,11 +249,10 @@ export default function OrdersPage() {
       key: 'total_amount' as keyof Order,
       label: 'Monto',
       sortable: true,
-      className: 'w-20',
+      className: 'w-24 min-w-[96px]',
       render: (value: any) => (
-        <div className="flex items-center gap-2 text-sm theme-text-secondary">
-          <DollarSign className="w-4 h-4" style={{ color: colors.success }} />
-          <span>Q{Number(value || 0).toFixed(2)}</span>
+        <div className="text-sm theme-text-secondary font-medium">
+          Q{Number(value || 0).toFixed(2)}
         </div>
       )
     },
@@ -261,7 +260,7 @@ export default function OrdersPage() {
       key: 'pickup_address' as keyof Order,
       label: 'Recogida',
       sortable: true,
-      className: 'w-1/5',
+      className: 'w-1/4 min-w-[200px]',
       render: (value: string) => (
         <div className="flex items-center gap-2 text-sm theme-text-secondary min-w-0">
           <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: colors.buttonPrimary1 }} />
@@ -273,7 +272,7 @@ export default function OrdersPage() {
       key: 'delivery_address' as keyof Order,
       label: 'Entrega',
       sortable: true,
-      className: 'w-1/5',
+      className: 'w-1/4 min-w-[200px]',
       render: (value: string) => (
         <div className="flex items-center gap-2 text-sm theme-text-secondary min-w-0">
           <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: colors.error }} />
@@ -285,7 +284,7 @@ export default function OrdersPage() {
       key: 'created_at' as keyof Order,
       label: 'Creado',
       sortable: true,
-      className: 'w-20',
+      className: 'w-24 min-w-[96px]',
       render: (value: string) => (
         <span className="text-xs theme-text-muted">
           {new Date(value).toLocaleDateString('es-ES', {
@@ -299,7 +298,7 @@ export default function OrdersPage() {
       key: 'actions' as keyof Order,
       label: 'Acciones',
       sortable: false,
-      className: 'w-24',
+      className: 'w-28 min-w-[112px]',
       render: (value: any, item: Order) => (
         <div className="flex items-center gap-1">
           <button
