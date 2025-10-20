@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/Button';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { useToast } from '@/hooks/useToast';
 import { OrderDetail } from '@/components/ui/OrderDetail';
-import { QuickOrderScreen } from '@/components/ui/QuickOrderScreen';
 import { StatCard } from '@/components/ui/StatCard';
 import { DataTable } from '@/components/ui/DataTable';
 import { Page } from '@/components/ui/Page';
@@ -19,11 +18,8 @@ import {
   Clock, 
   Truck, 
   CheckCircle,
-  Plus,
-  Map,
   MapPin,
   DollarSign,
-  Calendar,
   Eye
 } from 'lucide-react';
 
@@ -45,7 +41,6 @@ export default function OrdersPage() {
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
-  const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
   // Cargar pedidos cuando se monta el componente
@@ -110,29 +105,6 @@ export default function OrdersPage() {
     }
   };
 
-  const handleCreateOrder = async (data: any) => {
-    try {
-      const response = await ordersApiService.createOrder(data);
-      
-      if (response.success) {
-        success('Pedido creado exitosamente');
-        // Recargar pedidos
-        if (currentOrganization) {
-          fetchAllOrders(currentOrganization.uuid);
-          fetchOrders(currentOrganization.uuid, {
-            status: filterStatus === 'all' ? undefined : filterStatus,
-            page: 1,
-            limit: itemsPerPage
-          });
-        }
-      } else {
-        showError(response.error || 'Error al crear el pedido');
-      }
-    } catch (error) {
-      console.error('Error creating order:', error);
-      showError('Error al crear el pedido');
-    }
-  };
 
 
 
@@ -208,18 +180,12 @@ export default function OrdersPage() {
     setIsDetailModalOpen(true);
   };
 
-  const handleQuickOrder = () => {
-    setIsQuickOrderOpen(true);
-  };
 
   const handleCloseDetailModal = () => {
     setIsDetailModalOpen(false);
     setSelectedOrderForDetail(null);
   };
 
-  const handleCloseQuickOrder = () => {
-    setIsQuickOrderOpen(false);
-  };
 
   // Función para aceptar un pedido (cambiar de REQUESTED a PENDING) con total_amount
   const handleAcceptOrder = async (orderId: string, totalAmount?: number) => {
@@ -381,19 +347,6 @@ export default function OrdersPage() {
   }
 
 
-  // Si está abierto el QuickOrderScreen, mostrarlo en lugar del contenido normal
-  if (isQuickOrderOpen) {
-    return (
-      <>
-        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-        <QuickOrderScreen
-          organizationUuid={currentOrganization.uuid}
-          onClose={handleCloseQuickOrder}
-          onSubmit={handleCreateOrder}
-        />
-      </>
-    );
-  }
 
   return (
     <>
@@ -403,18 +356,13 @@ export default function OrdersPage() {
         title="Pedidos"
         subtitle={`Gestiona los pedidos de ${currentOrganization.name}`}
       >
-        {/* Header compacto con botón de crear pedido */}
+        {/* Header compacto */}
         <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
             <div>
               <h1 className="text-lg sm:text-xl font-bold theme-text-primary">Pedidos</h1>
               <p className="text-xs sm:text-sm theme-text-secondary truncate">{currentOrganization.name}</p>
             </div>
-            <Button onClick={handleQuickOrder} size="sm" className="w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Crear Pedido</span>
-              <span className="sm:hidden">Crear</span>
-            </Button>
           </div>
         </div>
         {/* Stats Cards - Clickables para filtrar */}
