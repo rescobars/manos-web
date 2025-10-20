@@ -1,11 +1,11 @@
 'use client';
 
-import { useTheme } from 'next-themes';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { useEffect, useState } from 'react';
 
-// Hook para aplicar clases de tema globalmente
+// Hook para aplicar clases de tema globalmente usando el sistema unificado
 export function useThemeClasses() {
-  const { theme, resolvedTheme } = useTheme();
+  const { resolvedMode } = useDynamicTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -16,23 +16,17 @@ export function useThemeClasses() {
   useEffect(() => {
     if (!mounted) return;
 
-    const currentTheme = resolvedTheme || theme;
-    
     // Remover clases anteriores
     document.body.classList.remove('light', 'dark');
     
     // Agregar clase del tema actual
-    if (currentTheme && currentTheme !== 'system') {
-      document.body.classList.add(currentTheme);
-    } else {
-      // Para system, usar la preferencia del sistema
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      document.body.classList.add(systemTheme);
+    if (resolvedMode) {
+      document.body.classList.add(resolvedMode);
     }
-  }, [theme, resolvedTheme, mounted]);
+  }, [resolvedMode, mounted]);
 
   return {
-    theme: resolvedTheme || theme,
+    theme: resolvedMode,
     mounted
   };
 }

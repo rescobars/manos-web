@@ -1,9 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { Palette, Check } from "lucide-react"
-import { useTheme } from "next-themes"
-
+import { Palette } from "lucide-react"
+import { useDynamicTheme } from "@/hooks/useDynamicTheme"
 import { Button } from "@/components/ui/Button"
 
 // Temas personalizados disponibles
@@ -17,7 +16,7 @@ const customThemes = [
 ]
 
 export function ThemeSelector() {
-  const { theme, setTheme } = useTheme()
+  const { mode, setMode } = useDynamicTheme()
   const [mounted, setMounted] = React.useState(false)
 
   // Evitar hidratación incorrecta
@@ -29,7 +28,7 @@ export function ThemeSelector() {
     return null
   }
 
-  const currentTheme = customThemes.find(t => t.id === theme) || customThemes[0]
+  const currentTheme = customThemes.find(t => t.id === mode) || customThemes[0]
 
   return (
     <div className="relative">
@@ -37,9 +36,9 @@ export function ThemeSelector() {
         variant="outline" 
         className="w-full justify-start"
         onClick={() => {
-          const currentIndex = customThemes.findIndex(t => t.id === theme)
+          const currentIndex = customThemes.findIndex(t => t.id === mode)
           const nextIndex = (currentIndex + 1) % customThemes.length
-          setTheme(customThemes[nextIndex].id)
+          setMode(customThemes[nextIndex].id as any)
         }}
       >
         <div className={`w-4 h-4 rounded-full mr-2 ${currentTheme.color}`} />

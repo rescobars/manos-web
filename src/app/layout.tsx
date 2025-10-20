@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { ThemeProvider, UnifiedThemeProvider } from '@/components/ui/theme-provider'
+import { UnifiedThemeProvider } from '@/components/ui/theme-provider'
 import { ThemeWrapper } from '@/components/ThemeWrapper'
 import { ThemeLoadingProvider } from '@/components/ThemeLoadingProvider'
 
@@ -21,22 +21,15 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <UnifiedThemeProvider>
-              <ThemeLoadingProvider>
-                <ThemeWrapper>
-                  {children}
-                </ThemeWrapper>
-              </ThemeLoadingProvider>
-            </UnifiedThemeProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <UnifiedThemeProvider>
+            <ThemeLoadingProvider>
+              <ThemeWrapper>
+                {children}
+              </ThemeWrapper>
+            </ThemeLoadingProvider>
+          </UnifiedThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   )

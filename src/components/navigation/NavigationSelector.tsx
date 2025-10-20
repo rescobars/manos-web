@@ -93,7 +93,7 @@ export function getNavigationItems(slug: string, userRole: string, isOwner: bool
         showForDriver: false
       },
       {
-        label: 'Optimización de Rutas',
+        label: 'Rutas',
         icon: Route,
         href: `/${slug}/route-optimization`,
         roles: ['OWNER', 'ADMIN'],

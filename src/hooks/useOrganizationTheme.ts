@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
+import { useDynamicTheme } from '@/hooks/useDynamicTheme';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface OrganizationThemeConfig {
@@ -14,7 +14,7 @@ interface OrganizationThemeConfig {
 }
 
 export function useOrganizationTheme() {
-  const { theme, setTheme } = useTheme();
+  const { mode, setMode } = useDynamicTheme();
   const { currentOrganization } = useAuth();
   const [organizationTheme, setOrganizationTheme] = useState<OrganizationThemeConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +41,7 @@ export function useOrganizationTheme() {
           
           // Aplicar el tema si está especificado
           if (result.data.theme_id) {
-            setTheme(result.data.theme_id);
+            setMode(result.data.theme_id as any);
           }
           
           // Aplicar CSS personalizado si existe
@@ -55,7 +55,7 @@ export function useOrganizationTheme() {
           }
         } else {
           // Usar tema por defecto si no hay configuración
-          setTheme('blue');
+          setMode('blue' as any);
           setOrganizationTheme({
             organization_uuid: organizationUuid,
             theme_id: 'blue',
@@ -64,7 +64,7 @@ export function useOrganizationTheme() {
         }
       } else {
         // Usar tema por defecto si hay error
-        setTheme('blue');
+        setMode('blue' as any);
         setOrganizationTheme({
           organization_uuid: organizationUuid,
           theme_id: 'blue',
@@ -73,7 +73,7 @@ export function useOrganizationTheme() {
       }
     } catch (error) {
       console.error('Error loading organization theme:', error);
-      setTheme('blue');
+      setMode('blue' as any);
       setOrganizationTheme({
         organization_uuid: organizationUuid,
         theme_id: 'blue',
@@ -98,7 +98,7 @@ export function useOrganizationTheme() {
         const result = await response.json();
         if (result.success && result.data) {
           setOrganizationTheme(result.data);
-          setTheme(themeConfig.theme_id);
+          setMode(themeConfig.theme_id as any);
         }
       } else {
         throw new Error('Error saving theme configuration');
@@ -145,7 +145,7 @@ export function useOrganizationTheme() {
     saveOrganizationTheme,
     applyCustomCSS,
     updateLogo,
-    currentTheme: theme,
-    setTheme,
+    currentTheme: mode,
+    setTheme: setMode,
   };
 }
